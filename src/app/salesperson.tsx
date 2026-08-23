@@ -44,7 +44,7 @@ export default function SalespersonScreen() {
             </View>
             <Text style={styles.actionLabel}>Call</Text>
           </Pressable>
-          <Pressable style={styles.actionItem}>
+          <Pressable style={styles.actionItem} onPress={() => Linking.openURL(salesperson.phone.replace('tel:', 'sms:'))}>
             <View style={[styles.actionCircle, { backgroundColor: Colors.red }]}>
               <MessageIcon color="#fff" />
             </View>

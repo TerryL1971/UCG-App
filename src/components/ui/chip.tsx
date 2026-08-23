@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Colors, Fonts, Radius } from '@/constants/theme';
 
@@ -39,9 +39,9 @@ export function StatusChip({ status, label }: { status: 'needed' | 'uploaded' | 
     approved: { bg: Colors.greenTint, fg: Colors.green },
   }[status];
   return (
-    <Pressable style={[chipStyles.base, { backgroundColor: palette.bg }]}>
+    <View style={[chipStyles.base, { backgroundColor: palette.bg }]}>
       <Text style={[chipStyles.label, { color: palette.fg }]}>{label}</Text>
-    </Pressable>
+    </View>
   );
 }
 

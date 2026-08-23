@@ -50,7 +50,13 @@ export default function BrowseScreen() {
           <Image source={icon} style={styles.icon} contentFit="contain" />
           <Text style={styles.title}>Browse Inventory</Text>
         </View>
-        <Pressable style={styles.iconButton} hitSlop={4}>
+        <Pressable
+          style={styles.iconButton}
+          hitSlop={4}
+          onPress={() => {
+            setQuery('');
+            setActiveFilter('All');
+          }}>
           <FilterIcon />
         </Pressable>
       </View>

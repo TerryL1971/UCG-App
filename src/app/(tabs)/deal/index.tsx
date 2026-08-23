@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { MessageIcon } from '@/components/icons';
@@ -30,7 +30,7 @@ export default function TimelineScreen() {
             {car ? `${car.year} ${car.title} · $${car.price.toLocaleString()}` : 'No car selected yet'}
           </Text>
         </View>
-        <Pressable hitSlop={8}>
+        <Pressable hitSlop={8} onPress={() => Linking.openURL(salesperson.phone.replace('tel:', 'sms:'))}>
           <MessageIcon />
         </Pressable>
       </View>
