@@ -1,0 +1,132 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap');
+    :root{
+      --navy:#273368; --navy-dark:#1B2450; --navy-tint:#E7EAF5;
+      --red:#C33531; --red-dark:#A32A27; --red-tint:#FBEAEA;
+      --bg:#F7F7FB; --card:#FFFFFF; --text:#20263F; --text-muted:#6B7280; --border:#E7E7EE;
+    }
+    *{box-sizing:border-box;}
+    body{margin:0;font-family:'Barlow',system-ui,sans-serif;background:#EDEEF3;}
+    .phone{width:390px;height:844px;background:var(--bg);position:relative;overflow:hidden;display:flex;flex-direction:column;}
+    .display{font-family:'Barlow Condensed',system-ui,sans-serif;font-weight:800;}
+    .navbar{padding:18px 20px 8px;display:flex;align-items:center;gap:14px;flex-shrink:0;}
+    .circbtn{width:44px;height:44px;border-radius:12px;background:#fff;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .actionbtn{display:flex;flex-direction:column;align-items:center;gap:8px;}
+    .actioncirc{width:58px;height:58px;border-radius:50%;background:var(--navy);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px rgba(39,51,104,0.28);}
+    .btn{display:flex;align-items:center;justify-content:center;gap:8px;height:54px;border-radius:14px;font-family:'Barlow Condensed',system-ui,sans-serif;font-weight:700;font-size:19px;cursor:pointer;border:none;width:100%;}
+    .btn-primary{background:var(--red);color:#fff;box-shadow:0 10px 22px rgba(195,53,49,0.30);}
+  </style>
+</helmet>
+
+<div class="phone">
+  <div class="navbar">
+    <div class="circbtn">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#273368" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </div>
+    <div class="display" style="font-size:19px;color:var(--text);">You're All Set</div>
+  </div>
+
+  <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;align-items:center;padding:8px 24px 0;">
+    <div style="font-size:13.5px;font-weight:600;color:var(--text-muted);letter-spacing:0.4px;text-transform:uppercase;margin-top:6px;">Meet Your Specialist</div>
+
+    <!-- avatar -->
+    <div style="width:190px;height:190px;border-radius:50%;background:var(--navy-tint);margin-top:18px;position:relative;display:flex;align-items:flex-end;justify-content:center;overflow:hidden;">
+      <svg width="190" height="207" viewBox="0 0 200 220" style="position:absolute;top:-8px;left:0;">
+        <defs>
+          <radialGradient id="skinGrad" cx="38%" cy="30%" r="75%">
+            <stop offset="0%" stop-color="#F2CBA0"/>
+            <stop offset="65%" stop-color="#E7B78A"/>
+            <stop offset="100%" stop-color="#C99567"/>
+          </radialGradient>
+          <linearGradient id="hairGrad" x1="0" y1="0" x2="0.3" y2="1">
+            <stop offset="0%" stop-color="#5A4433"/>
+            <stop offset="100%" stop-color="#2C1F17"/>
+          </linearGradient>
+          <linearGradient id="shirtGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#38468C"/>
+            <stop offset="100%" stop-color="#1B2450"/>
+          </linearGradient>
+        </defs>
+
+        <path d="M28 220 Q100 158 172 220 L172 226 L28 226 Z" fill="url(#shirtGrad)"/>
+        <path d="M88 168 L100 190 L112 168 L100 158 Z" fill="#C33531"/>
+        <path d="M88 168 L100 158 L78 152 Z" fill="url(#shirtGrad)"/>
+        <path d="M112 168 L100 158 L122 152 Z" fill="url(#shirtGrad)"/>
+
+        <rect x="84" y="132" width="32" height="38" rx="12" fill="url(#skinGrad)"/>
+        <ellipse cx="100" cy="160" rx="15" ry="6" fill="#C99567" opacity="0.35"/>
+
+        <ellipse cx="50" cy="98" rx="8" ry="11" fill="url(#skinGrad)"/>
+        <ellipse cx="150" cy="98" rx="8" ry="11" fill="url(#skinGrad)"/>
+
+        <ellipse cx="100" cy="92" rx="47" ry="52" fill="url(#skinGrad)"/>
+
+        <path d="M70 78 Q80 71 92 76" stroke="#3A2A1E" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+        <path d="M108 76 Q120 71 130 78" stroke="#3A2A1E" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+
+        <path d="M74 92 Q82 86 90 92 Q82 98 74 92 Z" fill="#fff"/>
+        <circle cx="83" cy="92" r="4.2" fill="#2A2016"/>
+        <circle cx="84.5" cy="90.3" r="1.3" fill="#fff"/>
+        <path d="M110 92 Q118 86 126 92 Q118 98 110 92 Z" fill="#fff"/>
+        <circle cx="119" cy="92" r="4.2" fill="#2A2016"/>
+        <circle cx="120.5" cy="90.3" r="1.3" fill="#fff"/>
+
+        <path d="M99 96 Q96 106 100 110 Q103 111 105 109" stroke="#C99567" stroke-width="2.4" fill="none" stroke-linecap="round" opacity="0.75"/>
+
+        <ellipse cx="72" cy="106" rx="9" ry="5.5" fill="#E8898A" opacity="0.28"/>
+        <ellipse cx="128" cy="106" rx="9" ry="5.5" fill="#E8898A" opacity="0.28"/>
+
+        <path d="M82 118 Q100 130 118 118 Q100 126 82 118 Z" fill="#B8654F"/>
+
+        <path d="M50 96 Q42 34 100 30 Q158 34 150 96 Q152 66 130 54 Q140 70 128 66 Q118 48 100 46 Q82 48 72 66 Q60 70 70 54 Q48 66 50 96 Z" fill="url(#hairGrad)"/>
+        <path d="M78 46 Q100 38 122 46 Q112 42 100 42 Q88 42 78 46 Z" fill="#6B5240" opacity="0.6"/>
+      </svg>
+      <svg width="34" height="34" viewBox="0 0 24 24" style="position:absolute;top:6px;right:6px;" fill="#C33531"><path d="M12 2l2.5 5.6L21 8.3l-4.6 4.2L17.6 19 12 15.9 6.4 19l1.2-6.5L3 8.3l6.5-.7L12 2z"/></svg>
+    </div>
+
+    <div class="display" style="font-size:24px;color:var(--text);margin-top:16px;">Marcus Whitfield</div>
+    <div style="display:flex;align-items:center;gap:6px;margin-top:2px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="#C33531"><path d="M12 2l2.5 5.6L21 8.3l-4.6 4.2L17.6 19 12 15.9 6.4 19l1.2-6.5L3 8.3l6.5-.7L12 2z"/></svg>
+      <div style="font-size:13.5px;font-weight:600;color:var(--red);">Top Rated &middot; Used Car Guys Specialist</div>
+    </div>
+
+    <div style="display:flex;gap:36px;margin-top:22px;">
+      <div class="actionbtn">
+        <div class="actioncirc">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        </div>
+        <div style="font-size:12.5px;font-weight:600;color:var(--text);">Call</div>
+      </div>
+      <div class="actionbtn">
+        <div class="actioncirc" style="background:var(--red);">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-5 4V6a1 1 0 0 1 1-1z"/></svg>
+        </div>
+        <div style="font-size:12.5px;font-weight:600;color:var(--text);">Text</div>
+      </div>
+    </div>
+
+    <div style="background:#fff;border-radius:16px;padding:16px 18px;margin-top:24px;box-shadow:0 6px 18px rgba(39,51,104,0.08);position:relative;width:100%;">
+      <div style="position:absolute;top:-8px;left:36px;width:16px;height:16px;background:#fff;transform:rotate(45deg);"></div>
+      <div style="font-size:14px;color:var(--text);line-height:1.5;font-style:italic;">
+        "Hi! I'll be helping you get into your 2021 RAV4. I'll walk with you through every step &mdash; text me anytime, day or night."
+      </div>
+    </div>
+  </div>
+
+  <div style="flex-shrink:0;padding:16px 24px 28px;">
+    <div class="btn btn-primary">View My Timeline &nbsp;&rarr;</div>
+  </div>
+</div>
+
+</x-dc>
+</body>
+</html>

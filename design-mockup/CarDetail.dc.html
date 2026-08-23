@@ -1,0 +1,90 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap');
+    :root{
+      --navy:#273368; --navy-dark:#1B2450; --navy-tint:#E7EAF5;
+      --red:#C33531; --red-dark:#A32A27; --red-tint:#FBEAEA;
+      --bg:#F7F7FB; --card:#FFFFFF; --text:#20263F; --text-muted:#6B7280; --border:#E7E7EE;
+    }
+    *{box-sizing:border-box;}
+    body{margin:0;font-family:'Barlow',system-ui,sans-serif;background:#EDEEF3;}
+    .phone{width:390px;height:844px;background:var(--bg);position:relative;overflow:hidden;display:flex;flex-direction:column;}
+    .display{font-family:'Barlow Condensed',system-ui,sans-serif;font-weight:800;}
+    .circbtn{width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.92);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(20,26,71,0.18);}
+    .spec{background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:12px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;}
+    .btn{display:flex;align-items:center;justify-content:center;gap:8px;height:54px;border-radius:14px;font-family:'Barlow Condensed',system-ui,sans-serif;font-weight:700;font-size:19px;cursor:pointer;border:none;}
+    .btn-primary{background:var(--red);color:#fff;box-shadow:0 10px 22px rgba(195,53,49,0.30);}
+    .detailrow{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--border);font-size:14px;}
+  </style>
+</helmet>
+
+<div class="phone">
+  <div style="height:280px;position:relative;flex-shrink:0;background:linear-gradient(180deg,#DCE2F2,#C9D2EC);">
+    <svg width="100%" height="100%" viewBox="0 0 390 280" preserveAspectRatio="xMidYMid meet">
+      <ellipse cx="195" cy="230" rx="160" ry="14" fill="#B7C1E2" opacity="0.7"/>
+      <path d="M56 190 L78 128 Q92 100 130 100 L262 100 Q300 100 314 128 L336 190 Z" fill="#273368"/>
+      <rect x="50" y="176" width="292" height="30" rx="15" fill="#20263F"/>
+      <circle cx="122" cy="212" r="26" fill="#141A47"/><circle cx="122" cy="212" r="10" fill="#AEB6CE"/>
+      <circle cx="268" cy="212" r="26" fill="#141A47"/><circle cx="268" cy="212" r="10" fill="#AEB6CE"/>
+      <rect x="98" y="112" width="56" height="30" rx="4" fill="#9FB3E0"/>
+      <rect x="236" y="112" width="56" height="30" rx="4" fill="#9FB3E0"/>
+    </svg>
+    <div style="position:absolute;top:20px;left:20px;" class="circbtn">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#273368" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </div>
+    <div style="position:absolute;top:20px;right:20px;" class="circbtn">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C33531" stroke-width="2.2"><path d="M12 21s-7-4.35-9.5-9A5.5 5.5 0 0 1 12 5a5.5 5.5 0 0 1 9.5 7C19 16.65 12 21 12 21z"/></svg>
+    </div>
+    <div style="position:absolute;bottom:16px;left:20px;background:var(--red);color:#fff;font-size:12px;font-weight:700;padding:6px 12px;border-radius:20px;">Certified Pre-Owned</div>
+  </div>
+
+  <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;padding:18px 20px 0;">
+    <div class="display" style="font-size:23px;color:var(--text);line-height:1.1;">2021 Toyota RAV4 XLE</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
+      <div style="font-size:13.5px;color:var(--text-muted);">32,410 mi &middot; Stuttgart Lot</div>
+      <div class="display" style="font-size:26px;color:var(--red);">$24,995</div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:18px;">
+      <div class="spec">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#273368" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <div style="font-size:11.5px;font-weight:600;color:var(--text-muted);">32.4k mi</div>
+      </div>
+      <div class="spec">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#273368" stroke-width="2"><circle cx="8" cy="17" r="3"/><circle cx="17" cy="17" r="3"/><path d="M8 17h6l3-9h-3"/></svg>
+        <div style="font-size:11.5px;font-weight:600;color:var(--text-muted);">Automatic</div>
+      </div>
+      <div class="spec">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#273368" stroke-width="2"><path d="M4 14l2-6h12l2 6M4 14v4h2v-2h12v2h2v-4M4 14h16"/></svg>
+        <div style="font-size:11.5px;font-weight:600;color:var(--text-muted);">AWD</div>
+      </div>
+      <div class="spec">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#273368" stroke-width="2"><path d="M6 3h9l3 6v11a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V3z"/><path d="M6 12h12"/></svg>
+        <div style="font-size:11.5px;font-weight:600;color:var(--text-muted);">Gas</div>
+      </div>
+    </div>
+
+    <div style="margin-top:20px;">
+      <div style="font-weight:700;font-size:15px;color:var(--text);margin-bottom:4px;">Vehicle Details</div>
+      <div class="detailrow"><span style="color:var(--text-muted);">Exterior</span><span style="font-weight:600;">Magnetic Gray</span></div>
+      <div class="detailrow"><span style="color:var(--text-muted);">Interior</span><span style="font-weight:600;">Black Cloth</span></div>
+      <div class="detailrow"><span style="color:var(--text-muted);">Engine</span><span style="font-weight:600;">2.5L 4-Cyl</span></div>
+    </div>
+  </div>
+
+  <div style="flex-shrink:0;padding:14px 20px 26px;background:#fff;border-top:1px solid var(--border);">
+    <div class="btn btn-primary">Choose This Car &nbsp;&rarr;</div>
+  </div>
+</div>
+
+</x-dc>
+</body>
+</html>

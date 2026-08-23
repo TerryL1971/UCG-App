@@ -1,0 +1,130 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap');
+    :root{
+      --navy:#273368; --navy-dark:#1B2450; --navy-tint:#E7EAF5;
+      --red:#C33531; --red-dark:#A32A27; --red-tint:#FBEAEA;
+      --bg:#F7F7FB; --card:#FFFFFF; --text:#20263F; --text-muted:#6B7280; --border:#E7E7EE;
+      --green:#2F9E60; --green-tint:#E7F5EC; --amber:#C97C10; --amber-tint:#FBF0DF;
+    }
+    *{box-sizing:border-box;}
+    body{margin:0;font-family:'Barlow',system-ui,sans-serif;background:#EDEEF3;}
+    .phone{width:390px;height:844px;background:var(--bg);position:relative;overflow:hidden;display:flex;flex-direction:column;}
+    .display{font-family:'Barlow Condensed',system-ui,sans-serif;font-weight:800;}
+    .navbar{padding:18px 20px 14px;display:flex;align-items:center;gap:14px;flex-shrink:0;background:#fff;border-bottom:1px solid var(--border);}
+    .circbtn{width:44px;height:44px;border-radius:12px;background:var(--navy-tint);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .docrow{background:#fff;border-radius:16px;padding:14px;display:flex;align-items:center;gap:12px;box-shadow:0 4px 14px rgba(39,51,104,0.06);}
+    .docicon{width:42px;height:42px;border-radius:11px;background:var(--navy-tint);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .chip{font-size:11px;font-weight:700;padding:5px 10px;border-radius:20px;display:inline-flex;align-items:center;gap:4px;}
+    .chip-needed{background:var(--amber-tint);color:var(--amber);}
+    .chip-uploaded{background:var(--navy-tint);color:var(--navy);}
+    .chip-approved{background:var(--green-tint);color:var(--green);}
+    .actioncirc{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .tabbar{height:80px;background:var(--navy);display:flex;align-items:flex-start;padding-top:12px;justify-content:space-around;flex-shrink:0;}
+    .tab{display:flex;flex-direction:column;align-items:center;gap:5px;color:rgba(255,255,255,0.5);font-size:11px;font-weight:600;}
+    .tab.active{color:#fff;}
+    .tab-ic{width:38px;height:28px;border-radius:10px;display:flex;align-items:center;justify-content:center;}
+    .tab.active .tab-ic{background:var(--red);}
+  </style>
+</helmet>
+
+<div class="phone">
+  <div class="navbar">
+    <div class="circbtn">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#273368" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </div>
+    <div>
+      <div class="display" style="font-size:19px;color:var(--text);line-height:1;">Documents</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">For your financing application</div>
+    </div>
+  </div>
+
+  <div style="flex:1;overflow:hidden;padding:18px 20px;display:flex;flex-direction:column;gap:12px;position:relative;">
+
+    <div class="docrow">
+      <div class="docicon"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#273368" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="11" r="2"/><path d="M5 17c.5-2 2-3 3.5-3s3 1 3.5 3"/><line x1="14" y1="9" x2="18" y2="9"/><line x1="14" y1="13" x2="18" y2="13"/></svg></div>
+      <div style="flex:1;">
+        <div style="font-size:14.5px;font-weight:700;color:var(--text);">Driver's License</div>
+        <div class="chip chip-approved" style="margin-top:5px;">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#2F9E60" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg>
+          Approved
+        </div>
+      </div>
+      <div class="actioncirc" style="background:var(--green-tint);">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2F9E60" stroke-width="2.2"><path d="M12 4v11"/><path d="M8 12l4 4 4-4"/><path d="M4 19h16"/></svg>
+      </div>
+    </div>
+
+    <div class="docrow">
+      <div class="docicon"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#273368" stroke-width="2"><path d="M12 2 4 5v6c0 5 3.5 9 8 11 4.5-2 8-6 8-11V5l-8-3z"/></svg></div>
+      <div style="flex:1;">
+        <div style="font-size:14.5px;font-weight:700;color:var(--text);">Proof of Insurance</div>
+        <div class="chip chip-uploaded" style="margin-top:5px;">Uploaded</div>
+      </div>
+      <div class="actioncirc" style="background:var(--navy-tint);">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#273368" stroke-width="2.2"><path d="M12 4v11"/><path d="M8 12l4 4 4-4"/><path d="M4 19h16"/></svg>
+      </div>
+    </div>
+
+    <div class="docrow">
+      <div class="docicon"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#273368" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/></svg></div>
+      <div style="flex:1;">
+        <div style="font-size:14.5px;font-weight:700;color:var(--text);">Proof of Income</div>
+        <div class="chip chip-needed" style="margin-top:5px;">Needed</div>
+      </div>
+      <div class="actioncirc" style="background:var(--red);">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4"><path d="M12 16V5"/><path d="M8 9l4-4 4 4"/><path d="M4 19h16"/></svg>
+      </div>
+    </div>
+
+    <div class="docrow">
+      <div class="docicon"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#273368" stroke-width="2"><path d="M12 21s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></svg></div>
+      <div style="flex:1;">
+        <div style="font-size:14.5px;font-weight:700;color:var(--text);">Proof of Residence</div>
+        <div class="chip chip-needed" style="margin-top:5px;">Needed</div>
+      </div>
+      <div class="actioncirc" style="background:var(--red);">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4"><path d="M12 16V5"/><path d="M8 9l4-4 4 4"/><path d="M4 19h16"/></svg>
+      </div>
+    </div>
+
+    <div style="text-align:center;font-size:12px;color:var(--text-muted);margin-top:4px;line-height:1.5;">
+      Tap to upload &mdash; we'll notify Marcus the moment it's ready for review.
+    </div>
+
+    <div style="position:absolute;right:20px;bottom:14px;width:56px;height:56px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;box-shadow:0 10px 22px rgba(195,53,49,0.35);">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </div>
+  </div>
+
+  <div class="tabbar">
+    <div class="tab">
+      <div class="tab-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg></div>
+      <div>Browse</div>
+    </div>
+    <div class="tab">
+      <div class="tab-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M12 21s-7-4.35-9.5-9A5.5 5.5 0 0 1 12 5a5.5 5.5 0 0 1 9.5 7C19 16.65 12 21 12 21z"/></svg></div>
+      <div>Saved</div>
+    </div>
+    <div class="tab active">
+      <div class="tab-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linejoin="round"><path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-5 4V6a1 1 0 0 1 1-1z"/></svg></div>
+      <div>My Deal</div>
+    </div>
+    <div class="tab">
+      <div class="tab-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-6 8-6s8 2 8 6"/></svg></div>
+      <div>Account</div>
+    </div>
+  </div>
+</div>
+
+</x-dc>
+</body>
+</html>

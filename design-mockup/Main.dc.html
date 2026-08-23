@@ -1,0 +1,75 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap');
+    :root{
+      --navy:#273368; --navy-dark:#1B2450; --navy-tint:#E7EAF5;
+      --red:#C33531; --red-dark:#A32A27; --red-tint:#FBEAEA;
+      --bg:#F7F7FB; --card:#FFFFFF; --text:#20263F; --text-muted:#6B7280; --border:#E7E7EE;
+    }
+    *{box-sizing:border-box;}
+    body{margin:0;font-family:'Barlow',system-ui,sans-serif;background:#EDEEF3;}
+    a{color:var(--red);} a:hover{color:var(--red-dark);}
+    .phone{width:390px;height:844px;background:var(--bg);position:relative;overflow:hidden;display:flex;flex-direction:column;}
+    .display{font-family:'Barlow Condensed',system-ui,sans-serif;font-weight:800;}
+    .btn{display:flex;align-items:center;justify-content:center;gap:8px;height:54px;border-radius:14px;font-family:'Barlow Condensed',system-ui,sans-serif;font-weight:700;font-size:19px;letter-spacing:0.3px;cursor:pointer;border:none;width:100%;}
+    .btn-primary{background:var(--red);color:#fff;box-shadow:0 10px 22px rgba(195,53,49,0.30);}
+    .btn-secondary{background:#fff;color:var(--navy);border:2px solid var(--navy);}
+  </style>
+</helmet>
+
+<div class="phone">
+
+  <!-- Hero band -->
+  <div style="background:var(--navy);height:360px;position:relative;overflow:hidden;flex-shrink:0;">
+    <!-- subtle star accents -->
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="#3A467F" style="position:absolute;top:28px;left:26px;"><path d="M12 2l2.5 5.6L21 8.3l-4.6 4.2L17.6 19 12 15.9 6.4 19l1.2-6.5L3 8.3l6.5-.7L12 2z"/></svg>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="#3A467F" style="position:absolute;top:80px;left:330px;"><path d="M12 2l2.5 5.6L21 8.3l-4.6 4.2L17.6 19 12 15.9 6.4 19l1.2-6.5L3 8.3l6.5-.7L12 2z"/></svg>
+
+    <!-- flat vector car illustration -->
+    <svg width="320" height="150" viewBox="0 0 320 150" style="position:absolute;bottom:34px;left:35px;">
+      <ellipse cx="160" cy="138" rx="130" ry="10" fill="#1B2450" opacity="0.55"/>
+      <path d="M28 108 L45 66 Q56 46 84 46 L216 46 Q244 46 255 66 L272 108 Z" fill="#FBFBFD"/>
+      <path d="M92 50 L104 82 L204 82 L216 50 Q206 44 195 44 L113 44 Q102 44 92 50 Z" fill="#C33531"/>
+      <rect x="24" y="100" width="272" height="26" rx="13" fill="#F3F3F6"/>
+      <circle cx="92" cy="128" r="20" fill="#20263F"/>
+      <circle cx="92" cy="128" r="8" fill="#C9CDD9"/>
+      <circle cx="230" cy="128" r="20" fill="#20263F"/>
+      <circle cx="230" cy="128" r="8" fill="#C9CDD9"/>
+      <rect x="60" y="60" width="34" height="20" rx="3" fill="#9FB3E0" opacity="0.9"/>
+      <rect x="214" y="60" width="34" height="20" rx="3" fill="#9FB3E0" opacity="0.9"/>
+    </svg>
+  </div>
+
+  <!-- Content -->
+  <div style="flex:1;display:flex;flex-direction:column;align-items:center;padding:28px 26px 30px;margin-top:-46px;position:relative;">
+    <div style="background:#fff;border-radius:20px;box-shadow:0 10px 28px rgba(27,36,80,0.14);padding:22px 20px 26px;width:100%;display:flex;flex-direction:column;align-items:center;">
+      <img src="ucg-logo-full.png" style="width:220px;height:auto;margin-bottom:14px;">
+      <div class="display" style="font-size:24px;color:var(--text);text-align:center;line-height:1.15;margin-bottom:8px;">Your next car,<br>one step at a time.</div>
+      <div style="font-size:14.5px;color:var(--text-muted);text-align:center;line-height:1.5;max-width:280px;">
+        Browse the lot, get matched with a real specialist, and track your whole deal &mdash; financing to pickup &mdash; in one place.
+      </div>
+    </div>
+
+    <div style="flex:1;"></div>
+
+    <div style="width:100%;display:flex;flex-direction:column;gap:12px;">
+      <div class="btn btn-primary">Create Account</div>
+      <div class="btn btn-secondary">Log In</div>
+      <div style="text-align:center;margin-top:6px;">
+        <a href="#" style="font-size:14px;font-weight:600;">Browse cars without an account</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+</x-dc>
+</body>
+</html>

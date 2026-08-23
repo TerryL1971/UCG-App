@@ -1,0 +1,173 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap');
+    :root{
+      --navy:#273368; --navy-dark:#1B2450; --navy-tint:#E7EAF5;
+      --red:#C33531; --red-dark:#A32A27; --red-tint:#FBEAEA;
+      --bg:#F7F7FB; --card:#FFFFFF; --text:#20263F; --text-muted:#6B7280; --border:#E1E3EC;
+    }
+    *{box-sizing:border-box;}
+    body{margin:0;font-family:'Barlow',system-ui,sans-serif;background:#EDEEF3;}
+    .phone{width:390px;height:844px;background:var(--bg);position:relative;overflow:hidden;display:flex;flex-direction:column;}
+    .display{font-family:'Barlow Condensed',system-ui,sans-serif;font-weight:800;}
+    .navbar{padding:18px 20px 6px;display:flex;align-items:center;gap:14px;flex-shrink:0;}
+    .circbtn{width:44px;height:44px;border-radius:12px;background:#fff;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+
+    .dot{position:absolute;top:0;left:0;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+    .dot-done{width:34px;height:34px;background:var(--red);}
+    .dot-upcoming{width:34px;height:34px;background:#fff;border:2.5px solid #D6D9E4;}
+    .dot-current{width:40px;height:40px;background:var(--navy);left:-3px;box-shadow:0 0 0 6px rgba(195,53,49,0.14);animation:pulse 2s ease-in-out infinite;}
+    @keyframes pulse{
+      0%{box-shadow:0 0 0 4px rgba(195,53,49,0.20);}
+      50%{box-shadow:0 0 0 10px rgba(195,53,49,0.06);}
+      100%{box-shadow:0 0 0 4px rgba(195,53,49,0.20);}
+    }
+    .line-solid{position:absolute;left:15.5px;top:34px;width:3px;height:calc(100% - 34px);background:var(--red);}
+    .line-dash{position:absolute;left:15.5px;top:34px;width:3px;height:calc(100% - 34px);background:repeating-linear-gradient(180deg,#D6D9E4 0 6px,transparent 6px 13px);}
+    .line-flow{position:absolute;left:15.5px;top:40px;width:3px;height:calc(100% - 40px);background:linear-gradient(180deg,var(--red) 0%,var(--red) 35%,transparent 35%),repeating-linear-gradient(180deg,#D6D9E4 35%,#D6D9E4 calc(35% + 6px),transparent calc(35% + 6px),transparent calc(35% + 13px));}
+    .flow-particle{position:absolute;left:12.5px;width:9px;height:9px;border-radius:50%;background:var(--red);box-shadow:0 0 8px rgba(195,53,49,0.7);animation:flow 2.2s ease-in-out infinite;}
+    @keyframes flow{
+      0%{top:40px;opacity:0;}
+      15%{opacity:1;}
+      85%{opacity:1;}
+      100%{top:calc(100% - 10px);opacity:0;}
+    }
+  </style>
+</helmet>
+
+<div class="phone">
+  <div class="navbar">
+    <div class="circbtn">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#273368" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </div>
+    <div class="display" style="font-size:19px;color:var(--text);">Your Journey</div>
+  </div>
+
+  <!-- pinned salesperson bar -->
+  <div style="margin:10px 20px 0;background:#fff;border-radius:14px;padding:10px 14px;display:flex;align-items:center;gap:10px;box-shadow:0 4px 12px rgba(39,51,104,0.07);flex-shrink:0;">
+    <svg width="34" height="34" viewBox="0 0 100 100" style="border-radius:50%;background:var(--navy-tint);flex-shrink:0;">
+      <defs>
+        <radialGradient id="skinGradPin" cx="38%" cy="30%" r="75%">
+          <stop offset="0%" stop-color="#F2CBA0"/><stop offset="65%" stop-color="#E7B78A"/><stop offset="100%" stop-color="#C99567"/>
+        </radialGradient>
+        <linearGradient id="hairGradPin" x1="0" y1="0" x2="0.3" y2="1">
+          <stop offset="0%" stop-color="#5A4433"/><stop offset="100%" stop-color="#2C1F17"/>
+        </linearGradient>
+      </defs>
+      <circle cx="50" cy="47" r="24" fill="url(#skinGradPin)"/>
+      <path d="M26 45 Q24 18 50 17 Q76 18 74 45 Q75 28 50 27 Q25 28 26 45 Z" fill="url(#hairGradPin)"/>
+      <path d="M39 46 Q44 42 49 46 Q44 49 39 46 Z" fill="#fff"/><circle cx="44" cy="46" r="2.1" fill="#2A2016"/>
+      <path d="M51 46 Q56 42 61 46 Q56 49 51 46 Z" fill="#fff"/><circle cx="56" cy="46" r="2.1" fill="#2A2016"/>
+      <path d="M38 58 Q50 67 62 58" stroke="#B8654F" stroke-width="3" fill="none" stroke-linecap="round"/>
+    </svg>
+    <div style="flex:1;">
+      <div style="font-size:13px;font-weight:700;color:var(--text);">Marcus is helping you</div>
+      <div style="font-size:11.5px;color:var(--text-muted);">2021 Toyota RAV4 XLE &middot; $24,995</div>
+    </div>
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#C33531" stroke-width="2.2" stroke-linejoin="round"><path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-5 4V6a1 1 0 0 1 1-1z"/></svg>
+  </div>
+
+  <div style="flex:1;overflow:hidden;padding:22px 20px 0;">
+
+    <div style="display:flex;gap:16px;min-height:80px;position:relative;">
+      <div style="width:34px;flex-shrink:0;position:relative;">
+        <div class="dot dot-done"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="line-solid"></div>
+      </div>
+      <div style="padding-top:2px;">
+        <div style="font-size:15px;font-weight:700;color:var(--text);">Matched with Salesperson</div>
+        <div style="font-size:12.5px;color:var(--text-muted);margin-top:2px;">Completed &middot; Aug 12</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:16px;min-height:80px;position:relative;">
+      <div style="width:34px;flex-shrink:0;position:relative;">
+        <div class="dot dot-done"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="line-solid"></div>
+      </div>
+      <div style="padding-top:2px;">
+        <div style="font-size:15px;font-weight:700;color:var(--text);">Application Submitted</div>
+        <div style="font-size:12.5px;color:var(--text-muted);margin-top:2px;">Completed &middot; Aug 14</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:16px;min-height:128px;position:relative;">
+      <div style="width:34px;flex-shrink:0;position:relative;">
+        <div class="dot dot-current"></div>
+        <div class="line-flow"></div>
+        <div class="flow-particle"></div>
+      </div>
+      <div style="padding-top:0px;">
+        <div style="font-size:15px;font-weight:700;color:var(--red);">Documents Uploaded</div>
+        <div style="font-size:12.5px;color:var(--text-muted);margin-top:2px;">In progress</div>
+        <div style="margin-top:10px;background:var(--red-tint);border-radius:12px;padding:9px 12px;display:flex;align-items:center;gap:9px;max-width:200px;">
+          <svg width="24" height="24" viewBox="0 0 100 100" style="border-radius:50%;flex-shrink:0;">
+            <defs>
+              <radialGradient id="skinGradChip" cx="38%" cy="30%" r="75%">
+                <stop offset="0%" stop-color="#F2CBA0"/><stop offset="65%" stop-color="#E7B78A"/><stop offset="100%" stop-color="#C99567"/>
+              </radialGradient>
+              <linearGradient id="hairGradChip" x1="0" y1="0" x2="0.3" y2="1">
+                <stop offset="0%" stop-color="#5A4433"/><stop offset="100%" stop-color="#2C1F17"/>
+              </linearGradient>
+            </defs>
+            <circle cx="50" cy="47" r="24" fill="url(#skinGradChip)"/>
+            <path d="M26 45 Q24 18 50 17 Q76 18 74 45 Q75 28 50 27 Q25 28 26 45 Z" fill="url(#hairGradChip)"/>
+          </svg>
+          <div style="font-size:11.5px;color:var(--navy);font-weight:600;line-height:1.3;">Marcus is reviewing your documents</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:16px;min-height:76px;position:relative;">
+      <div style="width:34px;flex-shrink:0;position:relative;">
+        <div class="dot dot-upcoming"></div>
+        <div class="line-dash"></div>
+      </div>
+      <div style="padding-top:4px;">
+        <div style="font-size:15px;font-weight:700;color:#9AA0B4;">Financing Approved</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:16px;min-height:76px;position:relative;">
+      <div style="width:34px;flex-shrink:0;position:relative;">
+        <div class="dot dot-upcoming"></div>
+        <div class="line-dash"></div>
+      </div>
+      <div style="padding-top:4px;">
+        <div style="font-size:15px;font-weight:700;color:#9AA0B4;">Contract Signed</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:16px;min-height:76px;position:relative;">
+      <div style="width:34px;flex-shrink:0;position:relative;">
+        <div class="dot dot-upcoming"></div>
+        <div class="line-dash"></div>
+      </div>
+      <div style="padding-top:4px;">
+        <div style="font-size:15px;font-weight:700;color:#9AA0B4;">Car Ready</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:16px;min-height:50px;position:relative;">
+      <div style="width:34px;flex-shrink:0;position:relative;">
+        <div class="dot dot-upcoming"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#B7BBCB" stroke-width="2.3"><path d="M4 22V4a1 1 0 0 1 1-1h10l5 5v14"/><path d="M5 3v6h9"/></svg></div>
+      </div>
+      <div style="padding-top:4px;">
+        <div style="font-size:15px;font-weight:700;color:#9AA0B4;">Picked Up</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</x-dc>
+</body>
+</html>

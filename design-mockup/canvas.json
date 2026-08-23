@@ -1,0 +1,28 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 390, "h": 844, "title": "1 · Sign Up & Log In" },
+    { "file": "Browse.dc.html", "x": 0, "y": 1004, "w": 390, "h": 844, "title": "2 · Browse Inventory" },
+    { "file": "CarDetail.dc.html", "x": 0, "y": 2008, "w": 390, "h": 844, "title": "3 · Car Detail" },
+    { "file": "Salesperson.dc.html", "x": 0, "y": 3012, "w": 390, "h": 844, "title": "4 · Meet Your Specialist" },
+    { "file": "Timeline.dc.html", "x": 0, "y": 4016, "w": 390, "h": 844, "title": "5 · Your Journey" },
+    { "file": "Documents.dc.html", "x": 0, "y": 5020, "w": 390, "h": 844, "title": "6 · Documents" },
+    { "file": "SellBack.dc.html", "x": 0, "y": 6024, "w": 390, "h": 844, "title": "7 · Sell It Back" }
+  ],
+  "annotations": [
+    { "id": "intro", "x": -40, "y": -300, "w": 470, "text": "USED CAR GUYS — APP CONCEPT\n\nA walkthrough of the full customer experience, top to bottom: sign up → browse the lot → pick a car → get matched with a real specialist → track the deal on an animated journey timeline → upload financing documents → and eventually sell a car back. Scroll down to follow the flow in order." },
+    { "id": "step-1", "x": -210, "y": 370, "w": 160, "text": "① Sign up, log in, or just start browsing." },
+    { "id": "arrow-1", "x": 175, "y": 924, "w": 40, "text": "↓" },
+    { "id": "step-2", "x": -210, "y": 1374, "w": 160, "text": "② Browse the live inventory, filter and search." },
+    { "id": "arrow-2", "x": 175, "y": 1928, "w": 40, "text": "↓" },
+    { "id": "step-3", "x": -210, "y": 2378, "w": 160, "text": "③ Pick a car and see the full detail page." },
+    { "id": "arrow-3", "x": 175, "y": 2932, "w": 40, "text": "↓" },
+    { "id": "step-4", "x": -210, "y": 3382, "w": 160, "text": "④ Instantly matched with a real salesperson — a face and a name, not a form." },
+    { "id": "arrow-4", "x": 175, "y": 3936, "w": 40, "text": "↓" },
+    { "id": "step-5", "x": -210, "y": 4386, "w": 160, "text": "⑤ The centerpiece: an animated step-by-step timeline of the whole deal, tied to their specialist." },
+    { "id": "arrow-5", "x": 175, "y": 4940, "w": 40, "text": "↓" },
+    { "id": "step-6", "x": -210, "y": 5390, "w": 160, "text": "⑥ Upload and track financing documents, right from the phone." },
+    { "id": "arrow-6", "x": 175, "y": 5944, "w": 40, "text": "↓" },
+    { "id": "step-7", "x": -210, "y": 6394, "w": 160, "text": "⑦ Down the road: sell the car back in a few taps." }
+  ],
+  "launch": { "view": "canvas" }
+}
