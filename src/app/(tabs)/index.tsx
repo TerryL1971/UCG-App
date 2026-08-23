@@ -66,16 +66,11 @@ export default function BrowseScreen() {
         />
       </View>
 
-      <FlatList
-        horizontal
-        data={filters}
-        keyExtractor={(f) => f}
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterRow}
-        renderItem={({ item }) => (
-          <FilterChip label={item} active={item === activeFilter} onPress={() => setActiveFilter(item)} />
-        )}
-      />
+      <View style={styles.filterRow}>
+        {filters.map((item) => (
+          <FilterChip key={item} label={item} active={item === activeFilter} onPress={() => setActiveFilter(item)} />
+        ))}
+      </View>
 
       {error ? (
         <View style={styles.centerMessage}>
@@ -159,6 +154,7 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
   filterRow: {
+    flexDirection: 'row',
     gap: 10,
     paddingHorizontal: Spacing.xl,
     paddingVertical: Spacing.md,
