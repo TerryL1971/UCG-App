@@ -1,56 +1,73 @@
-# Welcome to your Expo app 👋
+# Used Car Guys — mobile app
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+An Expo / React Native app for [Used Car Guys](https://www.usedcarguys.net) —
+browse the lot, get matched with a specialist, track a deal from application
+to pickup, and (eventually) sell a car back — for a dealership serving US
+military stationed in Germany.
 
-## Get started
-
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Running it
 
 ```bash
-npm run reset-project
+npm install
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Scan the QR code with **Expo Go** (iOS/Android) on a phone on the same
+Wi-Fi. This project is pinned to **Expo SDK 54** on purpose — see
+[AGENTS.md](./AGENTS.md) for why (short version: the published Expo Go app
+only supports SDK 54 as of writing; don't bump this without checking that
+first, or device testing breaks).
 
-### Other setup steps
+## What's actually built
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+- **Onboarding → Browse → Car Detail → Salesperson match → Journey timeline
+  → Documents → Sell it back** — the full flow, all seven screens, in the
+  real brand (navy/red, Barlow/Barlow Condensed, the real logo).
+- **Live inventory.** Browse and Car Detail read real cars off
+  usedcarguys.net (`src/lib/ucg-inventory.ts`) — there's no public API for
+  this yet, so it's a scraper against the public pages. See
+  [docs/wordpress-inventory-api-spec.md](./docs/wordpress-inventory-api-spec.md)
+  for the real endpoint this should become.
+- **The chosen car carries through the flow.** Tapping "Choose This Car"
+  is tracked in-memory (`src/lib/deal-context.tsx`) so the salesperson and
+  timeline screens reference the actual car, not a placeholder.
+- **An animated journey timeline** — Reanimated-driven pulse on the
+  in-progress step and a particle animating down the connecting line.
 
-## Learn more
+## What's still mocked / not wired up
 
-To learn more about developing your project with Expo, look at the following resources:
+- **Salesperson assignment** is a hardcoded person (`src/constants/mock-data.ts`)
+  — this is the piece that needs the Salesforce Dealer Team API.
+- **Deal progress** (application submitted, financing approved, etc.) and
+  **documents** are also mock data — pending whatever system actually
+  tracks financing status.
+- **The salesperson's photo** is an illustrated placeholder
+  (`src/components/salesperson-avatar.tsx`) — the plan is admin-uploaded
+  real photos, with the illustration as a fallback when none is set.
+- **No real auth.** Onboarding's "Create Account" / "Log In" just enter the
+  app — there's no account system behind them yet.
+- Several actions (document upload, photo upload on sell-back) show an
+  honest "not connected yet" message rather than pretending to work, since
+  there's no file storage backend yet.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Project layout
 
-## Join the community
+```
+src/
+  app/           Screens (Expo Router — file-based routing)
+  components/    Shared UI (buttons, chips, icons, car card, avatar, timeline dot)
+  constants/     Theme (brand colors/fonts) + remaining mock data
+  lib/           Live inventory scraper, the deal-context
+brand/           Source logo files + extracted brand colors
+design-mockup/   The original Claude Design canvas this app was built from
+docs/            Specs for integrations we're waiting on (WordPress API)
+```
 
-Join our community of developers creating universal apps.
+## Known gaps worth knowing about
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- The inventory scraper is inherently fragile — it reads the site's current
+  HTML structure directly, so a redesign of usedcarguys.net will break it.
+  It fails gracefully (shows an error, doesn't crash) but won't self-heal.
+- Deal state (`deal-context.tsx`) is in-memory only — closing the app loses
+  it. That's fine for now; it should move to a real backend once accounts
+  exist.
