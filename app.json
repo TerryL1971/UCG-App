@@ -8,7 +8,6 @@
     "scheme": "ucg",
     "userInterfaceStyle": "light",
     "ios": {
-      "icon": "./assets/expo.icon",
       "bundleIdentifier": "net.usedcarguys.app"
     },
     "android": {
