@@ -86,6 +86,7 @@ export default function BrowseScreen() {
         </View>
       ) : (
         <FlatList
+          style={{ flex: 1 }}
           data={visible}
           keyExtractor={(c) => c.slug}
           contentContainerStyle={styles.list}

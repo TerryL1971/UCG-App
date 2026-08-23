@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CameraIcon, ClockIcon, MapPinIcon, PlusIcon, ShieldIcon } from '@/components/icons';
@@ -13,6 +13,16 @@ export default function SellBackScreen() {
   const [plate, setPlate] = useState('');
   const [mileage, setMileage] = useState('');
   const [condition, setCondition] = useState<(typeof conditions)[number]>('Good');
+
+  const handleSubmit = () => {
+    if (!plate.trim() || !mileage.trim()) {
+      Alert.alert('Almost there', 'Add your license plate/VIN and mileage so we can put together an offer.');
+      return;
+    }
+    // No real offer-generation backend yet — confirm the submission was
+    // received rather than doing nothing when tapped.
+    Alert.alert('Request sent', "We'll text you a real offer within one business day.");
+  };
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
@@ -59,21 +69,20 @@ export default function SellBackScreen() {
 
         <Field label="Add Photos">
           <View style={styles.photoRow}>
-            <View style={styles.photoTile}>
-              <PlusIcon color={Colors.red} />
-            </View>
-            <View style={styles.photoTile}>
-              <CameraIcon />
-            </View>
-            <View style={styles.photoTile}>
-              <CameraIcon />
-            </View>
+            {[0, 1, 2].map((i) => (
+              <Pressable
+                key={i}
+                style={styles.photoTile}
+                onPress={() => Alert.alert('Not connected yet', "Photo upload isn't wired to a camera roll yet.")}>
+                {i === 0 ? <PlusIcon color={Colors.red} /> : <CameraIcon />}
+              </Pressable>
+            ))}
           </View>
         </Field>
       </ScrollView>
 
       <View style={styles.footer}>
-        <Button label="Get My Offer" />
+        <Button label="Get My Offer" onPress={handleSubmit} />
         <View style={styles.trustRow}>
           <Trust icon={<ShieldIcon size={20} />} label="No obligation" />
           <Trust icon={<ClockIcon size={20} />} label="Real offers, real fast" />

@@ -1,4 +1,4 @@
-import Svg, { type SvgProps, Circle, Ellipse, Line, Path, Polyline, Rect } from 'react-native-svg';
+import Svg, { type SvgProps, Circle, Line, Path, Polyline, Rect } from 'react-native-svg';
 
 export interface IconProps {
   size?: number;
