@@ -7,12 +7,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/button';
 import { ArrowLeftIcon, DrivetrainIcon, FuelIcon, GaugeIcon, HeartIcon, TransmissionIcon } from '@/components/icons';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
+import { useDeal } from '@/lib/deal-context';
 import { fetchInventoryDetail, type InventoryDetail } from '@/lib/ucg-inventory';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function CarDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { chooseCar } = useDeal();
   const [car, setCar] = useState<InventoryDetail | null>(null);
   const [error, setError] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -97,7 +99,13 @@ export default function CarDetailScreen() {
       </ScrollView>
 
       <SafeAreaView edges={['bottom']} style={styles.ctaBar}>
-        <Button label="Choose This Car  →" onPress={() => router.push('/salesperson')} />
+        <Button
+          label="Choose This Car  →"
+          onPress={() => {
+            chooseCar(car);
+            router.push('/salesperson');
+          }}
+        />
       </SafeAreaView>
     </View>
   );

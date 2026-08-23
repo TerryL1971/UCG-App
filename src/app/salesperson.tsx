@@ -7,11 +7,13 @@ import { SalespersonAvatarFull } from '@/components/salesperson-avatar';
 import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
-import { cars, salesperson } from '@/constants/mock-data';
-
-const car = cars[0];
+import { salesperson } from '@/constants/mock-data';
+import { useDeal } from '@/lib/deal-context';
 
 export default function SalespersonScreen() {
+  const { car } = useDeal();
+  const carLabel = car ? `${car.year} ${car.title}` : 'your next car';
+
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <ScreenHeader title="You're All Set" />
@@ -52,8 +54,8 @@ export default function SalespersonScreen() {
 
         <View style={[styles.quoteCard, Shadow.card]}>
           <Text style={styles.quoteText}>
-            &ldquo;Hi! I&apos;ll be helping you get into your {car.year} {car.model}. I&apos;ll walk with you
-            through every step — text me anytime, day or night.&rdquo;
+            &ldquo;Hi! I&apos;ll be helping you get into your {carLabel}. I&apos;ll walk with you through
+            every step — text me anytime, day or night.&rdquo;
           </Text>
         </View>
       </View>

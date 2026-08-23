@@ -1,86 +1,10 @@
 /**
- * Placeholder data standing in for the future WordPress inventory API and
- * Salesforce Dealer Team API. Shapes here are a first guess at the real
- * contracts — expect them to move once those integrations are wired up.
+ * Placeholder data standing in for the future Salesforce Dealer Team API
+ * (salesperson assignment) and the deal-progress steps/documents, which
+ * will eventually come from whatever system tracks financing status.
+ * Inventory itself is no longer mocked here — see src/lib/ucg-inventory.ts,
+ * which reads live listings off usedcarguys.net.
  */
-
-export type CarColor = 'navy' | 'red' | 'slate';
-
-export interface Car {
-  id: string;
-  year: number;
-  make: string;
-  model: string;
-  trim: string;
-  price: number;
-  mileage: number;
-  transmission: string;
-  drivetrain: string;
-  fuel: string;
-  exteriorColor: string;
-  interiorColor: string;
-  engine: string;
-  lot: string;
-  certified: boolean;
-  illustrationColor: CarColor;
-}
-
-export const cars: Car[] = [
-  {
-    id: 'rav4-xle-2021',
-    year: 2021,
-    make: 'Toyota',
-    model: 'RAV4',
-    trim: 'XLE',
-    price: 24995,
-    mileage: 32410,
-    transmission: 'Automatic',
-    drivetrain: 'AWD',
-    fuel: 'Gas',
-    exteriorColor: 'Magnetic Gray',
-    interiorColor: 'Black Cloth',
-    engine: '2.5L 4-Cyl',
-    lot: 'Stuttgart Lot',
-    certified: true,
-    illustrationColor: 'navy',
-  },
-  {
-    id: 'civic-sport-2020',
-    year: 2020,
-    make: 'Honda',
-    model: 'Civic',
-    trim: 'Sport',
-    price: 18450,
-    mileage: 27880,
-    transmission: 'Automatic',
-    drivetrain: 'FWD',
-    fuel: 'Gas',
-    exteriorColor: 'Rallye Red',
-    interiorColor: 'Black Cloth',
-    engine: '1.5L Turbo 4-Cyl',
-    lot: 'Stuttgart Lot',
-    certified: false,
-    illustrationColor: 'red',
-  },
-  {
-    id: 'passat-se-2019',
-    year: 2019,
-    make: 'Volkswagen',
-    model: 'Passat',
-    trim: 'SE',
-    price: 16900,
-    mileage: 41120,
-    transmission: 'Automatic',
-    drivetrain: 'FWD',
-    fuel: 'Gas',
-    exteriorColor: 'Pure White',
-    interiorColor: 'Titan Black',
-    engine: '2.0L Turbo 4-Cyl',
-    lot: 'Stuttgart Lot',
-    certified: true,
-    illustrationColor: 'slate',
-  },
-];
 
 export interface Salesperson {
   id: string;

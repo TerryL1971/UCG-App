@@ -14,6 +14,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { StatusBar } from 'react-native';
 
+import { DealProvider } from '@/lib/deal-context';
+
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
@@ -37,7 +39,7 @@ export default function RootLayout() {
   }
 
   return (
-    <>
+    <DealProvider>
       <StatusBar barStyle="dark-content" />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
@@ -46,6 +48,6 @@ export default function RootLayout() {
         <Stack.Screen name="salesperson" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="sell-back" options={{ animation: 'slide_from_right' }} />
       </Stack>
-    </>
+    </DealProvider>
   );
 }

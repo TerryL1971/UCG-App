@@ -6,15 +6,16 @@ import { MessageIcon } from '@/components/icons';
 import { SalespersonAvatarMini } from '@/components/salesperson-avatar';
 import { DashedLine, FlowLine, SolidLine, TimelineDot } from '@/components/timeline-dot';
 import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
-import { cars, dealSteps, salesperson } from '@/constants/mock-data';
-
-const car = cars[0];
+import { dealSteps, salesperson } from '@/constants/mock-data';
+import { useDeal } from '@/lib/deal-context';
 
 const ROW_HEIGHT = 80;
 const CURRENT_ROW_HEIGHT = 132;
 const LAST_ROW_HEIGHT = 50;
 
 export default function TimelineScreen() {
+  const { car } = useDeal();
+
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <View style={styles.navbar}>
@@ -26,7 +27,7 @@ export default function TimelineScreen() {
         <View style={{ flex: 1 }}>
           <Text style={styles.pinnedName}>{salesperson.name.split(' ')[0]} is helping you</Text>
           <Text style={styles.pinnedMeta}>
-            {car.year} {car.make} {car.model} · ${car.price.toLocaleString()}
+            {car ? `${car.year} ${car.title} · $${car.price.toLocaleString()}` : 'No car selected yet'}
           </Text>
         </View>
         <Pressable hitSlop={8}>
