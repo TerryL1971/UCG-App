@@ -1,98 +1,138 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
+import { router } from 'expo-router';
+import { Image } from 'expo-image';
+import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { CarFrontIllustration } from '@/components/icons';
+import { Button } from '@/components/ui/button';
+import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
+const logo = require('@/assets/brand/ucg-logo-full.png');
+
+export default function OnboardingScreen() {
   return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
+    <View style={styles.screen}>
+      <View style={styles.hero}>
+        <View style={styles.starSmall} />
+        <View style={styles.carWrap}>
+          <View style={styles.carShadow} />
+          <CarFrontIllustration size={280} bodyColor="#FBFBFD" />
+          <View style={styles.roofAccent} />
+        </View>
+      </View>
 
-export default function HomeScreen() {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
+      <SafeAreaView style={styles.body} edges={['bottom']}>
+        <View style={[styles.card, Shadow.card]}>
+          <Image source={logo} style={styles.logo} contentFit="contain" />
+          <Text style={styles.title}>Your next car,{'\n'}one step at a time.</Text>
+          <Text style={styles.subtitle}>
+            Browse the lot, get matched with a real specialist, and track your whole deal — financing to
+            pickup — in one place.
+          </Text>
+        </View>
 
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
+        <View style={styles.actions}>
+          <Button label="Create Account" onPress={() => router.replace('/(tabs)')} />
+          <Button label="Log In" variant="secondary" onPress={() => router.replace('/(tabs)')} />
+          <Text style={styles.link} onPress={() => router.replace('/(tabs)')}>
+            Browse cars without an account
+          </Text>
+        </View>
       </SafeAreaView>
-    </ThemedView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
+    backgroundColor: Colors.bg,
   },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
+  hero: {
+    height: 300,
+    backgroundColor: Colors.navy,
     alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
+    justifyContent: 'flex-end',
+    paddingBottom: 30,
+    overflow: 'hidden',
   },
-  heroSection: {
+  starSmall: {
+    position: 'absolute',
+    top: 28,
+    left: 26,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#3A467F',
+  },
+  carWrap: {
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  carShadow: {
+    position: 'absolute',
+    bottom: -6,
+    width: 220,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#1B2450',
+    opacity: 0.55,
+  },
+  roofAccent: {
+    position: 'absolute',
+    top: 18,
+    width: 150,
+    height: 16,
+    backgroundColor: Colors.red,
+    borderRadius: 4,
+  },
+  body: {
     flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
+    alignItems: 'center',
+    paddingHorizontal: Spacing.xxl,
+    marginTop: -46,
+  },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: Radius.xl,
+    paddingHorizontal: 20,
+    paddingTop: 22,
+    paddingBottom: 26,
+    width: '100%',
+    alignItems: 'center',
+  },
+  logo: {
+    width: 220,
+    height: 62,
+    marginBottom: 14,
   },
   title: {
+    fontFamily: Fonts.display,
+    fontSize: 24,
+    color: Colors.text,
     textAlign: 'center',
+    lineHeight: 28,
+    marginBottom: 8,
   },
-  code: {
-    textTransform: 'uppercase',
+  subtitle: {
+    fontFamily: Fonts.body,
+    fontSize: 14.5,
+    color: Colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 21,
+    maxWidth: 280,
   },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
+  actions: {
+    width: '100%',
+    gap: 12,
+    marginTop: 'auto',
+    marginBottom: 8,
+  },
+  link: {
+    textAlign: 'center',
+    marginTop: 6,
+    fontFamily: Fonts.bodySemibold,
+    fontSize: 14,
+    color: Colors.red,
   },
 });

@@ -1,65 +1,76 @@
 /**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
+ * Used Car Guys brand theme.
+ * Colors are lifted directly from the logo (brand/ucg-logo-wide.pdf) — see
+ * design-mockup/ for the source-of-truth visual mockup this app is built from.
  */
-
-import '@/global.css';
-
-import { Platform } from 'react-native';
-
 export const Colors = {
-  light: {
-    text: '#000000',
-    background: '#ffffff',
-    backgroundElement: '#F0F0F3',
-    backgroundSelected: '#E0E1E6',
-    textSecondary: '#60646C',
-  },
-  dark: {
-    text: '#ffffff',
-    background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
-  },
+  navy: '#273368',
+  navyDark: '#1B2450',
+  navyTint: '#E7EAF5',
+  red: '#C33531',
+  redDark: '#A32A27',
+  redTint: '#FBEAEA',
+  bg: '#F7F7FB',
+  card: '#FFFFFF',
+  text: '#20263F',
+  textMuted: '#6B7280',
+  textFaint: '#9AA0B4',
+  border: '#E7E7EE',
+  green: '#2F9E60',
+  greenTint: '#E7F5EC',
+  amber: '#C97C10',
+  amberTint: '#FBF0DF',
 } as const;
-
-export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
-
-export const Fonts = Platform.select({
-  ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
-    sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
-    serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
-    rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
-    mono: 'ui-monospace',
-  },
-  default: {
-    sans: 'normal',
-    serif: 'serif',
-    rounded: 'normal',
-    mono: 'monospace',
-  },
-  web: {
-    sans: 'var(--font-display)',
-    serif: 'var(--font-serif)',
-    rounded: 'var(--font-rounded)',
-    mono: 'var(--font-mono)',
-  },
-});
 
 export const Spacing = {
-  half: 2,
-  one: 4,
-  two: 8,
-  three: 16,
-  four: 24,
-  five: 32,
-  six: 64,
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  xxl: 24,
+  xxxl: 32,
 } as const;
 
-export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
-export const MaxContentWidth = 800;
+export const Radius = {
+  sm: 10,
+  md: 12,
+  lg: 14,
+  xl: 16,
+  xxl: 18,
+  pill: 999,
+} as const;
+
+/**
+ * Display font (Barlow Condensed) for headlines/nav titles, matching the
+ * bold condensed feel of the UCG wordmark. Body font (Barlow) for everything
+ * readable. Loaded via @expo-google-fonts in src/app/_layout.tsx.
+ */
+export const Fonts = {
+  display: 'BarlowCondensed_800ExtraBold',
+  displaySemibold: 'BarlowCondensed_700Bold',
+  body: 'Barlow_400Regular',
+  bodyMedium: 'Barlow_500Medium',
+  bodySemibold: 'Barlow_600SemiBold',
+  bodyBold: 'Barlow_700Bold',
+} as const;
+
+export const Shadow = {
+  card: {
+    shadowColor: '#273368',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 18,
+    elevation: 3,
+  },
+  button: {
+    shadowColor: '#C33531',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 4,
+  },
+} as const;
+
+/** Minimum comfortable tap target, per Apple/Google HIG. */
+export const MinHitSlop = 44;
