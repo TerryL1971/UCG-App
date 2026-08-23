@@ -1,32 +1,21 @@
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { CarFrontIllustration, HeartIcon } from '@/components/icons';
+import { HeartIcon } from '@/components/icons';
 import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
-import type { Car } from '@/constants/mock-data';
+import type { InventoryListItem } from '@/lib/ucg-inventory';
 
-const illustrationBg: Record<Car['illustrationColor'], [string, string]> = {
-  navy: ['#DCE2F2', '#C9D2EC'],
-  red: ['#F3DEDD', '#EBC9C7'],
-  slate: ['#E3E5EC', '#D2D5E1'],
-};
-
-const illustrationBody: Record<Car['illustrationColor'], string> = {
-  navy: '#273368',
-  red: '#C33531',
-  slate: '#4B5266',
-};
-
-export function CarCard({ car }: { car: Car }) {
+export function CarCard({ car }: { car: InventoryListItem }) {
   const [saved, setSaved] = useState(false);
-  const [bgFrom, bgTo] = illustrationBg[car.illustrationColor];
 
   return (
-    <Pressable style={[styles.card, Shadow.card]} onPress={() => router.push(`/car/${car.id}`)}>
-      <View style={[styles.photo, { backgroundColor: bgTo }]}>
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: bgFrom, opacity: 0.6 }]} />
-        <CarFrontIllustration size={200} bodyColor={illustrationBody[car.illustrationColor]} />
+    <Pressable
+      style={[styles.card, Shadow.card]}
+      onPress={() => router.push(`/car/${encodeURIComponent(car.slug)}`)}>
+      <View style={styles.photo}>
+        <Image source={{ uri: car.thumbnail }} style={StyleSheet.absoluteFill} contentFit="cover" transition={150} />
         <Pressable
           hitSlop={8}
           onPress={(e) => {
@@ -40,12 +29,12 @@ export function CarCard({ car }: { car: Car }) {
       <View style={styles.info}>
         <View style={styles.infoTop}>
           <Text style={styles.name} numberOfLines={1}>
-            {car.year} {car.make} {car.model}
+            {car.year} {car.title}
           </Text>
           <Text style={styles.price}>${car.price.toLocaleString()}</Text>
         </View>
         <Text style={styles.meta}>
-          {car.mileage.toLocaleString()} mi · {car.transmission} · {car.lot}
+          {car.perMonth ? `From $${car.perMonth.toLocaleString()}/mo` : 'Tap for pricing details'}
         </Text>
       </View>
     </Pressable>
@@ -60,8 +49,7 @@ const styles = StyleSheet.create({
   },
   photo: {
     height: 150,
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: Colors.navyTint,
   },
   saveButton: {
     position: 'absolute',

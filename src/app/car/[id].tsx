@@ -1,67 +1,99 @@
+import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Dimensions, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
-import {
-  ArrowLeftIcon,
-  CarFrontIllustration,
-  DrivetrainIcon,
-  FuelIcon,
-  GaugeIcon,
-  HeartIcon,
-  TransmissionIcon,
-} from '@/components/icons';
+import { ArrowLeftIcon, DrivetrainIcon, FuelIcon, GaugeIcon, HeartIcon, TransmissionIcon } from '@/components/icons';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
-import { cars } from '@/constants/mock-data';
+import { fetchInventoryDetail, type InventoryDetail } from '@/lib/ucg-inventory';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function CarDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const car = cars.find((c) => c.id === id) ?? cars[0];
+  const [car, setCar] = useState<InventoryDetail | null>(null);
+  const [error, setError] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    fetchInventoryDetail(id)
+      .then((d) => {
+        if (!cancelled) setCar(d);
+      })
+      .catch(() => {
+        if (!cancelled) setError(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.centerScreen} edges={['top']}>
+        <Text style={styles.centerTitle}>Couldn&apos;t load this listing</Text>
+        <Text style={styles.centerBody}>It may have sold, or usedcarguys.net didn&apos;t respond.</Text>
+        <Pressable onPress={() => router.back()} style={{ marginTop: 16 }}>
+          <Text style={{ color: Colors.red, fontFamily: Fonts.bodySemibold }}>Go back</Text>
+        </Pressable>
+      </SafeAreaView>
+    );
+  }
+
+  if (!car) {
+    return (
+      <SafeAreaView style={styles.centerScreen} edges={['top']}>
+        <ActivityIndicator color={Colors.red} />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <View style={styles.screen}>
       <SafeAreaView edges={['top']}>
         <View style={styles.hero}>
-          <CarFrontIllustration size={340} bodyColor="#273368" />
+          {car.images.length > 0 ? (
+            <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
+              {car.images.map((uri) => (
+                <Image key={uri} source={{ uri }} style={{ width: SCREEN_WIDTH, height: 240 }} contentFit="cover" />
+              ))}
+            </ScrollView>
+          ) : (
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: Colors.navyTint }]} />
+          )}
           <Pressable style={[styles.circleButton, styles.backButton]} onPress={() => router.back()} hitSlop={4}>
             <ArrowLeftIcon />
           </Pressable>
           <Pressable style={[styles.circleButton, styles.heartButton]} onPress={() => setSaved((s) => !s)} hitSlop={4}>
             <HeartIcon color={saved ? Colors.red : Colors.textFaint} filled={saved} />
           </Pressable>
-          {car.certified && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>Certified Pre-Owned</Text>
-            </View>
-          )}
         </View>
       </SafeAreaView>
 
       <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent}>
         <Text style={styles.title}>
-          {car.year} {car.make} {car.model} {car.trim}
+          {car.year} {car.title}
         </Text>
         <View style={styles.priceRow}>
-          <Text style={styles.meta}>
-            {car.mileage.toLocaleString()} mi · {car.lot}
-          </Text>
+          <Text style={styles.meta}>Stock #{car.stockNumber}</Text>
           <Text style={styles.price}>${car.price.toLocaleString()}</Text>
         </View>
 
         <View style={styles.specGrid}>
-          <Spec icon={<GaugeIcon color={Colors.navy} />} label={`${(car.mileage / 1000).toFixed(1)}k mi`} />
-          <Spec icon={<TransmissionIcon color={Colors.navy} />} label={car.transmission} />
-          <Spec icon={<DrivetrainIcon color={Colors.navy} />} label={car.drivetrain} />
-          <Spec icon={<FuelIcon color={Colors.navy} />} label={car.fuel} />
+          <Spec icon={<GaugeIcon color={Colors.navy} />} label={car.mileage ? `${(car.mileage / 1000).toFixed(1)}k mi` : '—'} />
+          <Spec icon={<TransmissionIcon color={Colors.navy} />} label={car.transmission ?? '—'} />
+          <Spec icon={<DrivetrainIcon color={Colors.navy} />} label={car.mpg && car.mpg !== '/' ? `${car.mpg} mpg` : '—'} />
+          <Spec icon={<FuelIcon color={Colors.navy} />} label={car.exteriorColor ? car.exteriorColor.split(' - ')[0] : '—'} />
         </View>
 
         <Text style={styles.sectionTitle}>Vehicle Details</Text>
-        <DetailRow label="Exterior" value={car.exteriorColor} />
-        <DetailRow label="Interior" value={car.interiorColor} />
-        <DetailRow label="Engine" value={car.engine} />
+        <DetailRow label="Exterior" value={car.exteriorColor ?? 'Not listed'} />
+        <DetailRow label="Engine" value={car.engine ?? 'Not listed'} />
+        {car.vin ? <DetailRow label="VIN" value={car.vin} /> : null}
       </ScrollView>
 
       <SafeAreaView edges={['bottom']} style={styles.ctaBar}>
@@ -75,7 +107,9 @@ function Spec({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (
     <View style={styles.spec}>
       {icon}
-      <Text style={styles.specLabel}>{label}</Text>
+      <Text style={styles.specLabel} numberOfLines={1}>
+        {label}
+      </Text>
     </View>
   );
 }
@@ -91,11 +125,12 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: Colors.bg },
+  centerScreen: { flex: 1, backgroundColor: Colors.bg, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 },
+  centerTitle: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.text, marginBottom: 4 },
+  centerBody: { fontFamily: Fonts.body, fontSize: 13, color: Colors.textMuted, textAlign: 'center' },
   hero: {
     height: 240,
     backgroundColor: '#DCE2F2',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   circleButton: {
     position: 'absolute',
@@ -109,16 +144,6 @@ const styles = StyleSheet.create({
   },
   backButton: { left: 16 },
   heartButton: { right: 16 },
-  badge: {
-    position: 'absolute',
-    bottom: 14,
-    left: 16,
-    backgroundColor: Colors.red,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: Radius.pill,
-  },
-  badgeText: { color: '#fff', fontFamily: Fonts.bodyBold, fontSize: 12 },
   body: { flex: 1, paddingHorizontal: Spacing.xl },
   bodyContent: { paddingTop: Spacing.lg, paddingBottom: Spacing.xl },
   title: { fontFamily: Fonts.display, fontSize: 23, color: Colors.text, lineHeight: 26 },
@@ -133,6 +158,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     borderRadius: Radius.lg,
     paddingVertical: 12,
+    paddingHorizontal: 4,
     alignItems: 'center',
     gap: 6,
   },
