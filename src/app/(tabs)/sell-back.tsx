@@ -9,10 +9,14 @@ import { CameraIcon, ClockIcon, MapPinIcon, PlusIcon, ShieldIcon } from '@/compo
 import { Button } from '@/components/ui/button';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { useDeal } from '@/lib/deal-context';
+import { compressPhoto } from '@/lib/image';
 import { useVinScan } from '@/lib/vin-scan-context';
 
 const conditions = ['Fair', 'Good', 'Excellent'] as const;
-const PHOTO_SLOTS = 3;
+// Real dealership workflow here is more like 8-10+ photos per car, not 3 —
+// this is a soft ceiling to keep the screen from growing unbounded, not a
+// realistic limit anyone should actually hit.
+const MAX_PHOTOS = 15;
 
 export default function SellBackScreen() {
   const { car } = useDeal();
@@ -25,53 +29,50 @@ export default function SellBackScreen() {
   const [plate, setPlate] = useState(() => car?.vin ?? '');
   const [mileage, setMileage] = useState('');
   const [condition, setCondition] = useState<(typeof conditions)[number]>('Good');
-  const [photos, setPhotos] = useState<(string | null)[]>(Array(PHOTO_SLOTS).fill(null));
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [isAdding, setIsAdding] = useState(false);
 
-  const captureInto = async (index: number, useCamera: boolean) => {
+  /** index === null means "append a new photo" rather than replace one. */
+  const captureInto = async (index: number | null, useCamera: boolean) => {
     const permission = useCamera
       ? await ImagePicker.requestCameraPermissionsAsync()
       : await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert(
-        'Permission needed',
-        `Allow ${useCamera ? 'camera' : 'photo library'} access to add a photo.`,
-      );
+      Alert.alert('Permission needed', `Allow ${useCamera ? 'camera' : 'photo library'} access to add a photo.`);
       return;
     }
 
     const launch = useCamera ? ImagePicker.launchCameraAsync : ImagePicker.launchImageLibraryAsync;
-    const result = await launch({ mediaTypes: ['images'], quality: 0.7, allowsEditing: true, aspect: [4, 3] });
+    const result = await launch({ mediaTypes: ['images'], quality: 0.8 });
     if (result.canceled || !result.assets[0]) return;
 
-    setPhotos((prev) => {
-      const next = [...prev];
-      next[index] = result.assets[0].uri;
-      return next;
-    });
-  };
-
-  const handlePhotoTilePress = (index: number) => {
-    if (photos[index]) {
-      Alert.alert('Photo', undefined, [
-        { text: 'Replace', onPress: () => promptSource(index) },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: () =>
-            setPhotos((prev) => {
-              const next = [...prev];
-              next[index] = null;
-              return next;
-            }),
-        },
-        { text: 'Cancel', style: 'cancel' },
-      ]);
-      return;
+    setIsAdding(true);
+    try {
+      const compressed = await compressPhoto(result.assets[0].uri);
+      setPhotos((prev) => {
+        if (index === null) return [...prev, compressed];
+        const next = [...prev];
+        next[index] = compressed;
+        return next;
+      });
+    } finally {
+      setIsAdding(false);
     }
-    promptSource(index);
   };
 
-  const promptSource = (index: number) => {
+  const handleExistingPhotoPress = (index: number) => {
+    Alert.alert('Photo', undefined, [
+      { text: 'Replace', onPress: () => promptSource(index) },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: () => setPhotos((prev) => prev.filter((_, i) => i !== index)),
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
+  const promptSource = (index: number | null) => {
     Alert.alert('Add Photo', undefined, [
       { text: 'Take Photo', onPress: () => captureInto(index, true) },
       { text: 'Choose from Library', onPress: () => captureInto(index, false) },
@@ -159,21 +160,28 @@ export default function SellBackScreen() {
           </View>
         </Field>
 
-        <Field label="Add Photos">
+        <Field label={`Add Photos${photos.length ? ` (${photos.length})` : ''}`}>
           <View style={styles.photoRow}>
             {photos.map((uri, i) => (
               <Pressable
-                key={i}
-                style={[styles.photoTile, uri && styles.photoTileFilled]}
-                onPress={() => handlePhotoTilePress(i)}>
-                {uri ? (
-                  <Image source={{ uri }} style={StyleSheet.absoluteFill} contentFit="cover" />
-                ) : (
-                  <PlusIcon color={Colors.red} />
-                )}
+                key={uri + i}
+                style={[styles.photoTile, styles.photoTileFilled]}
+                onPress={() => handleExistingPhotoPress(i)}>
+                <Image source={{ uri }} style={StyleSheet.absoluteFill} contentFit="cover" />
               </Pressable>
             ))}
+            {photos.length < MAX_PHOTOS && (
+              <Pressable
+                style={styles.photoTile}
+                disabled={isAdding}
+                onPress={() => promptSource(null)}>
+                <PlusIcon color={Colors.red} />
+              </Pressable>
+            )}
           </View>
+          <Text style={styles.photoHint}>
+            Photos are automatically resized to keep things quick to send — take as many as you need.
+          </Text>
         </Field>
       </ScrollView>
 
@@ -275,7 +283,14 @@ const styles = StyleSheet.create({
   segOptionActive: { backgroundColor: Colors.navy, borderColor: Colors.navy },
   segLabel: { fontFamily: Fonts.bodySemibold, fontSize: 13.5, color: Colors.textMuted },
   segLabelActive: { color: '#fff' },
-  photoRow: { flexDirection: 'row', gap: 10, marginTop: 7 },
+  photoRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 7 },
+  photoHint: {
+    fontFamily: Fonts.body,
+    fontSize: 11.5,
+    color: Colors.textMuted,
+    marginTop: 8,
+    lineHeight: 16,
+  },
   photoTile: {
     width: 76,
     height: 76,

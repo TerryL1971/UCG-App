@@ -49,11 +49,17 @@ first, or device testing breaks).
   the Code 39 barcode on a VIN sticker instead of making someone type all
   17 characters. Falls back to manual entry if camera permission is denied
   or scanning doesn't work out.
-- **Real photo attach on Sell It Back** (`expo-image-picker`) — take a
-  photo or choose from the library for each of the three photo slots;
-  tapping a filled slot offers Replace/Remove. This is a genuinely
-  different feature from VIN scanning above (attaching photos vs. reading
-  a barcode), so it's a separate library even though both touch the camera.
+- **Real photo attach on Sell It Back** (`expo-image-picker`) — an open-
+  ended grid, not a fixed count: take a photo or choose from the library,
+  tap the **+** tile to keep adding (up to 15 — a soft ceiling, not a
+  realistic limit), tap an existing photo for Replace/Remove. Matches the
+  actual dealership workflow of 8-10+ condition photos per car.
+- **Photos are auto-resized, not just compressed** (`src/lib/image.ts`,
+  `expo-image-manipulator`) — every photo is downscaled to 1024px on the
+  long side before it's kept, since a phone camera photo can be several MB
+  at full resolution and that adds up fast across a batch. Resizing the
+  actual dimensions is what shrinks file size; JPEG quality alone on a
+  huge image doesn't.
 
 - **Staying logged in.** Sessions persist (AsyncStorage) — closing and
   reopening the app remembers you, and returning logged-in users skip
