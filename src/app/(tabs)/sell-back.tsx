@@ -13,6 +13,7 @@ import { compressPhoto } from '@/lib/image';
 import { useVinScan } from '@/lib/vin-scan-context';
 
 const conditions = ['Fair', 'Good', 'Excellent'] as const;
+const mileageUnits = ['mi', 'km'] as const;
 // Real dealership workflow here is more like 8-10+ photos per car, not 3 —
 // this is a soft ceiling to keep the screen from growing unbounded, not a
 // realistic limit anyone should actually hit.
@@ -28,6 +29,7 @@ export default function SellBackScreen() {
   // them), this just stays blank and they fill it in like normal.
   const [plate, setPlate] = useState(() => car?.vin ?? '');
   const [mileage, setMileage] = useState('');
+  const [mileageUnit, setMileageUnit] = useState<(typeof mileageUnits)[number]>('mi');
   const [condition, setCondition] = useState<(typeof conditions)[number]>('Good');
   const [photos, setPhotos] = useState<string[]>([]);
   const [isAdding, setIsAdding] = useState(false);
@@ -136,15 +138,30 @@ export default function SellBackScreen() {
           </View>
         </Field>
 
-        <Field label="Current Mileage">
-          <TextInput
-            value={mileage}
-            onChangeText={setMileage}
-            placeholder="e.g. 41,200 miles"
-            placeholderTextColor={Colors.textFaint}
-            keyboardType="number-pad"
-            style={styles.input}
-          />
+        <Field label="Current Mileage / Kilometers">
+          <View style={styles.mileageRow}>
+            <TextInput
+              value={mileage}
+              onChangeText={setMileage}
+              placeholder={mileageUnit === 'mi' ? 'e.g. 41,200' : 'e.g. 66,300'}
+              placeholderTextColor={Colors.textFaint}
+              keyboardType="number-pad"
+              style={[styles.input, styles.mileageInput]}
+            />
+            <View style={styles.unitToggle}>
+              {mileageUnits.map((unit) => (
+                <Pressable
+                  key={unit}
+                  onPress={() => setMileageUnit(unit)}
+                  style={[styles.unitOption, mileageUnit === unit && styles.unitOptionActive]}>
+                  <Text style={[styles.unitLabel, mileageUnit === unit && styles.unitLabelActive]}>{unit}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+          <Text style={styles.mileageHint}>
+            US-spec cars in miles, EU-spec in kilometers — whichever&apos;s on the odometer.
+          </Text>
         </Field>
 
         <Field label="Overall Condition">
@@ -269,6 +286,35 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   scanButtonLabel: { fontFamily: Fonts.bodyBold, fontSize: 13.5, color: '#fff' },
+  mileageRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-start' },
+  mileageInput: { flex: 1, marginTop: 7 },
+  mileageHint: {
+    fontFamily: Fonts.body,
+    fontSize: 11.5,
+    color: Colors.textMuted,
+    marginTop: 6,
+    lineHeight: 16,
+  },
+  unitToggle: {
+    marginTop: 7,
+    height: 50,
+    borderRadius: Radius.md,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    backgroundColor: '#fff',
+    flexDirection: 'row',
+    padding: 3,
+    gap: 3,
+  },
+  unitOption: {
+    width: 44,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  unitOptionActive: { backgroundColor: Colors.navy },
+  unitLabel: { fontFamily: Fonts.bodySemibold, fontSize: 13, color: Colors.textMuted },
+  unitLabelActive: { color: '#fff' },
   segRow: { flexDirection: 'row', gap: 8, marginTop: 7 },
   segOption: {
     flex: 1,
