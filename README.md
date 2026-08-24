@@ -48,13 +48,18 @@ first, or device testing breaks).
   17 characters. Falls back to manual entry if camera permission is denied
   or scanning doesn't work out.
 
+- **Staying logged in.** Sessions persist (AsyncStorage) — closing and
+  reopening the app remembers you, and returning logged-in users skip
+  onboarding entirely instead of re-typing their info every time.
+
 ## What's still mocked / not wired up
 
 - **Auth is a stand-in** (`src/lib/auth-context.tsx`) — the forms validate
   properly and the app genuinely tracks a logged-in user (shows their real
-  name/email on the Account tab, supports logging out), but signing up or
-  logging in accepts anything well-formed. There's no real backend/password
-  check, and nothing persists past closing the app.
+  name/email on the Account tab, supports logging out) across app restarts,
+  but signing up or logging in accepts anything well-formed. There's no
+  real backend, no password check, no server-issued token — just a name
+  and email saved locally.
 - **Salesperson assignment** is a hardcoded person (`src/constants/mock-data.ts`)
   — this is the piece that needs the Salesforce Dealer Team API.
 - **Deal progress** (application submitted, financing approved, etc.) and

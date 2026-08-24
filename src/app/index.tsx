@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import { Image } from 'expo-image';
 import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -6,10 +6,26 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { CarFrontIllustration } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
+import { useAuth } from '@/lib/auth-context';
 
 const logo = require('@/assets/brand/ucg-logo-full.png');
 
 export default function OnboardingScreen() {
+  const { user, isLoading } = useAuth();
+
+  // Briefly true while AsyncStorage resolves (near-instant on device) —
+  // render nothing rather than flash "Create Account" for someone who's
+  // actually already logged in.
+  if (isLoading) {
+    return null;
+  }
+
+  // Already logged in from a previous session — skip straight past
+  // onboarding instead of making them look at "Create Account" again.
+  if (user) {
+    return <Redirect href="/(tabs)" />;
+  }
+
   return (
     <View style={styles.screen}>
       <View style={styles.hero}>

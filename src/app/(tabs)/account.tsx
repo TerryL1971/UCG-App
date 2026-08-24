@@ -11,7 +11,7 @@ export default function AccountScreen() {
   const { user, logOut } = useAuth();
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.screen} edges={['top']}>
       <View style={styles.navbar}>
         <Text style={styles.title}>Account</Text>
       </View>
