@@ -32,8 +32,8 @@ export default function OnboardingScreen() {
         </View>
 
         <View style={styles.actions}>
-          <Button label="Create Account" onPress={() => router.replace('/(tabs)')} />
-          <Button label="Log In" variant="secondary" onPress={() => router.replace('/(tabs)')} />
+          <Button label="Create Account" onPress={() => router.push('/create-account')} />
+          <Button label="Log In" variant="secondary" onPress={() => router.push('/log-in')} />
           <Text style={styles.link} onPress={() => router.replace('/(tabs)')}>
             Browse cars without an account
           </Text>

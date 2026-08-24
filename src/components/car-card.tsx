@@ -1,8 +1,9 @@
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { HeartIcon } from '@/components/icons';
+import { CarFrontIllustration, HeartIcon } from '@/components/icons';
 import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
 import { useSaved } from '@/lib/saved-context';
 import type { InventoryListItem } from '@/lib/ucg-inventory';
@@ -10,13 +11,26 @@ import type { InventoryListItem } from '@/lib/ucg-inventory';
 export function CarCard({ car }: { car: InventoryListItem }) {
   const { isSaved, toggleSaved } = useSaved();
   const saved = isSaved(car.slug);
+  const [imageFailed, setImageFailed] = useState(false);
 
   return (
     <Pressable
       style={[styles.card, Shadow.card]}
       onPress={() => router.push(`/car/${encodeURIComponent(car.slug)}`)}>
       <View style={styles.photo}>
-        <Image source={{ uri: car.thumbnail }} style={StyleSheet.absoluteFill} contentFit="cover" transition={150} />
+        {imageFailed ? (
+          <View style={styles.photoFallback}>
+            <CarFrontIllustration size={130} bodyColor={Colors.navy} />
+          </View>
+        ) : (
+          <Image
+            source={{ uri: car.thumbnail }}
+            style={StyleSheet.absoluteFill}
+            contentFit="cover"
+            transition={150}
+            onError={() => setImageFailed(true)}
+          />
+        )}
         <Pressable
           hitSlop={8}
           onPress={(e) => {
@@ -51,6 +65,11 @@ const styles = StyleSheet.create({
   photo: {
     height: 150,
     backgroundColor: Colors.navyTint,
+  },
+  photoFallback: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   saveButton: {
     position: 'absolute',

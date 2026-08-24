@@ -36,9 +36,17 @@ first, or device testing breaks).
 - **Saving a car actually saves it.** The heart button on a car card and
   the Saved tab share real state (`src/lib/saved-context.tsx`), not just a
   per-card toggle that went nowhere.
+- **Real Create Account / Log In screens** (`src/app/create-account.tsx`,
+  `src/app/log-in.tsx`) — actual forms with validation, not a dead bypass.
+  "Browse without an account" still skips straight in, on purpose.
 
 ## What's still mocked / not wired up
 
+- **Auth is a stand-in** (`src/lib/auth-context.tsx`) — the forms validate
+  properly and the app genuinely tracks a logged-in user (shows their real
+  name/email on the Account tab, supports logging out), but signing up or
+  logging in accepts anything well-formed. There's no real backend/password
+  check, and nothing persists past closing the app.
 - **Salesperson assignment** is a hardcoded person (`src/constants/mock-data.ts`)
   — this is the piece that needs the Salesforce Dealer Team API.
 - **Deal progress** (application submitted, financing approved, etc.) and
@@ -47,8 +55,6 @@ first, or device testing breaks).
 - **The salesperson's photo** is an illustrated placeholder
   (`src/components/salesperson-avatar.tsx`) — the plan is admin-uploaded
   real photos, with the illustration as a fallback when none is set.
-- **No real auth.** Onboarding's "Create Account" / "Log In" just enter the
-  app — there's no account system behind them yet.
 - Several actions (document upload, photo upload on sell-back) show an
   honest "not connected yet" message rather than pretending to work, since
   there's no file storage backend yet.
@@ -60,7 +66,7 @@ src/
   app/           Screens (Expo Router — file-based routing)
   components/    Shared UI (buttons, chips, icons, car card, avatar, timeline dot)
   constants/     Theme (brand colors/fonts) + remaining mock data
-  lib/           Live inventory scraper, deal-context, saved-cars context
+  lib/           Live inventory scraper, deal/saved/auth contexts
 brand/           Source logo files + extracted brand colors
 design-mockup/   The original Claude Design canvas this app was built from
 docs/            Specs for integrations we're waiting on (WordPress API)

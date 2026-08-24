@@ -3,13 +3,15 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ArrowLeftIcon, ShieldIcon, UserIcon } from '@/components/icons';
+import { Button } from '@/components/ui/button';
 import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
+import { useAuth } from '@/lib/auth-context';
 
-function Row({ icon, label, onPress }: { icon: React.ReactNode; label: string; onPress?: () => void }) {
+function Row({ icon, label, onPress, danger }: { icon: React.ReactNode; label: string; onPress?: () => void; danger?: boolean }) {
   return (
     <Pressable style={styles.row} onPress={onPress}>
       <View style={styles.rowIcon}>{icon}</View>
-      <Text style={styles.rowLabel}>{label}</Text>
+      <Text style={[styles.rowLabel, danger && { color: Colors.red }]}>{label}</Text>
       <View style={styles.rowChevron}>
         <ArrowLeftIcon size={16} color={Colors.textFaint} strokeWidth={2.4} />
       </View>
@@ -18,6 +20,8 @@ function Row({ icon, label, onPress }: { icon: React.ReactNode; label: string; o
 }
 
 export default function AccountScreen() {
+  const { user, logOut } = useAuth();
+
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <View style={styles.navbar}>
@@ -28,15 +32,43 @@ export default function AccountScreen() {
         <View style={styles.avatarPlaceholder}>
           <UserIcon size={22} color={Colors.navy} />
         </View>
-        <View>
-          <Text style={styles.name}>Jordan Rivera</Text>
-          <Text style={styles.email}>jordan.rivera@example.com</Text>
-        </View>
+        {user ? (
+          <View>
+            <Text style={styles.name}>{user.name}</Text>
+            <Text style={styles.email}>{user.email}</Text>
+          </View>
+        ) : (
+          <View style={{ flex: 1 }}>
+            <Text style={styles.name}>Browsing as Guest</Text>
+            <Text style={styles.email}>Create an account to save your progress</Text>
+          </View>
+        )}
       </View>
+
+      {!user && (
+        <View style={styles.guestActions}>
+          <Button label="Create Account" onPress={() => router.push('/create-account')} />
+          <Button label="Log In" variant="secondary" onPress={() => router.push('/log-in')} />
+        </View>
+      )}
 
       <View style={[styles.section, Shadow.card]}>
         <Row icon={<ShieldIcon size={18} color={Colors.navy} />} label="Sell your car back to us" onPress={() => router.push('/sell-back')} />
       </View>
+
+      {user && (
+        <View style={[styles.section, Shadow.card, { marginTop: Spacing.md }]}>
+          <Row
+            icon={<UserIcon size={18} color={Colors.red} />}
+            label="Log Out"
+            danger
+            onPress={() => {
+              logOut();
+              router.replace('/');
+            }}
+          />
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -67,6 +99,11 @@ const styles = StyleSheet.create({
   },
   name: { fontFamily: Fonts.bodyBold, fontSize: 16, color: Colors.text },
   email: { fontFamily: Fonts.body, fontSize: 13, color: Colors.textMuted, marginTop: 2 },
+  guestActions: {
+    paddingHorizontal: Spacing.xl,
+    gap: 10,
+    marginBottom: Spacing.xl,
+  },
   section: {
     marginHorizontal: Spacing.xl,
     backgroundColor: '#fff',
