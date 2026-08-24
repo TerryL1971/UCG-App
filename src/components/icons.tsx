@@ -26,6 +26,14 @@ export function ArrowLeftIcon({ size = 20, color = '#273368', strokeWidth = 2.4 
   );
 }
 
+export function ChevronDownIcon({ size = 18, color = '#9AA0B4', strokeWidth = 2.4 }: IconProps) {
+  return (
+    <Svg {...base(size)}>
+      <Polyline points="6 9 12 15 18 9" {...strokeProps(color, strokeWidth)} />
+    </Svg>
+  );
+}
+
 export function SearchIcon({ size = 18, color = '#9AA0B4', strokeWidth = 2.2 }: IconProps) {
   return (
     <Svg {...base(size)}>

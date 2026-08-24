@@ -41,6 +41,17 @@ first, or device testing breaks).
   photo of the customer with their car and share it straight to whatever
   app you want (Instagram, Facebook, Messages…) via the native share
   sheet (`expo-sharing`), meant for posting to UCG's social pages.
+  Next to it, a "Leave a Google Review" button deep-links straight to
+  UCG's real Google Business write-a-review page (`googleReviewUrl` in
+  `mock-data.ts` — a real business identifier found in usedcarguys.net's
+  own site, not a placeholder; see the comment there for how it was
+  found/verified).
+  Completed steps are tap-to-expand — Matched shows the salesperson's
+  contact card, Documents shows the actual document list with real
+  status chips, Financing shows the loan terms, Contract confirms it was
+  signed. Each step's expanded content is a different shape (a contact
+  card vs. a list vs. a stat grid), so there's no one generic "detail"
+  component — see `StepDetail` in `src/app/(tabs)/deal/index.tsx`.
 - **Saving a car actually saves it.** The heart button on a car card and
   the Saved tab share real state (`src/lib/saved-context.tsx`), not just a
   per-card toggle that went nowhere.
@@ -115,3 +126,9 @@ docs/            Specs for integrations we're waiting on (WordPress API)
 - Deal state (`deal-context.tsx`) is in-memory only — closing the app loses
   it. That's fine for now; it should move to a real backend once accounts
   exist.
+- The timeline's connecting-line height for an expanded step
+  (`EXPANDED_EXTRA_HEIGHT` in `deal/index.tsx`) is an estimate per step,
+  not measured from actual rendered content — reasonable for now, but the
+  properly robust fix would measure each row's real height (`onLayout`)
+  instead of guessing. Worth revisiting if a line visibly falls short or
+  overshoots on a real device.

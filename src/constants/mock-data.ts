@@ -22,6 +22,14 @@ export const salesperson: Salesperson = {
   phone: 'tel:+491700000000',
 };
 
+// Deep-links straight to UCG's real "write a review" page — this is a real
+// business identifier, not a placeholder. The CID (116234595812975768728)
+// came from a plus.google.com link in usedcarguys.net's own footer; Google+
+// itself is long gone, but the CID is the same one Maps still uses for the
+// business today (verified: fetching it resolves a real Place page). Worth
+// swapping for an official link if UCG's marketing team already has one.
+export const googleReviewUrl = 'https://search.google.com/local/writereview?cid=116234595812975768728';
+
 export type DealStepStatus = 'done' | 'current' | 'upcoming';
 
 export interface DealStep {
@@ -54,9 +62,29 @@ export interface DealDocument {
   icon: 'id' | 'insurance' | 'income' | 'residence';
 }
 
+// All approved — consistent with dealSteps' "documents" step being marked
+// done above. (These previously stayed partly "Needed" even once the
+// timeline claimed the step was complete, which contradicted itself the
+// moment someone actually looked at the document list.)
 export const dealDocuments: DealDocument[] = [
   { id: 'license', name: "Driver's License", status: 'approved', icon: 'id' },
-  { id: 'insurance', name: 'Proof of Insurance', status: 'uploaded', icon: 'insurance' },
-  { id: 'income', name: 'Proof of Income', status: 'needed', icon: 'income' },
-  { id: 'residence', name: 'Proof of Residence', status: 'needed', icon: 'residence' },
+  { id: 'insurance', name: 'Proof of Insurance', status: 'approved', icon: 'insurance' },
+  { id: 'income', name: 'Proof of Income', status: 'approved', icon: 'income' },
+  { id: 'residence', name: 'Proof of Residence', status: 'approved', icon: 'residence' },
 ];
+
+export interface FinancingTerms {
+  amountFinanced: number;
+  apr: number;
+  termMonths: number;
+  monthlyPayment: number;
+  lender: string;
+}
+
+export const financingTerms: FinancingTerms = {
+  amountFinanced: 21500,
+  apr: 4.9,
+  termMonths: 60,
+  monthlyPayment: 405,
+  lender: 'USAA Auto Loans',
+};
