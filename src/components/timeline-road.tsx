@@ -4,16 +4,20 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
   interpolate,
+  useAnimatedProps,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
+  type SharedValue,
 } from 'react-native-reanimated';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { G, Path } from 'react-native-svg';
 
 import { CarSideIcon, CheckIcon, PackageIcon } from '@/components/icons';
 import { Colors, Fonts, Radius, Shadow } from '@/constants/theme';
 import type { DealStep } from '@/constants/mock-data';
 import type { InventoryDetail } from '@/lib/ucg-inventory';
+
+const AnimatedG = Animated.createAnimatedComponent(G);
 
 // Vertical (portrait): road runs top-to-bottom, swinging between these two
 // x positions. Horizontal (landscape): road runs left-to-right instead,
@@ -26,6 +30,9 @@ const START_PAD = 40;
 const END_PAD = 70;
 const SIGN_SIZE = 40;
 const CAR_SIZE = 52;
+/** How much of a full step's travel it takes for a passed stop/segment to
+ * fully fade out — 1 = fully gone exactly one step behind the car. */
+const FADE_TRAIL = 1;
 
 interface Waypoint {
   x: number;
@@ -40,47 +47,151 @@ function buildWaypoints(count: number, horizontal: boolean): Waypoint[] {
   });
 }
 
-/** Smooth S-curve road connecting each waypoint — a cubic bezier per
- * segment with control points pulled toward the midline, which is what
- * makes it swing side to side (or up and down, in horizontal mode) rather
- * than zigzag with sharp corners. */
-function buildRoadPath(points: Waypoint[], horizontal: boolean): string {
-  if (points.length < 2) return '';
-  let d = `M ${points[0].x} ${points[0].y}`;
-  for (let i = 0; i < points.length - 1; i++) {
-    const p0 = points[i];
-    const p1 = points[i + 1];
-    if (horizontal) {
-      const midX = (p0.x + p1.x) / 2;
-      d += ` C ${midX} ${p0.y}, ${midX} ${p1.y}, ${p1.x} ${p1.y}`;
-    } else {
-      const midY = (p0.y + p1.y) / 2;
-      d += ` C ${p0.x} ${midY}, ${p1.x} ${midY}, ${p1.x} ${p1.y}`;
-    }
+/** One cubic-bezier segment between two waypoints, pulled toward the
+ * midline so the road swings smoothly rather than zigzagging. */
+function buildSegmentPath(p0: Waypoint, p1: Waypoint, horizontal: boolean): string {
+  if (horizontal) {
+    const midX = (p0.x + p1.x) / 2;
+    return `M ${p0.x} ${p0.y} C ${midX} ${p0.y}, ${midX} ${p1.y}, ${p1.x} ${p1.y}`;
   }
-  return d;
+  const midY = (p0.y + p1.y) / 2;
+  return `M ${p0.x} ${p0.y} C ${p0.x} ${midY}, ${p1.x} ${midY}, ${p1.x} ${p1.y}`;
+}
+
+/** One road segment (three layered strokes for the asphalt/shadow/dashed
+ * center line), fading out once the car has driven a step past it, fading
+ * back in as the car retreats — this is what makes completed road "go
+ * away" and reappear on Back rather than just sitting there passively. */
+function RoadSegment({
+  p0,
+  p1,
+  index,
+  totalSteps,
+  horizontal,
+  progress,
+}: {
+  p0: Waypoint;
+  p1: Waypoint;
+  index: number;
+  totalSteps: number;
+  horizontal: boolean;
+  progress: SharedValue<number>;
+}) {
+  const animatedProps = useAnimatedProps(() => {
+    const carStepPos = progress.value * (totalSteps - 1);
+    const opacity = interpolate(carStepPos - index, [0, FADE_TRAIL], [1, 0], 'clamp');
+    return { opacity };
+  });
+  const d = buildSegmentPath(p0, p1, horizontal);
+  return (
+    <AnimatedG animatedProps={animatedProps}>
+      <Path d={d} stroke="#3A3F4E" strokeWidth={46} strokeLinecap="round" strokeLinejoin="round" fill="none" opacity={0.18} />
+      <Path d={d} stroke="#575D6E" strokeWidth={42} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      <Path d={d} stroke="#F4F4F8" strokeWidth={3} strokeDasharray="12 12" strokeLinecap="round" fill="none" opacity={0.85} />
+    </AnimatedG>
+  );
 }
 
 /** One step's marker, styled as a small road sign on a post rather than a
  * plain dot — done/current/upcoming shown through fill color the same way
  * the rest of the app already does (red = complete, matching StatusChip
- * etc.), just on a sign-shaped body instead of a circle. */
-function RoadSign({ status, isLast, horizontal }: { status: DealStep['status']; isLast: boolean; horizontal: boolean }) {
+ * etc.), just on a sign-shaped body instead of a circle. Fades in step
+ * with its outgoing road segment (same index, same threshold) so the sign
+ * and the road leaving it recede together, not independently. */
+function RoadStop({
+  step,
+  index,
+  totalSteps,
+  wp,
+  containerWidth,
+  containerHeight,
+  horizontal,
+  isLast,
+  isViewed,
+  progress,
+  onPress,
+}: {
+  step: DealStep;
+  index: number;
+  totalSteps: number;
+  wp: Waypoint;
+  containerWidth: number;
+  containerHeight: number;
+  horizontal: boolean;
+  isLast: boolean;
+  isViewed: boolean;
+  progress: SharedValue<number>;
+  onPress: () => void;
+}) {
+  const isNear = index % 2 === 0; // "near edge" side — left (vertical) or top (horizontal)
+
+  const fadeStyle = useAnimatedStyle(() => {
+    const carStepPos = progress.value * (totalSteps - 1);
+    const opacity = interpolate(carStepPos - index, [0, FADE_TRAIL], [1, 0], 'clamp');
+    return { opacity };
+  });
+
+  // Position goes on the outer (absolutely-placed, fading) wrapper; the
+  // flex direction that arranges [sign, label] goes on the Pressable
+  // itself — the wrapper only ever has that one child, so flexDirection
+  // on it wouldn't do anything.
+  const posStyle = horizontal
+    ? isNear
+      ? { left: wp.x - SIGN_SIZE / 2, top: wp.y - SIGN_SIZE / 2 }
+      : { left: wp.x - SIGN_SIZE / 2, bottom: containerHeight - wp.y - SIGN_SIZE / 2 }
+    : isNear
+      ? { left: wp.x - SIGN_SIZE / 2, top: wp.y - SIGN_SIZE / 2 }
+      : { right: containerWidth - wp.x - SIGN_SIZE / 2, top: wp.y - SIGN_SIZE / 2 };
+
+  const pressableDirection = horizontal
+    ? isNear
+      ? ('column' as const)
+      : ('column-reverse' as const)
+    : isNear
+      ? ('row' as const)
+      : ('row-reverse' as const);
+
+  const labelSpacing = horizontal
+    ? isNear
+      ? { marginTop: 6, alignItems: 'center' as const }
+      : { marginBottom: 6, alignItems: 'center' as const }
+    : isNear
+      ? { marginLeft: 8 }
+      : { marginRight: 8, alignItems: 'flex-end' as const };
+
   return (
-    <View style={{ alignItems: 'center', flexDirection: horizontal ? 'row' : 'column' }}>
-      <View
-        style={[
-          signStyles.face,
-          status === 'done' && signStyles.faceDone,
-          status === 'current' && signStyles.faceCurrent,
-          status === 'upcoming' && signStyles.faceUpcoming,
-        ]}>
-        {status === 'done' && <CheckIcon size={17} color="#fff" strokeWidth={3} />}
-        {status === 'current' && <View style={signStyles.currentDot} />}
-        {status === 'upcoming' && isLast && <PackageIcon size={16} color="#B7BBCB" />}
-      </View>
-      <View style={horizontal ? signStyles.postHorizontal : signStyles.post} />
-    </View>
+    <Animated.View pointerEvents="box-none" style={[styles.stopRow, posStyle, fadeStyle]}>
+      <Pressable
+        onPress={onPress}
+        style={[styles.stopPressable, { flexDirection: pressableDirection }, isViewed && styles.stopRowViewed]}>
+        <View style={{ alignItems: 'center' }}>
+          <View
+            style={[
+              signStyles.face,
+              step.status === 'done' && signStyles.faceDone,
+              step.status === 'current' && signStyles.faceCurrent,
+              step.status === 'upcoming' && signStyles.faceUpcoming,
+            ]}>
+            {step.status === 'done' && <CheckIcon size={17} color="#fff" strokeWidth={3} />}
+            {step.status === 'current' && <View style={signStyles.currentDot} />}
+            {step.status === 'upcoming' && isLast && <PackageIcon size={16} color="#B7BBCB" />}
+          </View>
+          <View style={signStyles.post} />
+        </View>
+        <View style={[styles.labelWrap, labelSpacing, horizontal && { maxWidth: 90 }]}>
+          <Text
+            style={[
+              styles.label,
+              horizontal && { textAlign: 'center' },
+              step.status === 'current' && styles.labelCurrent,
+              step.status === 'upcoming' && styles.labelUpcoming,
+            ]}
+            numberOfLines={2}>
+            {step.title}
+          </Text>
+        </View>
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -100,7 +211,6 @@ const signStyles = StyleSheet.create({
   faceUpcoming: { backgroundColor: '#fff', borderColor: '#D6D9E4' },
   currentDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#fff' },
   post: { width: 4, height: 12, backgroundColor: '#B9BDC9', marginTop: -2, borderRadius: 2 },
-  postHorizontal: { height: 4, width: 12, backgroundColor: '#B9BDC9', marginLeft: -2, borderRadius: 2 },
 });
 
 interface TimelineRoadProps {
@@ -120,7 +230,6 @@ export function TimelineRoad({ steps, car, viewedIndex, onStepPress, horizontal 
   const crossTotal = (horizontal ? FAR_EDGE_H : FAR_EDGE_V) + NEAR_EDGE;
   const containerWidth = horizontal ? alongTotal : crossTotal;
   const containerHeight = horizontal ? crossTotal : alongTotal;
-  const roadPath = buildRoadPath(waypoints, horizontal);
   const lastIndex = steps.length - 1;
   const isAtFinalStop = viewedIndex === lastIndex && steps[lastIndex].status !== 'upcoming';
 
@@ -130,7 +239,12 @@ export function TimelineRoad({ steps, car, viewedIndex, onStepPress, horizontal 
 
   useEffect(() => {
     const target = steps.length > 1 ? viewedIndex / (steps.length - 1) : 0;
-    progress.value = withTiming(target, { duration: 650, easing: Easing.inOut(Easing.cubic) });
+    // Slower and more deliberate than a fixed duration — a full end-to-end
+    // drive should feel like a real trip, not a snap; a single back/forward
+    // step should still feel responsive. Scales with distance traveled.
+    const stepsMoved = Math.abs(target - progress.value) * (steps.length - 1);
+    const duration = Math.max(550, stepsMoved * 900);
+    progress.value = withTiming(target, { duration, easing: Easing.inOut(Easing.cubic) });
 
     if (isAtFinalStop && car) {
       setShowPhoto(true);
@@ -168,69 +282,35 @@ export function TimelineRoad({ steps, car, viewedIndex, onStepPress, horizontal 
   return (
     <View style={{ width: containerWidth, height: containerHeight, alignSelf: 'center' }}>
       <Svg width={containerWidth} height={containerHeight} style={StyleSheet.absoluteFill}>
-        <Path d={roadPath} stroke="#3A3F4E" strokeWidth={46} strokeLinecap="round" strokeLinejoin="round" fill="none" opacity={0.18} />
-        <Path d={roadPath} stroke="#575D6E" strokeWidth={42} strokeLinecap="round" strokeLinejoin="round" fill="none" />
-        <Path
-          d={roadPath}
-          stroke="#F4F4F8"
-          strokeWidth={3}
-          strokeDasharray="12 12"
-          strokeLinecap="round"
-          fill="none"
-          opacity={0.85}
-        />
+        {waypoints.slice(0, -1).map((wp, i) => (
+          <RoadSegment
+            key={i}
+            p0={wp}
+            p1={waypoints[i + 1]}
+            index={i}
+            totalSteps={steps.length}
+            horizontal={horizontal}
+            progress={progress}
+          />
+        ))}
       </Svg>
 
-      {waypoints.map((wp, i) => {
-        const step = steps[i];
-        const isNear = i % 2 === 0; // "near edge" side — left (vertical) or top (horizontal)
-        const isViewed = i === viewedIndex;
-
-        const posStyle = horizontal
-          ? isNear
-            ? { left: wp.x - SIGN_SIZE / 2, top: wp.y - SIGN_SIZE / 2, flexDirection: 'column' as const }
-            : {
-                left: wp.x - SIGN_SIZE / 2,
-                bottom: containerHeight - wp.y - SIGN_SIZE / 2,
-                flexDirection: 'column-reverse' as const,
-              }
-          : isNear
-            ? { left: wp.x - SIGN_SIZE / 2, top: wp.y - SIGN_SIZE / 2, flexDirection: 'row' as const }
-            : {
-                right: containerWidth - wp.x - SIGN_SIZE / 2,
-                top: wp.y - SIGN_SIZE / 2,
-                flexDirection: 'row-reverse' as const,
-              };
-
-        const labelSpacing = horizontal
-          ? isNear
-            ? { marginTop: 6, alignItems: 'center' as const }
-            : { marginBottom: 6, alignItems: 'center' as const }
-          : isNear
-            ? { marginLeft: 8 }
-            : { marginRight: 8, alignItems: 'flex-end' as const };
-
-        return (
-          <Pressable
-            key={step.id}
-            onPress={() => onStepPress(i)}
-            style={[styles.stopRow, isViewed && styles.stopRowViewed, posStyle]}>
-            <RoadSign status={step.status} isLast={i === lastIndex} horizontal={horizontal} />
-            <View style={[styles.labelWrap, labelSpacing, horizontal && { maxWidth: 90 }]}>
-              <Text
-                style={[
-                  styles.label,
-                  horizontal && { textAlign: 'center' },
-                  step.status === 'current' && styles.labelCurrent,
-                  step.status === 'upcoming' && styles.labelUpcoming,
-                ]}
-                numberOfLines={2}>
-                {step.title}
-              </Text>
-            </View>
-          </Pressable>
-        );
-      })}
+      {waypoints.map((wp, i) => (
+        <RoadStop
+          key={steps[i].id}
+          step={steps[i]}
+          index={i}
+          totalSteps={steps.length}
+          wp={wp}
+          containerWidth={containerWidth}
+          containerHeight={containerHeight}
+          horizontal={horizontal}
+          isLast={i === lastIndex}
+          isViewed={i === viewedIndex}
+          progress={progress}
+          onPress={() => onStepPress(i)}
+        />
+      ))}
 
       {showPhoto && car && (
         <Animated.View
@@ -251,6 +331,9 @@ export function TimelineRoad({ steps, car, viewedIndex, onStepPress, horizontal 
 const styles = StyleSheet.create({
   stopRow: {
     position: 'absolute',
+    alignItems: 'center',
+  },
+  stopPressable: {
     alignItems: 'center',
     padding: 4,
     borderRadius: Radius.md,

@@ -69,6 +69,27 @@ first, or device testing breaks).
   phone sideways and the road reflows to run left-to-right across a
   horizontally-scrolling canvas instead of top-to-bottom — same
   waypoint/curve math, axes swapped (`horizontal` prop on `TimelineRoad`).
+  Fixed a real bug found on first use: the screen's `SafeAreaView` only
+  reserved the `top` edge, which is fine in portrait but wrong in
+  landscape — the notch/dynamic island moves to a *side* edge when
+  rotated, so `top`-only was leaving that side completely unprotected.
+  Now reserves `top`, `left`, and `right`.
+- **The road drives slower, and completed road fades away behind you as
+  you go** — a real animation redesign, not just a speed tweak. Duration
+  now scales with distance traveled (a full drive feels like a real trip,
+  a single back/forward step still feels snappy) instead of a fixed
+  650ms. Each road segment and its sign fade out together once the car
+  has driven a step past them, and fade back in as the car retreats —
+  driven by the same continuous `progress` value that positions the car,
+  so pressing Back doesn't just move the car backward, it un-fades the
+  road behind it step by step. Segments are individually animatable via
+  `react-native-svg`'s `Animated.createAnimatedComponent(G)` +
+  Reanimated's `useAnimatedProps` (the SVG-specific pattern — plain
+  `useAnimatedStyle` doesn't drive SVG props the way it drives RN View
+  styles). This fades the road to transparent rather than truly tucking
+  it behind the header/detail-panel chrome via z-index — a lighter-weight
+  version of "disappears" that reads the same but doesn't require
+  restructuring the screen into overlapping layers.
 - **A real camera button on "Picked Up"** — snap a photo of the customer
   with their car and share it straight to whatever app you want
   (Instagram, Facebook, Messages…) via the native share sheet
@@ -163,10 +184,12 @@ docs/            Specs for integrations we're waiting on (WordPress API)
 - Deal state (`deal-context.tsx`) is in-memory only — closing the app loses
   it. That's fine for now; it should move to a real backend once accounts
   exist.
-- **The timeline road (`timeline-road.tsx`) still hasn't been checked on a
-  real device** — the geometry (S-curve waypoints, sign label placement,
-  car animation, photo crossfade, the back/forward control bar) is all
-  hand-computed, not visually verified. It compiles and bundles clean on
-  both web and iOS targets, but "compiles" isn't "looks right" for
-  something this visual. Check it on your phone before treating it as
-  final; it's a clean revert (see the note above) if it doesn't land.
+- **The timeline road (`timeline-road.tsx`) still hasn't been fully
+  checked on a real device** — landscape mode surfaced one real bug
+  already (the safe-area edges fix above), which is exactly the kind of
+  thing that only shows up on an actual device, not in a bundler check.
+  The newer per-segment fade animation (SVG `G` + `useAnimatedProps`) is
+  a pattern that's easy to get subtly wrong in ways TypeScript/Metro
+  can't catch — worth specifically confirming the fade actually animates
+  smoothly (not just cuts on/off) before treating it as final. Still a
+  clean revert if any of this doesn't land — see the note above.

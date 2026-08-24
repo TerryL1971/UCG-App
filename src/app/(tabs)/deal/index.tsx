@@ -258,8 +258,11 @@ export default function TimelineScreen() {
   const { width, height } = useWindowDimensions();
   const isLandscape = width > height;
 
+  // left/right matter once this screen can go landscape — the notch/dynamic
+  // island moves to a side edge, not the top, when rotated, and 'top'-only
+  // was leaving that side completely unprotected.
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
+    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
       <View style={styles.navbar}>
         <Text style={styles.title}>Your Journey</Text>
       </View>
@@ -386,6 +389,9 @@ const styles = StyleSheet.create({
   detailPanel: {
     marginHorizontal: Spacing.xl,
     marginBottom: Spacing.xl,
+    maxWidth: 420,
+    alignSelf: 'center',
+    width: '100%',
   },
   detailPanelTitle: { fontFamily: Fonts.display, fontSize: 20, color: Colors.text },
   detailPanelMeta: { fontFamily: Fonts.body, fontSize: 12.5, color: Colors.textMuted, marginTop: 2, marginBottom: 10 },
@@ -420,6 +426,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
+    alignSelf: 'flex-start',
   },
   pickupButtonLabel: { fontFamily: Fonts.bodyBold, fontSize: 13.5, color: '#fff' },
   reviewButton: {
@@ -433,6 +440,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
+    alignSelf: 'flex-start',
   },
   reviewButtonLabel: { fontFamily: Fonts.bodyBold, fontSize: 13.5, color: Colors.navy },
   sheetBackdrop: {
