@@ -1,3 +1,5 @@
+import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -10,6 +12,7 @@ import { useDeal } from '@/lib/deal-context';
 import { useVinScan } from '@/lib/vin-scan-context';
 
 const conditions = ['Fair', 'Good', 'Excellent'] as const;
+const PHOTO_SLOTS = 3;
 
 export default function SellBackScreen() {
   const { car } = useDeal();
@@ -22,6 +25,59 @@ export default function SellBackScreen() {
   const [plate, setPlate] = useState(() => car?.vin ?? '');
   const [mileage, setMileage] = useState('');
   const [condition, setCondition] = useState<(typeof conditions)[number]>('Good');
+  const [photos, setPhotos] = useState<(string | null)[]>(Array(PHOTO_SLOTS).fill(null));
+
+  const captureInto = async (index: number, useCamera: boolean) => {
+    const permission = useCamera
+      ? await ImagePicker.requestCameraPermissionsAsync()
+      : await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert(
+        'Permission needed',
+        `Allow ${useCamera ? 'camera' : 'photo library'} access to add a photo.`,
+      );
+      return;
+    }
+
+    const launch = useCamera ? ImagePicker.launchCameraAsync : ImagePicker.launchImageLibraryAsync;
+    const result = await launch({ mediaTypes: ['images'], quality: 0.7, allowsEditing: true, aspect: [4, 3] });
+    if (result.canceled || !result.assets[0]) return;
+
+    setPhotos((prev) => {
+      const next = [...prev];
+      next[index] = result.assets[0].uri;
+      return next;
+    });
+  };
+
+  const handlePhotoTilePress = (index: number) => {
+    if (photos[index]) {
+      Alert.alert('Photo', undefined, [
+        { text: 'Replace', onPress: () => promptSource(index) },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () =>
+            setPhotos((prev) => {
+              const next = [...prev];
+              next[index] = null;
+              return next;
+            }),
+        },
+        { text: 'Cancel', style: 'cancel' },
+      ]);
+      return;
+    }
+    promptSource(index);
+  };
+
+  const promptSource = (index: number) => {
+    Alert.alert('Add Photo', undefined, [
+      { text: 'Take Photo', onPress: () => captureInto(index, true) },
+      { text: 'Choose from Library', onPress: () => captureInto(index, false) },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
 
   useEffect(() => {
     if (lastScannedVin) {
@@ -105,12 +161,16 @@ export default function SellBackScreen() {
 
         <Field label="Add Photos">
           <View style={styles.photoRow}>
-            {[0, 1, 2].map((i) => (
+            {photos.map((uri, i) => (
               <Pressable
                 key={i}
-                style={styles.photoTile}
-                onPress={() => Alert.alert('Not connected yet', "Photo upload isn't wired to a camera roll yet.")}>
-                {i === 0 ? <PlusIcon color={Colors.red} /> : <CameraIcon />}
+                style={[styles.photoTile, uri && styles.photoTileFilled]}
+                onPress={() => handlePhotoTilePress(i)}>
+                {uri ? (
+                  <Image source={{ uri }} style={StyleSheet.absoluteFill} contentFit="cover" />
+                ) : (
+                  <PlusIcon color={Colors.red} />
+                )}
               </Pressable>
             ))}
           </View>
@@ -226,6 +286,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  photoTileFilled: {
+    borderStyle: 'solid',
+    borderColor: Colors.border,
   },
   footer: { paddingHorizontal: Spacing.xxl, paddingTop: 8, paddingBottom: 8 },
   trustRow: { flexDirection: 'row', marginTop: 20, paddingHorizontal: 4 },

@@ -49,6 +49,11 @@ first, or device testing breaks).
   the Code 39 barcode on a VIN sticker instead of making someone type all
   17 characters. Falls back to manual entry if camera permission is denied
   or scanning doesn't work out.
+- **Real photo attach on Sell It Back** (`expo-image-picker`) — take a
+  photo or choose from the library for each of the three photo slots;
+  tapping a filled slot offers Replace/Remove. This is a genuinely
+  different feature from VIN scanning above (attaching photos vs. reading
+  a barcode), so it's a separate library even though both touch the camera.
 
 - **Staying logged in.** Sessions persist (AsyncStorage) — closing and
   reopening the app remembers you, and returning logged-in users skip
@@ -70,9 +75,9 @@ first, or device testing breaks).
 - **The salesperson's photo** is an illustrated placeholder
   (`src/components/salesperson-avatar.tsx`) — the plan is admin-uploaded
   real photos, with the illustration as a fallback when none is set.
-- Several actions (document upload, photo upload on sell-back) show an
-  honest "not connected yet" message rather than pretending to work, since
-  there's no file storage backend yet.
+- **Document upload** (on the Documents tab) still shows an honest "not
+  connected yet" message — no file storage backend exists for it yet.
+  Photo attach on Sell It Back is real now (see above); documents aren't.
 
 ## Project layout
 

@@ -37,9 +37,17 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Used Car Guys uses your camera to scan a VIN barcode so you don't have to type it in.",
+          "cameraPermission": "Used Car Guys uses your camera to scan a VIN barcode and take photos of your car.",
           "microphonePermission": false,
           "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Used Car Guys uses your photo library so you can attach existing photos of your car.",
+          "cameraPermission": "Used Car Guys uses your camera to scan a VIN barcode and take photos of your car.",
+          "microphonePermission": false
         }
       ]
     ],
