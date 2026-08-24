@@ -1,29 +1,17 @@
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ArrowLeftIcon, ShieldIcon, UserIcon } from '@/components/icons';
+import { UserIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
-import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
+import { Colors, Fonts, Spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
-
-function Row({ icon, label, onPress, danger }: { icon: React.ReactNode; label: string; onPress?: () => void; danger?: boolean }) {
-  return (
-    <Pressable style={styles.row} onPress={onPress}>
-      <View style={styles.rowIcon}>{icon}</View>
-      <Text style={[styles.rowLabel, danger && { color: Colors.red }]}>{label}</Text>
-      <View style={styles.rowChevron}>
-        <ArrowLeftIcon size={16} color={Colors.textFaint} strokeWidth={2.4} />
-      </View>
-    </Pressable>
-  );
-}
 
 export default function AccountScreen() {
   const { user, logOut } = useAuth();
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
+    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <View style={styles.navbar}>
         <Text style={styles.title}>Account</Text>
       </View>
@@ -52,23 +40,21 @@ export default function AccountScreen() {
         </View>
       )}
 
-      <View style={[styles.section, Shadow.card]}>
-        <Row icon={<ShieldIcon size={18} color={Colors.navy} />} label="Sell your car back to us" onPress={() => router.push('/sell-back')} />
-      </View>
+      <View style={styles.spacer} />
 
-      {user && (
-        <View style={[styles.section, Shadow.card, { marginTop: Spacing.md }]}>
-          <Row
-            icon={<UserIcon size={18} color={Colors.red} />}
-            label="Log Out"
-            danger
+      <View style={styles.footer}>
+        <Button label="Sell Your Car Back" variant="secondary" onPress={() => router.push('/sell-back')} />
+        {user && (
+          <Text
+            style={styles.logOut}
             onPress={() => {
               logOut();
               router.replace('/');
-            }}
-          />
-        </View>
-      )}
+            }}>
+            Log Out
+          </Text>
+        )}
+      </View>
     </SafeAreaView>
   );
 }
@@ -102,36 +88,18 @@ const styles = StyleSheet.create({
   guestActions: {
     paddingHorizontal: Spacing.xl,
     gap: 10,
-    marginBottom: Spacing.xl,
   },
-  section: {
-    marginHorizontal: Spacing.xl,
-    backgroundColor: '#fff',
-    borderRadius: Radius.xl,
-    overflow: 'hidden',
+  spacer: { flex: 1 },
+  footer: {
+    paddingHorizontal: Spacing.xl,
+    paddingBottom: Spacing.lg,
+    gap: 18,
+    alignItems: 'stretch',
   },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: 16,
-  },
-  rowIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    backgroundColor: Colors.navyTint,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  rowLabel: {
-    flex: 1,
+  logOut: {
+    textAlign: 'center',
     fontFamily: Fonts.bodySemibold,
-    fontSize: 14.5,
-    color: Colors.text,
-  },
-  rowChevron: {
-    transform: [{ rotate: '180deg' }],
+    fontSize: 14,
+    color: Colors.red,
   },
 });

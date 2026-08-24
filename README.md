@@ -39,6 +39,14 @@ first, or device testing breaks).
 - **Real Create Account / Log In screens** (`src/app/create-account.tsx`,
   `src/app/log-in.tsx`) — actual forms with validation, not a dead bypass.
   "Browse without an account" still skips straight in, on purpose.
+- **Sell It Back knows if you bought the car from us.** If the car you're
+  selling back is the one you chose earlier in the app, the form recognizes
+  it and pre-fills the VIN (`src/app/sell-back.tsx`, reads `deal-context`).
+  If not, it's just a normal blank form — works either way.
+- **VIN barcode scanning** (`src/app/scan-vin.tsx`, `expo-camera`) — scans
+  the Code 39 barcode on a VIN sticker instead of making someone type all
+  17 characters. Falls back to manual entry if camera permission is denied
+  or scanning doesn't work out.
 
 ## What's still mocked / not wired up
 
@@ -66,7 +74,7 @@ src/
   app/           Screens (Expo Router — file-based routing)
   components/    Shared UI (buttons, chips, icons, car card, avatar, timeline dot)
   constants/     Theme (brand colors/fonts) + remaining mock data
-  lib/           Live inventory scraper, deal/saved/auth contexts
+  lib/           Live inventory scraper, deal/saved/auth/vin-scan contexts
 brand/           Source logo files + extracted brand colors
 design-mockup/   The original Claude Design canvas this app was built from
 docs/            Specs for integrations we're waiting on (WordPress API)

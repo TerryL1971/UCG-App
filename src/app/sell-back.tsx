@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { router } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -6,13 +7,29 @@ import { CameraIcon, ClockIcon, MapPinIcon, PlusIcon, ShieldIcon } from '@/compo
 import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
+import { useDeal } from '@/lib/deal-context';
+import { useVinScan } from '@/lib/vin-scan-context';
 
 const conditions = ['Fair', 'Good', 'Excellent'] as const;
 
 export default function SellBackScreen() {
-  const [plate, setPlate] = useState('');
+  const { car } = useDeal();
+  const { lastScannedVin, clearLastScannedVin } = useVinScan();
+
+  // If they chose this car from our own inventory earlier in the app, we
+  // already know its VIN — no reason to make them type it again. If they
+  // never went through that flow (or came here for a car we didn't sell
+  // them), this just stays blank and they fill it in like normal.
+  const [plate, setPlate] = useState(() => car?.vin ?? '');
   const [mileage, setMileage] = useState('');
   const [condition, setCondition] = useState<(typeof conditions)[number]>('Good');
+
+  useEffect(() => {
+    if (lastScannedVin) {
+      setPlate(lastScannedVin);
+      clearLastScannedVin();
+    }
+  }, [lastScannedVin, clearLastScannedVin]);
 
   const handleSubmit = () => {
     if (!plate.trim() || !mileage.trim()) {
@@ -33,14 +50,32 @@ export default function SellBackScreen() {
           Already own a Used Car Guys vehicle? Get a real offer in minutes — no obligation.
         </Text>
 
+        {car && (
+          <View style={styles.recognizedCard}>
+            <Text style={styles.recognizedTitle}>
+              Selling back your {car.year} {car.title}?
+            </Text>
+            <Text style={styles.recognizedBody}>
+              {car.vin ? "We've filled in the VIN below." : 'Add its VIN below to get started.'}
+            </Text>
+          </View>
+        )}
+
         <Field label="License Plate or VIN">
-          <TextInput
-            value={plate}
-            onChangeText={setPlate}
-            placeholder="e.g. 1HGCM82633A004352"
-            placeholderTextColor={Colors.textFaint}
-            style={styles.input}
-          />
+          <View style={styles.plateRow}>
+            <TextInput
+              value={plate}
+              onChangeText={setPlate}
+              placeholder="e.g. 1HGCM82633A004352"
+              placeholderTextColor={Colors.textFaint}
+              autoCapitalize="characters"
+              style={[styles.input, styles.plateInput]}
+            />
+            <Pressable style={styles.scanButton} onPress={() => router.push('/scan-vin')}>
+              <CameraIcon color="#fff" strokeWidth={2.2} />
+              <Text style={styles.scanButtonLabel}>Scan</Text>
+            </Pressable>
+          </View>
         </Field>
 
         <Field label="Current Mileage">
@@ -116,6 +151,14 @@ const styles = StyleSheet.create({
   body: { flex: 1, paddingHorizontal: Spacing.xxl },
   bodyContent: { paddingTop: Spacing.md, paddingBottom: Spacing.xl },
   intro: { fontFamily: Fonts.body, fontSize: 13.5, color: Colors.textMuted, lineHeight: 20, marginBottom: 20 },
+  recognizedCard: {
+    backgroundColor: Colors.navyTint,
+    borderRadius: Radius.lg,
+    padding: 14,
+    marginBottom: 18,
+  },
+  recognizedTitle: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.navy },
+  recognizedBody: { fontFamily: Fonts.body, fontSize: 12.5, color: Colors.navy, marginTop: 2, opacity: 0.8 },
   field: { marginBottom: 16 },
   fieldLabel: {
     fontFamily: Fonts.bodyBold,
@@ -136,6 +179,19 @@ const styles = StyleSheet.create({
     fontSize: 14.5,
     color: Colors.text,
   },
+  plateRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-start' },
+  plateInput: { flex: 1, marginTop: 7 },
+  scanButton: {
+    marginTop: 7,
+    height: 50,
+    paddingHorizontal: 14,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.navy,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  scanButtonLabel: { fontFamily: Fonts.bodyBold, fontSize: 13.5, color: '#fff' },
   segRow: { flexDirection: 'row', gap: 8, marginTop: 7 },
   segOption: {
     flex: 1,
