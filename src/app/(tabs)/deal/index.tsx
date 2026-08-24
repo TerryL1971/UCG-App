@@ -2,16 +2,25 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import * as Sharing from 'expo-sharing';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Alert, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { CameraIcon, DownloadIcon, MessageIcon, PhoneIcon, StarIcon } from '@/components/icons';
+import { ArrowLeftIcon, CameraIcon, DownloadIcon, MessageIcon, PhoneIcon, StarIcon } from '@/components/icons';
 import { SalespersonAvatarMini } from '@/components/salesperson-avatar';
 import { StatusChip } from '@/components/ui/chip';
 import { TimelineRoad } from '@/components/timeline-road';
 import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
-import { dealDocuments, dealSteps, financingTerms, salesperson, ucgLocations, type DealStep } from '@/constants/mock-data';
+import {
+  dealDocuments,
+  dealSteps,
+  financingTerms,
+  salesperson,
+  ucgLocations,
+  waitingOnLabel,
+  whatsappChatUrl,
+  type DealStep,
+} from '@/constants/mock-data';
 import { useDeal } from '@/lib/deal-context';
 
 /** The camera/share action under "Picked Up" — its own component (not
@@ -98,9 +107,9 @@ function PickupPhotoAction() {
 
 const documentStatusLabel: Record<string, string> = { needed: 'Needed', uploaded: 'Uploaded', approved: 'Approved' };
 
-/** Content shown inside the stop detail sheet — one case per step id.
- * "ready" and "pickup" have their own richer content (a photo card / the
- * camera+share+review actions); the rest get a plain verification card. */
+/** Content for the persistent "currently viewing" panel — one case per
+ * step id. "ready" and "pickup" have their own richer content; the rest
+ * get a plain verification card. */
 function StepDetailContent({ step, car }: { step: DealStep; car: ReturnType<typeof useDeal>['car'] }) {
   if (step.id === 'ready') {
     return car ? (
@@ -132,10 +141,10 @@ function StepDetailContent({ step, car }: { step: DealStep; car: ReturnType<type
           <Text style={styles.detailTitle}>{salesperson.name}</Text>
           <Text style={styles.detailSubtitle}>{salesperson.title}</Text>
         </View>
-        <Pressable hitSlop={8} onPress={() => Linking.openURL(salesperson.phone)}>
+        <Pressable hitSlop={8} onPress={() => Linking.openURL(whatsappChatUrl(salesperson.whatsapp))}>
           <PhoneIcon size={18} color={Colors.navy} />
         </Pressable>
-        <Pressable hitSlop={8} onPress={() => Linking.openURL(salesperson.phone.replace('tel:', 'sms:'))}>
+        <Pressable hitSlop={8} onPress={() => Linking.openURL(whatsappChatUrl(salesperson.whatsapp))}>
           <MessageIcon size={18} color={Colors.red} />
         </Pressable>
       </View>
@@ -181,7 +190,7 @@ function StepDetailContent({ step, car }: { step: DealStep; car: ReturnType<type
           <FinanceStat label="Term" value={`${financingTerms.termMonths} mo`} />
           <FinanceStat label="Monthly" value={`$${financingTerms.monthlyPayment}`} />
         </View>
-        <Text style={styles.detailSubtitle}>Financed through {financingTerms.lender}</Text>
+        <Text style={styles.detailSubtitle}>Financed through {financingTerms.lender}. Once approved, the loan is sent to the bank outside of this app — your salesperson handles that step directly.</Text>
       </View>
     );
   }
@@ -189,7 +198,9 @@ function StepDetailContent({ step, car }: { step: DealStep; car: ReturnType<type
   if (step.id === 'contract') {
     return (
       <View style={[styles.detailCard, { flexDirection: 'column', alignItems: 'stretch', gap: 8 }]}>
-        <Text style={styles.detailPlainText}>Signed electronically. A copy was emailed to you.</Text>
+        <Text style={styles.detailPlainText}>
+          Signed electronically. A copy was emailed to you — print a copy for your records if you&apos;d like one.
+        </Text>
         <Pressable
           style={styles.detailLinkRow}
           onPress={() => Alert.alert('Not connected yet', "Viewing the signed contract isn't wired up yet.")}>
@@ -218,7 +229,20 @@ function FinanceStat({ label, value }: { label: string; value: string }) {
 
 export default function TimelineScreen() {
   const { car } = useDeal();
-  const [selectedStep, setSelectedStep] = useState<DealStep | null>(null);
+
+  const targetIndex = useMemo(() => {
+    let idx = 0;
+    for (let i = 0; i < dealSteps.length; i++) {
+      if (dealSteps[i].status !== 'upcoming') idx = i;
+    }
+    return idx;
+  }, []);
+
+  const [viewedIndex, setViewedIndex] = useState(targetIndex);
+  const viewedStep = dealSteps[viewedIndex];
+
+  const goBack = () => setViewedIndex((i) => Math.max(0, i - 1));
+  const goForward = () => setViewedIndex((i) => Math.min(targetIndex, i + 1));
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
@@ -234,32 +258,51 @@ export default function TimelineScreen() {
             {car ? `${car.year} ${car.title} · $${car.price.toLocaleString()}` : 'No car selected yet'}
           </Text>
         </View>
-        <Pressable hitSlop={8} onPress={() => Linking.openURL(salesperson.phone.replace('tel:', 'sms:'))}>
+        <Pressable hitSlop={8} onPress={() => Linking.openURL(whatsappChatUrl(salesperson.whatsapp))}>
           <MessageIcon />
         </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={styles.roadScrollContent}>
-        <TimelineRoad steps={dealSteps} car={car} onStepPress={setSelectedStep} />
-      </ScrollView>
-
-      <Modal
-        visible={!!selectedStep}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setSelectedStep(null)}>
-        <Pressable style={styles.sheetBackdrop} onPress={() => setSelectedStep(null)}>
-          <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
-            {selectedStep && (
-              <>
-                <Text style={styles.sheetTitle}>{selectedStep.title}</Text>
-                {selectedStep.detail ? <Text style={styles.sheetSubtitle}>{selectedStep.detail}</Text> : <View style={{ height: 10 }} />}
-                <StepDetailContent step={selectedStep} car={car} />
-              </>
-            )}
-          </Pressable>
+      <View style={styles.reviewBar}>
+        <Pressable
+          hitSlop={8}
+          disabled={viewedIndex === 0}
+          onPress={goBack}
+          style={[styles.reviewArrow, viewedIndex === 0 && styles.reviewArrowDisabled]}>
+          <ArrowLeftIcon size={18} color={viewedIndex === 0 ? Colors.textFaint : Colors.navy} />
         </Pressable>
-      </Modal>
+
+        <View style={{ flex: 1, alignItems: 'center' }}>
+          <Text style={styles.reviewStep}>
+            Step {viewedIndex + 1} of {dealSteps.length}
+          </Text>
+          <View style={styles.waitingChip}>
+            <Text style={styles.waitingChipText}>{waitingOnLabel[viewedStep.waitingOn]}</Text>
+          </View>
+        </View>
+
+        <Pressable
+          hitSlop={8}
+          disabled={viewedIndex === targetIndex}
+          onPress={goForward}
+          style={[
+            styles.reviewArrow,
+            styles.reviewArrowForward,
+            viewedIndex === targetIndex && styles.reviewArrowDisabled,
+          ]}>
+          <ArrowLeftIcon size={18} color={viewedIndex === targetIndex ? Colors.textFaint : Colors.navy} />
+        </Pressable>
+      </View>
+
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.detailPanel}>
+          <Text style={styles.detailPanelTitle}>{viewedStep.title}</Text>
+          {viewedStep.detail ? <Text style={styles.detailPanelMeta}>{viewedStep.detail}</Text> : null}
+          <StepDetailContent step={viewedStep} car={car} />
+        </View>
+
+        <TimelineRoad steps={dealSteps} car={car} viewedIndex={viewedIndex} onStepPress={setViewedIndex} />
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -287,7 +330,41 @@ const styles = StyleSheet.create({
   },
   pinnedName: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.text },
   pinnedMeta: { fontFamily: Fonts.body, fontSize: 11.5, color: Colors.textMuted, marginTop: 1 },
-  roadScrollContent: { paddingVertical: Spacing.xxl },
+  reviewBar: {
+    marginHorizontal: Spacing.xl,
+    marginTop: Spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  reviewArrow: {
+    width: 40,
+    height: 40,
+    borderRadius: Radius.md,
+    backgroundColor: '#fff',
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  reviewArrowForward: { transform: [{ rotate: '180deg' }] },
+  reviewArrowDisabled: { opacity: 0.4 },
+  reviewStep: { fontFamily: Fonts.bodyBold, fontSize: 12.5, color: Colors.textMuted },
+  waitingChip: {
+    marginTop: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: Radius.pill,
+    backgroundColor: Colors.redTint,
+  },
+  waitingChipText: { fontFamily: Fonts.bodyBold, fontSize: 11.5, color: Colors.red },
+  scrollContent: { paddingVertical: Spacing.xl },
+  detailPanel: {
+    marginHorizontal: Spacing.xl,
+    marginBottom: Spacing.xl,
+  },
+  detailPanelTitle: { fontFamily: Fonts.display, fontSize: 20, color: Colors.text },
+  detailPanelMeta: { fontFamily: Fonts.body, fontSize: 12.5, color: Colors.textMuted, marginTop: 2, marginBottom: 10 },
   readyCard: {
     backgroundColor: '#fff',
     borderRadius: Radius.lg,
@@ -295,6 +372,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    ...Shadow.card,
   },
   readyCardEmpty: {
     backgroundColor: Colors.navyTint,
@@ -405,6 +483,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    ...Shadow.card,
   },
   detailTitle: { fontFamily: Fonts.bodyBold, fontSize: 13.5, color: Colors.text },
   detailSubtitle: { fontFamily: Fonts.body, fontSize: 11.5, color: Colors.textMuted, marginTop: 1 },

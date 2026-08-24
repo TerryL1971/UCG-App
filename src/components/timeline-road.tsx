@@ -7,12 +7,10 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withTiming,
-  runOnJS,
 } from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
 
-import { CarSideIcon } from '@/components/icons';
-import { TimelineDot } from '@/components/timeline-dot';
+import { CarSideIcon, CheckIcon, PackageIcon } from '@/components/icons';
 import { Colors, Fonts, Radius, Shadow } from '@/constants/theme';
 import type { DealStep } from '@/constants/mock-data';
 import type { InventoryDetail } from '@/lib/ucg-inventory';
@@ -23,7 +21,7 @@ const RIGHT_X = ROAD_WIDTH - 72;
 const Y_STEP = 150;
 const TOP_PAD = 40;
 const BOTTOM_PAD = 70;
-const DOT_SIZE = 34;
+const SIGN_SIZE = 40;
 const CAR_SIZE = 52;
 
 interface Waypoint {
@@ -53,48 +51,81 @@ function buildRoadPath(points: Waypoint[]): string {
   return d;
 }
 
+/** One step's marker, styled as a small road sign on a post rather than a
+ * plain dot — done/current/upcoming shown through fill color the same way
+ * the rest of the app already does (red = complete, matching StatusChip
+ * etc.), just on a sign-shaped body instead of a circle. */
+function RoadSign({ status, isLast }: { status: DealStep['status']; isLast: boolean }) {
+  return (
+    <View style={{ alignItems: 'center' }}>
+      <View
+        style={[
+          signStyles.face,
+          status === 'done' && signStyles.faceDone,
+          status === 'current' && signStyles.faceCurrent,
+          status === 'upcoming' && signStyles.faceUpcoming,
+        ]}>
+        {status === 'done' && <CheckIcon size={17} color="#fff" strokeWidth={3} />}
+        {status === 'current' && <View style={signStyles.currentDot} />}
+        {status === 'upcoming' && isLast && <PackageIcon size={16} color="#B7BBCB" />}
+      </View>
+      <View style={signStyles.post} />
+    </View>
+  );
+}
+
+const signStyles = StyleSheet.create({
+  face: {
+    width: SIGN_SIZE,
+    height: SIGN_SIZE,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2.5,
+    borderColor: '#fff',
+    ...Shadow.card,
+  },
+  faceDone: { backgroundColor: Colors.red },
+  faceCurrent: { backgroundColor: Colors.navy },
+  faceUpcoming: { backgroundColor: '#fff', borderColor: '#D6D9E4' },
+  currentDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#fff' },
+  post: { width: 4, height: 12, backgroundColor: '#B9BDC9', marginTop: -2, borderRadius: 2 },
+});
+
 interface TimelineRoadProps {
   steps: DealStep[];
   car: InventoryDetail | null;
-  onStepPress: (step: DealStep) => void;
+  /** Which stop the car is currently sitting at / showing detail for —
+   * controlled by the parent so a back/forward control can drive it. */
+  viewedIndex: number;
+  onStepPress: (index: number) => void;
 }
 
-export function TimelineRoad({ steps, car, onStepPress }: TimelineRoadProps) {
+export function TimelineRoad({ steps, car, viewedIndex, onStepPress }: TimelineRoadProps) {
   const waypoints = buildWaypoints(steps.length);
   const totalHeight = TOP_PAD + (steps.length - 1) * Y_STEP + BOTTOM_PAD;
   const roadPath = buildRoadPath(waypoints);
-
-  // Furthest point reached: the last step that's 'done' or 'current'. If
-  // every step is somehow 'upcoming' (shouldn't happen in practice), the
-  // car just sits at the start rather than driving nowhere.
-  let targetIndex = 0;
-  for (let i = 0; i < steps.length; i++) {
-    if (steps[i].status !== 'upcoming') targetIndex = i;
-  }
-  const reachedFinalStop = targetIndex === steps.length - 1 && steps[targetIndex].status !== 'upcoming';
+  const lastIndex = steps.length - 1;
+  const isAtFinalStop = viewedIndex === lastIndex && steps[lastIndex].status !== 'upcoming';
 
   const progress = useSharedValue(0);
   const morph = useSharedValue(0);
-  const [morphed, setMorphed] = useState(false);
+  const [showPhoto, setShowPhoto] = useState(false);
 
   useEffect(() => {
-    const target = steps.length > 1 ? targetIndex / (steps.length - 1) : 0;
-    progress.value = withTiming(
-      target,
-      { duration: 900 + target * 2200, easing: Easing.inOut(Easing.cubic) },
-      (finished) => {
-        if (finished && reachedFinalStop && car) {
-          morph.value = withTiming(1, { duration: 500 });
-          runOnJS(setMorphed)(true);
-        }
-      },
-    );
-    // Intentionally runs once on mount — this is a "reveal" animation for
-    // wherever the deal currently stands, not a live step-by-step tracker
-    // (dealSteps is static mock data; there's no real "just advanced one
-    // step" moment to animate yet).
+    const target = steps.length > 1 ? viewedIndex / (steps.length - 1) : 0;
+    progress.value = withTiming(target, { duration: 650, easing: Easing.inOut(Easing.cubic) });
+
+    if (isAtFinalStop && car) {
+      setShowPhoto(true);
+      morph.value = withTiming(1, { duration: 450 });
+    } else {
+      morph.value = withTiming(0, { duration: 300 });
+      const t = setTimeout(() => setShowPhoto(false), 300);
+      return () => clearTimeout(t);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [viewedIndex]);
 
   const xs = waypoints.map((w) => w.x);
   const ys = waypoints.map((w) => w.y);
@@ -116,7 +147,7 @@ export function TimelineRoad({ steps, car, onStepPress }: TimelineRoadProps) {
     transform: [{ scale: 0.7 + morph.value * 0.3 }],
   }));
 
-  const finalStop = waypoints[waypoints.length - 1];
+  const finalStop = waypoints[lastIndex];
 
   return (
     <View style={{ width: ROAD_WIDTH, height: totalHeight, alignSelf: 'center' }}>
@@ -137,17 +168,19 @@ export function TimelineRoad({ steps, car, onStepPress }: TimelineRoadProps) {
       {waypoints.map((wp, i) => {
         const step = steps[i];
         const isLeft = i % 2 === 0;
+        const isViewed = i === viewedIndex;
         return (
           <Pressable
             key={step.id}
-            onPress={() => onStepPress(step)}
+            onPress={() => onStepPress(i)}
             style={[
               styles.stopRow,
+              isViewed && styles.stopRowViewed,
               isLeft
-                ? { left: wp.x - DOT_SIZE / 2, top: wp.y - DOT_SIZE / 2, flexDirection: 'row' }
-                : { right: ROAD_WIDTH - wp.x - DOT_SIZE / 2, top: wp.y - DOT_SIZE / 2, flexDirection: 'row-reverse' },
+                ? { left: wp.x - SIGN_SIZE / 2, top: wp.y - SIGN_SIZE / 2, flexDirection: 'row' }
+                : { right: ROAD_WIDTH - wp.x - SIGN_SIZE / 2, top: wp.y - SIGN_SIZE / 2, flexDirection: 'row-reverse' },
             ]}>
-            <TimelineDot status={step.status} isLast={i === steps.length - 1} />
+            <RoadSign status={step.status} isLast={i === lastIndex} />
             <View style={[styles.labelWrap, isLeft ? { marginLeft: 8 } : { marginRight: 8, alignItems: 'flex-end' }]}>
               <Text
                 style={[
@@ -163,8 +196,7 @@ export function TimelineRoad({ steps, car, onStepPress }: TimelineRoadProps) {
         );
       })}
 
-      {/* Photo takes over the final stop once the car "arrives" there. */}
-      {car && (
+      {showPhoto && car && (
         <Animated.View
           pointerEvents="none"
           style={[styles.photoWrap, { left: finalStop.x - 34, top: finalStop.y - 34 - 6 }, photoStyle]}>
@@ -176,14 +208,6 @@ export function TimelineRoad({ steps, car, onStepPress }: TimelineRoadProps) {
       <Animated.View pointerEvents="none" style={[styles.carWrap, carStyle]}>
         <CarSideIcon size={CAR_SIZE} />
       </Animated.View>
-
-      {morphed && car && (
-        <View pointerEvents="none" style={[styles.arrivedBadge, { left: finalStop.x - 60, top: finalStop.y + 26 }]}>
-          <Text style={styles.arrivedText} numberOfLines={1}>
-            {car.year} {car.title}
-          </Text>
-        </View>
-      )}
     </View>
   );
 }
@@ -192,6 +216,11 @@ const styles = StyleSheet.create({
   stopRow: {
     position: 'absolute',
     alignItems: 'center',
+    padding: 4,
+    borderRadius: Radius.md,
+  },
+  stopRowViewed: {
+    backgroundColor: 'rgba(39,51,104,0.08)',
   },
   labelWrap: {
     maxWidth: 110,
@@ -234,15 +263,4 @@ const styles = StyleSheet.create({
     ...Shadow.card,
   },
   photo: { width: '100%', height: '100%' },
-  arrivedBadge: {
-    position: 'absolute',
-    width: 120,
-    alignItems: 'center',
-  },
-  arrivedText: {
-    fontFamily: Fonts.bodyBold,
-    fontSize: 11.5,
-    color: Colors.navy,
-    textAlign: 'center',
-  },
 });

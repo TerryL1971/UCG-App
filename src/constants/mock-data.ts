@@ -12,6 +12,8 @@ export interface Salesperson {
   title: string;
   topRated: boolean;
   phone: string;
+  /** Digits only, country code, no '+' — the format wa.me links need. */
+  whatsapp: string;
 }
 
 export const salesperson: Salesperson = {
@@ -20,7 +22,21 @@ export const salesperson: Salesperson = {
   title: 'Used Car Guys Specialist',
   topRated: true,
   phone: 'tel:+491700000000',
+  whatsapp: '491700000000',
 };
+
+/**
+ * wa.me is WhatsApp's official "click to chat" link format — reliable and
+ * documented. There's deliberately no equivalent "start a call" link here:
+ * WhatsApp doesn't publish a way to auto-dial a voice call from outside the
+ * app the way `tel:` does, so "Call" opens the chat too (one tap from the
+ * real call button inside WhatsApp) rather than faking a one-tap call that
+ * wouldn't actually work.
+ */
+export function whatsappChatUrl(phoneDigits: string, message?: string): string {
+  const base = `https://wa.me/${phoneDigits}`;
+  return message ? `${base}?text=${encodeURIComponent(message)}` : base;
+}
 
 export interface UcgLocation {
   name: string;
@@ -58,11 +74,24 @@ export const ucgLocations: UcgLocation[] = [
 
 export type DealStepStatus = 'done' | 'current' | 'upcoming';
 
+/** Whose action moves this step forward — the whole point being that a
+ * customer can tell at a glance whether they're the one holding things up,
+ * or whether it's on UCG or the bank. This is the actual point of the
+ * timeline, more than any animation on top of it. */
+export type WaitingOn = 'you' | 'ucg' | 'bank';
+
+export const waitingOnLabel: Record<WaitingOn, string> = {
+  you: 'Waiting on You',
+  ucg: 'Waiting on UCG',
+  bank: 'Waiting on the Bank',
+};
+
 export interface DealStep {
   id: string;
   title: string;
   status: DealStepStatus;
   detail?: string;
+  waitingOn: WaitingOn;
 }
 
 // Advanced further along than a brand-new deal on purpose — this is what
@@ -70,13 +99,13 @@ export interface DealStep {
 // a step's own status, not hardcoded to a step id) actually show up by
 // default instead of requiring someone to hand-edit this file to see them.
 export const dealSteps: DealStep[] = [
-  { id: 'matched', title: 'Matched with Salesperson', status: 'done', detail: 'Completed · Aug 12' },
-  { id: 'application', title: 'Application Submitted', status: 'done', detail: 'Completed · Aug 14' },
-  { id: 'documents', title: 'Documents Uploaded', status: 'done', detail: 'Completed · Aug 16' },
-  { id: 'financing', title: 'Financing Approved', status: 'done', detail: 'Completed · Aug 19' },
-  { id: 'contract', title: 'Contract Signed', status: 'done', detail: 'Completed · Aug 21' },
-  { id: 'ready', title: 'Car Ready', status: 'done', detail: 'Completed · Aug 22' },
-  { id: 'pickup', title: 'Picked Up', status: 'current' },
+  { id: 'matched', title: 'Matched with Salesperson', status: 'done', detail: 'Completed · Aug 12', waitingOn: 'ucg' },
+  { id: 'application', title: 'Application Submitted', status: 'done', detail: 'Completed · Aug 14', waitingOn: 'you' },
+  { id: 'documents', title: 'Documents Uploaded', status: 'done', detail: 'Completed · Aug 16', waitingOn: 'you' },
+  { id: 'financing', title: 'Financing Approved', status: 'done', detail: 'Completed · Aug 19', waitingOn: 'bank' },
+  { id: 'contract', title: 'Contract Signed', status: 'done', detail: 'Completed · Aug 21', waitingOn: 'you' },
+  { id: 'ready', title: 'Car Ready', status: 'done', detail: 'Completed · Aug 22', waitingOn: 'ucg' },
+  { id: 'pickup', title: 'Picked Up', status: 'current', waitingOn: 'you' },
 ];
 
 export type DocumentStatus = 'needed' | 'uploaded' | 'approved';

@@ -7,7 +7,7 @@ import { SalespersonAvatarFull } from '@/components/salesperson-avatar';
 import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
-import { salesperson } from '@/constants/mock-data';
+import { salesperson, whatsappChatUrl } from '@/constants/mock-data';
 import { useDeal } from '@/lib/deal-context';
 
 export default function SalespersonScreen() {
@@ -38,19 +38,20 @@ export default function SalespersonScreen() {
         </View>
 
         <View style={styles.actionsRow}>
-          <Pressable style={styles.actionItem} onPress={() => Linking.openURL(salesperson.phone)}>
+          <Pressable style={styles.actionItem} onPress={() => Linking.openURL(whatsappChatUrl(salesperson.whatsapp))}>
             <View style={styles.actionCircle}>
               <PhoneIcon />
             </View>
             <Text style={styles.actionLabel}>Call</Text>
           </Pressable>
-          <Pressable style={styles.actionItem} onPress={() => Linking.openURL(salesperson.phone.replace('tel:', 'sms:'))}>
+          <Pressable style={styles.actionItem} onPress={() => Linking.openURL(whatsappChatUrl(salesperson.whatsapp))}>
             <View style={[styles.actionCircle, { backgroundColor: Colors.red }]}>
               <MessageIcon color="#fff" />
             </View>
             <Text style={styles.actionLabel}>Text</Text>
           </Pressable>
         </View>
+        <Text style={styles.viaWhatsapp}>via WhatsApp</Text>
 
         <View style={[styles.quoteCard, Shadow.card]}>
           <Text style={styles.quoteText}>
@@ -102,6 +103,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   actionLabel: { fontFamily: Fonts.bodySemibold, fontSize: 12.5, color: Colors.text },
+  viaWhatsapp: { fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted, marginTop: 10 },
   quoteCard: {
     backgroundColor: '#fff',
     borderRadius: Radius.xl,

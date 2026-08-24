@@ -33,22 +33,35 @@ first, or device testing breaks).
 - **The chosen car carries through the flow.** Tapping "Choose This Car"
   is tracked in-memory (`src/lib/deal-context.tsx`) so the salesperson and
   timeline screens reference the actual car, not a placeholder.
-- **The journey timeline is a winding road, not a straight line**
-  (`src/components/timeline-road.tsx`) — an SVG road curving side to side
-  down the screen, with a small car icon that drives from the start to
-  wherever the deal currently stands (a Reanimated reveal animation on
-  load, not a live tracker — `dealSteps` is still static mock data, so
-  there's no real "just advanced one step" moment to animate). Once the
-  car reaches the final stop, it crossfades into the customer's actual
-  car photo. Tapping any stop opens a detail sheet — Matched shows the
-  salesperson's contact card, Documents the real document list, Financing
-  the loan terms, Contract a signed confirmation, Car Ready the photo
-  card, Picked Up the camera+share+review actions below.
+- **The journey timeline is a winding road with signs, not a straight
+  line** (`src/components/timeline-road.tsx`) — an SVG road curving side
+  to side down the screen, each step a small road-sign marker (one
+  consistent shape, status shown by color — done/current/upcoming) rather
+  than seven different novelty signs, which would've gotten visually
+  noisy at phone size. A car icon marks whichever step is currently being
+  viewed and crossfades into the customer's actual car photo when that's
+  the final stop. **The car's position and the detail panel are driven by
+  the same `viewedIndex`, not just a one-way reveal** — a back/forward
+  control bar above the road (`reviewBar` in `deal/index.tsx`) lets you
+  step through any *already-reached* step to review it; forward is capped
+  at wherever the deal actually stands, so you can look back at history
+  but can't drive into a future that hasn't happened yet. Whatever step
+  is being viewed shows in a persistent panel above the road (not a modal
+  you have to open) — Matched shows the salesperson's contact card,
+  Documents the real document list, Financing the loan terms, Contract a
+  signed confirmation, Car Ready the photo card, Picked Up the
+  camera+share+review actions. Every step also shows **who it's waiting
+  on** — You / UCG / the Bank (`waitingOn` on each step in
+  `mock-data.ts`) — meant to answer the actual question this screen
+  exists for: what's blocking the deal, and whose job is it to unblock it.
   **This replaced a straight-line, tap-to-expand-inline version of the
-  same screen** (still fully intact in git history — `git log --
-  src/app/\(tabs\)/deal/index.tsx` — if the road doesn't work out
-  visually, reverting to before this change is a clean option, not a
-  rebuild).
+  same screen**, then that first road version replaced *itself* once
+  (dots → signs, modal → persistent panel, one-way reveal → back/forward)
+  after the first pass turned out to hide the pickup camera/review
+  buttons behind a tap, which was a real regression, not just a style
+  question. Both earlier versions are intact in git history if this one
+  doesn't work out either — this is genuinely still an experiment, not
+  a settled design.
 - **A real camera button on "Picked Up"** — snap a photo of the customer
   with their car and share it straight to whatever app you want
   (Instagram, Facebook, Messages…) via the native share sheet
@@ -62,6 +75,13 @@ first, or device testing breaks).
   were found and verified (and for a real mistake this caught: an earlier
   version hardcoded a single review link that turned out to be a stale,
   unrelated identifier once actually checked against the real listings).
+  Both this and every Call/Text touchpoint (salesperson match screen, the
+  timeline's pinned bar) now go through **WhatsApp**
+  (`whatsappChatUrl` in `mock-data.ts`), not the native phone/SMS apps.
+  One honest limit: WhatsApp doesn't publish a way to auto-dial a voice
+  call the way `tel:` does, so "Call" opens the WhatsApp chat too (one
+  tap from the real call button inside WhatsApp) rather than faking a
+  one-tap call that wouldn't actually work.
 - **Saving a car actually saves it.** The heart button on a car card and
   the Saved tab share real state (`src/lib/saved-context.tsx`), not just a
   per-card toggle that went nowhere.
@@ -136,9 +156,10 @@ docs/            Specs for integrations we're waiting on (WordPress API)
 - Deal state (`deal-context.tsx`) is in-memory only — closing the app loses
   it. That's fine for now; it should move to a real backend once accounts
   exist.
-- **The timeline road (`timeline-road.tsx`) hasn't been checked on a real
-  device yet** — the geometry (S-curve waypoints, label placement, car
-  animation, photo crossfade) is all hand-computed, not visually verified.
-  It compiles and bundles clean, but "compiles" isn't "looks right" for
+- **The timeline road (`timeline-road.tsx`) still hasn't been checked on a
+  real device** — the geometry (S-curve waypoints, sign label placement,
+  car animation, photo crossfade, the back/forward control bar) is all
+  hand-computed, not visually verified. It compiles and bundles clean on
+  both web and iOS targets, but "compiles" isn't "looks right" for
   something this visual. Check it on your phone before treating it as
   final; it's a clean revert (see the note above) if it doesn't land.
