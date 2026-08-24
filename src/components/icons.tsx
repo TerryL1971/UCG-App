@@ -270,6 +270,27 @@ export function CarFrontIllustration({
   );
 }
 
+/** Side-profile car for the timeline road — a small character that "drives"
+ * along the path, distinct from CarFrontIllustration's front-on card hero. */
+export function CarSideIcon({ size = 56, bodyColor = '#C33531' }: { size?: number; bodyColor?: string }) {
+  const h = size * (50 / 100);
+  return (
+    <Svg width={size} height={h} viewBox="0 0 100 50">
+      <Path
+        d="M6 38 L6 30 Q6 26 10 24 L22 24 Q28 13 43 13 L63 13 Q75 13 80 24 L90 24 Q94 26 94 30 L94 38 Z"
+        fill={bodyColor}
+      />
+      <Rect x={3} y={33} width={94} height={9} rx={4.5} fill="#20263F" />
+      <Path d="M27 22 L34 15 L58 15 L65 22 Z" fill="#B9C6E8" />
+      <Line x1={45.5} y1={15} x2={45.5} y2={22} stroke="#8FA3D6" strokeWidth={1.5} />
+      <Circle cx={24} cy={40} r={8} fill="#141A47" />
+      <Circle cx={24} cy={40} r={3.2} fill="#AEB6CE" />
+      <Circle cx={74} cy={40} r={8} fill="#141A47" />
+      <Circle cx={74} cy={40} r={3.2} fill="#AEB6CE" />
+    </Svg>
+  );
+}
+
 export function AvatarPersonIcon({ size = 24, color = '#3B2A20', skinColor = '#E8B98A' }: IconProps & { skinColor?: string }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 100 100">

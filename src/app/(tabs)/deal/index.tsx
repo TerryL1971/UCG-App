@@ -6,32 +6,13 @@ import { useState } from 'react';
 import { Alert, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { CameraIcon, ChevronDownIcon, DownloadIcon, MessageIcon, PhoneIcon, StarIcon } from '@/components/icons';
+import { CameraIcon, DownloadIcon, MessageIcon, PhoneIcon, StarIcon } from '@/components/icons';
 import { SalespersonAvatarMini } from '@/components/salesperson-avatar';
 import { StatusChip } from '@/components/ui/chip';
-import { DashedLine, FlowLine, SolidLine, TimelineDot } from '@/components/timeline-dot';
+import { TimelineRoad } from '@/components/timeline-road';
 import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
-import { dealDocuments, dealSteps, financingTerms, salesperson, ucgLocations } from '@/constants/mock-data';
+import { dealDocuments, dealSteps, financingTerms, salesperson, ucgLocations, type DealStep } from '@/constants/mock-data';
 import { useDeal } from '@/lib/deal-context';
-
-const ROW_HEIGHT = 80;
-const CURRENT_ROW_HEIGHT = 132;
-const READY_ROW_HEIGHT = 190;
-const LAST_ROW_HEIGHT = 70;
-
-// How much extra vertical space each step's expanded detail panel needs,
-// so the connecting line down to the next dot still reaches it. These are
-// estimates, not measured — tune them if a line visibly falls short or
-// overshoots once this is checked on a real device. Kept deliberately a
-// little conservative (short) rather than long: a line stopping a bit
-// early reads better than one running through the next dot.
-const EXPANDED_EXTRA_HEIGHT: Record<string, number> = {
-  matched: 74,
-  application: 36,
-  documents: 158,
-  financing: 108,
-  contract: 60,
-};
 
 /** The camera/share action under "Picked Up" — its own component (not
  * inlined in the steps loop) since it needs its own local state for the
@@ -117,12 +98,33 @@ function PickupPhotoAction() {
 
 const documentStatusLabel: Record<string, string> = { needed: 'Needed', uploaded: 'Uploaded', approved: 'Approved' };
 
-/** What shows when a completed step is expanded — one case per step id
- * that actually has something to verify. Steps not listed here (ready,
- * pickup) have their own always-visible content instead, handled outside
- * this expand/collapse system. */
-function StepDetail({ id, car }: { id: string; car: ReturnType<typeof useDeal>['car'] }) {
-  if (id === 'matched') {
+/** Content shown inside the stop detail sheet — one case per step id.
+ * "ready" and "pickup" have their own richer content (a photo card / the
+ * camera+share+review actions); the rest get a plain verification card. */
+function StepDetailContent({ step, car }: { step: DealStep; car: ReturnType<typeof useDeal>['car'] }) {
+  if (step.id === 'ready') {
+    return car ? (
+      <View style={styles.readyCard}>
+        <Image source={{ uri: car.thumbnail }} style={styles.readyImage} contentFit="cover" />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.readyTitle} numberOfLines={1}>
+            {car.year} {car.title}
+          </Text>
+          <Text style={styles.readySubtitle}>Washed, inspected, and waiting for you.</Text>
+        </View>
+      </View>
+    ) : (
+      <View style={styles.readyCardEmpty}>
+        <Text style={styles.readySubtitle}>Your car&apos;s photo will show up here once one&apos;s chosen from Browse.</Text>
+      </View>
+    );
+  }
+
+  if (step.id === 'pickup') {
+    return <PickupPhotoAction />;
+  }
+
+  if (step.id === 'matched') {
     return (
       <View style={styles.detailCard}>
         <SalespersonAvatarMini size={30} />
@@ -140,7 +142,7 @@ function StepDetail({ id, car }: { id: string; car: ReturnType<typeof useDeal>['
     );
   }
 
-  if (id === 'application') {
+  if (step.id === 'application') {
     return (
       <View style={styles.detailCard}>
         <Text style={styles.detailPlainText}>
@@ -151,7 +153,7 @@ function StepDetail({ id, car }: { id: string; car: ReturnType<typeof useDeal>['
     );
   }
 
-  if (id === 'documents') {
+  if (step.id === 'documents') {
     return (
       <View style={[styles.detailCard, { flexDirection: 'column', alignItems: 'stretch', gap: 10 }]}>
         {dealDocuments.map((doc) => (
@@ -170,7 +172,7 @@ function StepDetail({ id, car }: { id: string; car: ReturnType<typeof useDeal>['
     );
   }
 
-  if (id === 'financing') {
+  if (step.id === 'financing') {
     return (
       <View style={[styles.detailCard, { flexDirection: 'column', alignItems: 'stretch', gap: 8 }]}>
         <View style={styles.financeGrid}>
@@ -184,7 +186,7 @@ function StepDetail({ id, car }: { id: string; car: ReturnType<typeof useDeal>['
     );
   }
 
-  if (id === 'contract') {
+  if (step.id === 'contract') {
     return (
       <View style={[styles.detailCard, { flexDirection: 'column', alignItems: 'stretch', gap: 8 }]}>
         <Text style={styles.detailPlainText}>Signed electronically. A copy was emailed to you.</Text>
@@ -198,7 +200,11 @@ function StepDetail({ id, car }: { id: string; car: ReturnType<typeof useDeal>['
     );
   }
 
-  return null;
+  return (
+    <View style={styles.detailCard}>
+      <Text style={styles.detailPlainText}>Coming up next.</Text>
+    </View>
+  );
 }
 
 function FinanceStat({ label, value }: { label: string; value: string }) {
@@ -212,16 +218,7 @@ function FinanceStat({ label, value }: { label: string; value: string }) {
 
 export default function TimelineScreen() {
   const { car } = useDeal();
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
-
-  const toggleExpanded = (id: string) => {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
+  const [selectedStep, setSelectedStep] = useState<DealStep | null>(null);
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
@@ -242,93 +239,27 @@ export default function TimelineScreen() {
         </Pressable>
       </View>
 
-      <ScrollView style={styles.list} contentContainerStyle={styles.listContent}>
-        {dealSteps.map((step, i) => {
-          const isLast = i === dealSteps.length - 1;
-          const showsReadyPhoto = step.id === 'ready' && step.status !== 'upcoming';
-          const isExpandable = step.status === 'done' && step.id in EXPANDED_EXTRA_HEIGHT;
-          const isExpanded = isExpandable && expanded.has(step.id);
-
-          let rowHeight = showsReadyPhoto
-            ? READY_ROW_HEIGHT
-            : step.status === 'current'
-              ? CURRENT_ROW_HEIGHT
-              : isLast
-                ? LAST_ROW_HEIGHT
-                : ROW_HEIGHT;
-          if (isExpanded) rowHeight += EXPANDED_EXTRA_HEIGHT[step.id];
-          const lineHeight = rowHeight - 34;
-
-          return (
-            <View key={step.id} style={{ flexDirection: 'row', gap: 16, minHeight: rowHeight }}>
-              <View style={{ width: 34, alignItems: 'center' }}>
-                <TimelineDot status={step.status} isLast={isLast} />
-                {!isLast && step.status === 'done' && <SolidLine height={lineHeight} />}
-                {!isLast && step.status === 'current' && <FlowLine height={lineHeight} />}
-                {!isLast && step.status === 'upcoming' && <DashedLine height={lineHeight} />}
-              </View>
-
-              <View style={{ flex: 1, paddingTop: 2 }}>
-                <Pressable
-                  disabled={!isExpandable}
-                  onPress={() => toggleExpanded(step.id)}
-                  style={styles.titleRow}>
-                  <Text
-                    style={[
-                      styles.stepTitle,
-                      step.status === 'current' && styles.stepTitleCurrent,
-                      step.status === 'upcoming' && styles.stepTitleUpcoming,
-                    ]}>
-                    {step.title}
-                  </Text>
-                  {isExpandable && (
-                    <View style={isExpanded ? styles.chevronExpanded : undefined}>
-                      <ChevronDownIcon size={16} color={Colors.textFaint} strokeWidth={2.4} />
-                    </View>
-                  )}
-                </Pressable>
-                {step.detail ? <Text style={styles.stepDetail}>{step.detail}</Text> : null}
-
-                {isExpanded && <StepDetail id={step.id} car={car} />}
-
-                {step.id === 'documents' && step.status === 'current' && (
-                  <Pressable style={styles.miniChip} onPress={() => router.push('/(tabs)/deal/documents')}>
-                    <SalespersonAvatarMini size={24} />
-                    <Text style={styles.miniChipText}>
-                      {salesperson.name.split(' ')[0]} is reviewing your documents
-                    </Text>
-                  </Pressable>
-                )}
-
-                {showsReadyPhoto &&
-                  (car ? (
-                    <View style={styles.readyCard}>
-                      <Image source={{ uri: car.thumbnail }} style={styles.readyImage} contentFit="cover" />
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.readyTitle} numberOfLines={1}>
-                          {car.year} {car.title}
-                        </Text>
-                        <Text style={styles.readySubtitle}>Washed, inspected, and waiting for you.</Text>
-                      </View>
-                    </View>
-                  ) : (
-                    <View style={styles.readyCardEmpty}>
-                      <Text style={styles.readySubtitle}>
-                        Your car&apos;s photo will show up here once one&apos;s chosen from Browse.
-                      </Text>
-                    </View>
-                  ))}
-
-                {step.id === 'pickup' && step.status === 'current' && (
-                  <View style={{ marginTop: 10 }}>
-                    <PickupPhotoAction />
-                  </View>
-                )}
-              </View>
-            </View>
-          );
-        })}
+      <ScrollView contentContainerStyle={styles.roadScrollContent}>
+        <TimelineRoad steps={dealSteps} car={car} onStepPress={setSelectedStep} />
       </ScrollView>
+
+      <Modal
+        visible={!!selectedStep}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setSelectedStep(null)}>
+        <Pressable style={styles.sheetBackdrop} onPress={() => setSelectedStep(null)}>
+          <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+            {selectedStep && (
+              <>
+                <Text style={styles.sheetTitle}>{selectedStep.title}</Text>
+                {selectedStep.detail ? <Text style={styles.sheetSubtitle}>{selectedStep.detail}</Text> : <View style={{ height: 10 }} />}
+                <StepDetailContent step={selectedStep} car={car} />
+              </>
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -356,43 +287,19 @@ const styles = StyleSheet.create({
   },
   pinnedName: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.text },
   pinnedMeta: { fontFamily: Fonts.body, fontSize: 11.5, color: Colors.textMuted, marginTop: 1 },
-  list: { flex: 1 },
-  listContent: { paddingHorizontal: Spacing.xl, paddingTop: Spacing.xxl, paddingBottom: Spacing.xxl },
-  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  stepTitle: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.text },
-  stepTitleCurrent: { color: Colors.red },
-  stepTitleUpcoming: { color: Colors.textFaint },
-  stepDetail: { fontFamily: Fonts.body, fontSize: 12.5, color: Colors.textMuted, marginTop: 2 },
-  chevronExpanded: { transform: [{ rotate: '180deg' }] },
-  miniChip: {
-    marginTop: 10,
-    backgroundColor: Colors.redTint,
-    borderRadius: Radius.md,
-    paddingVertical: 9,
-    paddingHorizontal: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 9,
-    maxWidth: 220,
-  },
-  miniChipText: { flex: 1, fontFamily: Fonts.bodySemibold, fontSize: 11.5, color: Colors.navy, lineHeight: 15 },
+  roadScrollContent: { paddingVertical: Spacing.xxl },
   readyCard: {
-    marginTop: 10,
     backgroundColor: '#fff',
     borderRadius: Radius.lg,
     padding: 10,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    maxWidth: 300,
-    ...Shadow.card,
   },
   readyCardEmpty: {
-    marginTop: 10,
     backgroundColor: Colors.navyTint,
     borderRadius: Radius.lg,
     padding: 14,
-    maxWidth: 280,
   },
   readyImage: {
     width: 72,
@@ -411,7 +318,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    alignSelf: 'flex-start',
   },
   pickupButtonLabel: { fontFamily: Fonts.bodyBold, fontSize: 13.5, color: '#fff' },
   reviewButton: {
@@ -425,7 +331,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    alignSelf: 'flex-start',
   },
   reviewButtonLabel: { fontFamily: Fonts.bodyBold, fontSize: 13.5, color: Colors.navy },
   sheetBackdrop: {
@@ -465,7 +370,6 @@ const styles = StyleSheet.create({
     padding: 10,
     flexDirection: 'row',
     gap: 12,
-    maxWidth: 320,
     ...Shadow.card,
   },
   pickupThumb: {
@@ -495,15 +399,12 @@ const styles = StyleSheet.create({
   },
   pickupPrimaryLabel: { fontFamily: Fonts.bodySemibold, fontSize: 12, color: '#fff' },
   detailCard: {
-    marginTop: 10,
     backgroundColor: '#fff',
     borderRadius: Radius.lg,
     padding: 12,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    maxWidth: 320,
-    ...Shadow.card,
   },
   detailTitle: { fontFamily: Fonts.bodyBold, fontSize: 13.5, color: Colors.text },
   detailSubtitle: { fontFamily: Fonts.body, fontSize: 11.5, color: Colors.textMuted, marginTop: 1 },

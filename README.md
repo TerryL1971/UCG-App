@@ -33,16 +33,28 @@ first, or device testing breaks).
 - **The chosen car carries through the flow.** Tapping "Choose This Car"
   is tracked in-memory (`src/lib/deal-context.tsx`) so the salesperson and
   timeline screens reference the actual car, not a placeholder.
-- **An animated journey timeline** — Reanimated-driven pulse on the
-  in-progress step and a particle animating down the connecting line.
-  Once "Car Ready" is reached, it shows the actual car's photo (the same
-  one from Browse, via `deal-context`) instead of just a text label. Once
-  "Picked Up" is the current step, there's a real camera button — snap a
-  photo of the customer with their car and share it straight to whatever
-  app you want (Instagram, Facebook, Messages…) via the native share
-  sheet (`expo-sharing`), meant for posting to UCG's social pages.
-  Next to it, a "Leave a Google Review" button opens a picker for UCG's
-  six real locations (Ramstein, Kaiserslautern, Stuttgart, Spangdahlem,
+- **The journey timeline is a winding road, not a straight line**
+  (`src/components/timeline-road.tsx`) — an SVG road curving side to side
+  down the screen, with a small car icon that drives from the start to
+  wherever the deal currently stands (a Reanimated reveal animation on
+  load, not a live tracker — `dealSteps` is still static mock data, so
+  there's no real "just advanced one step" moment to animate). Once the
+  car reaches the final stop, it crossfades into the customer's actual
+  car photo. Tapping any stop opens a detail sheet — Matched shows the
+  salesperson's contact card, Documents the real document list, Financing
+  the loan terms, Contract a signed confirmation, Car Ready the photo
+  card, Picked Up the camera+share+review actions below.
+  **This replaced a straight-line, tap-to-expand-inline version of the
+  same screen** (still fully intact in git history — `git log --
+  src/app/\(tabs\)/deal/index.tsx` — if the road doesn't work out
+  visually, reverting to before this change is a clean option, not a
+  rebuild).
+- **A real camera button on "Picked Up"** — snap a photo of the customer
+  with their car and share it straight to whatever app you want
+  (Instagram, Facebook, Messages…) via the native share sheet
+  (`expo-sharing`), meant for posting to UCG's social pages. Next to it,
+  a "Leave a Google Review" button opens a picker for UCG's six real
+  locations (Ramstein, Kaiserslautern, Stuttgart, Spangdahlem,
   Grafenwoehr, Wiesbaden — `ucgLocations` in `mock-data.ts`) and opens
   that location's actual Google Business listing — UCG turns out to have
   a separate Google listing per lot, not one shared listing, so picking
@@ -50,12 +62,6 @@ first, or device testing breaks).
   were found and verified (and for a real mistake this caught: an earlier
   version hardcoded a single review link that turned out to be a stale,
   unrelated identifier once actually checked against the real listings).
-  Completed steps are tap-to-expand — Matched shows the salesperson's
-  contact card, Documents shows the actual document list with real
-  status chips, Financing shows the loan terms, Contract confirms it was
-  signed. Each step's expanded content is a different shape (a contact
-  card vs. a list vs. a stat grid), so there's no one generic "detail"
-  component — see `StepDetail` in `src/app/(tabs)/deal/index.tsx`.
 - **Saving a car actually saves it.** The heart button on a car card and
   the Saved tab share real state (`src/lib/saved-context.tsx`), not just a
   per-card toggle that went nowhere.
@@ -130,9 +136,9 @@ docs/            Specs for integrations we're waiting on (WordPress API)
 - Deal state (`deal-context.tsx`) is in-memory only — closing the app loses
   it. That's fine for now; it should move to a real backend once accounts
   exist.
-- The timeline's connecting-line height for an expanded step
-  (`EXPANDED_EXTRA_HEIGHT` in `deal/index.tsx`) is an estimate per step,
-  not measured from actual rendered content — reasonable for now, but the
-  properly robust fix would measure each row's real height (`onLayout`)
-  instead of guessing. Worth revisiting if a line visibly falls short or
-  overshoots on a real device.
+- **The timeline road (`timeline-road.tsx`) hasn't been checked on a real
+  device yet** — the geometry (S-curve waypoints, label placement, car
+  animation, photo crossfade) is all hand-computed, not visually verified.
+  It compiles and bundles clean, but "compiles" isn't "looks right" for
+  something this visual. Check it on your phone before treating it as
+  final; it's a clean revert (see the note above) if it doesn't land.
