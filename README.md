@@ -21,8 +21,10 @@ first, or device testing breaks).
 ## What's actually built
 
 - **Onboarding → Browse → Car Detail → Salesperson match → Journey timeline
-  → Documents → Sell it back** — the full flow, all seven screens, in the
-  real brand (navy/red, Barlow/Barlow Condensed, the real logo).
+  → Documents → Sell it back** — the full flow, in the real brand
+  (navy/red, Barlow/Barlow Condensed, the real logo). Sell It Back is a
+  full tab of its own (Browse / Saved / My Deal / Sell Back / Account),
+  not buried inside Account.
 - **Live inventory.** Browse and Car Detail read real cars off
   usedcarguys.net (`src/lib/ucg-inventory.ts`) — there's no public API for
   this yet, so it's a scraper against the public pages. See
@@ -41,8 +43,8 @@ first, or device testing breaks).
   "Browse without an account" still skips straight in, on purpose.
 - **Sell It Back knows if you bought the car from us.** If the car you're
   selling back is the one you chose earlier in the app, the form recognizes
-  it and pre-fills the VIN (`src/app/sell-back.tsx`, reads `deal-context`).
-  If not, it's just a normal blank form — works either way.
+  it and pre-fills the VIN (`src/app/(tabs)/sell-back.tsx`, reads
+  `deal-context`). If not, it's just a normal blank form — works either way.
 - **VIN barcode scanning** (`src/app/scan-vin.tsx`, `expo-camera`) — scans
   the Code 39 barcode on a VIN sticker instead of making someone type all
   17 characters. Falls back to manual entry if camera permission is denied

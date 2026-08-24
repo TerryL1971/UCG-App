@@ -42,9 +42,8 @@ export default function AccountScreen() {
 
       <View style={styles.spacer} />
 
-      <View style={styles.footer}>
-        <Button label="Sell Your Car Back" variant="secondary" onPress={() => router.push('/sell-back')} />
-        {user && (
+      {user && (
+        <View style={styles.footer}>
           <Text
             style={styles.logOut}
             onPress={() => {
@@ -53,8 +52,8 @@ export default function AccountScreen() {
             }}>
             Log Out
           </Text>
-        )}
-      </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -93,8 +92,6 @@ const styles = StyleSheet.create({
   footer: {
     paddingHorizontal: Spacing.xl,
     paddingBottom: Spacing.lg,
-    gap: 18,
-    alignItems: 'stretch',
   },
   logOut: {
     textAlign: 'center',

@@ -5,7 +5,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CameraIcon, ClockIcon, MapPinIcon, PlusIcon, ShieldIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
-import { ScreenHeader } from '@/components/ui/screen-header';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { useDeal } from '@/lib/deal-context';
 import { useVinScan } from '@/lib/vin-scan-context';
@@ -42,8 +41,10 @@ export default function SellBackScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      <ScreenHeader title="Sell It Back" />
+    <SafeAreaView style={styles.screen} edges={['top']}>
+      <View style={styles.navbar}>
+        <Text style={styles.title}>Sell It Back</Text>
+      </View>
 
       <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent}>
         <Text style={styles.intro}>
@@ -148,6 +149,14 @@ function Trust({ icon, label }: { icon: React.ReactNode; label: string }) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: Colors.bg },
+  navbar: {
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.lg,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  title: { fontFamily: Fonts.display, fontSize: 20, color: Colors.text },
   body: { flex: 1, paddingHorizontal: Spacing.xxl },
   bodyContent: { paddingTop: Spacing.md, paddingBottom: Spacing.xl },
   intro: { fontFamily: Fonts.body, fontSize: 13.5, color: Colors.textMuted, lineHeight: 20, marginBottom: 20 },
