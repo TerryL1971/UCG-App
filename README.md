@@ -35,6 +35,12 @@ first, or device testing breaks).
   timeline screens reference the actual car, not a placeholder.
 - **An animated journey timeline** — Reanimated-driven pulse on the
   in-progress step and a particle animating down the connecting line.
+  Once "Car Ready" is reached, it shows the actual car's photo (the same
+  one from Browse, via `deal-context`) instead of just a text label. Once
+  "Picked Up" is the current step, there's a real camera button — snap a
+  photo of the customer with their car and share it straight to whatever
+  app you want (Instagram, Facebook, Messages…) via the native share
+  sheet (`expo-sharing`), meant for posting to UCG's social pages.
 - **Saving a car actually saves it.** The heart button on a car card and
   the Saved tab share real state (`src/lib/saved-context.tsx`), not just a
   per-card toggle that went nowhere.
@@ -77,7 +83,10 @@ first, or device testing breaks).
   — this is the piece that needs the Salesforce Dealer Team API.
 - **Deal progress** (application submitted, financing approved, etc.) and
   **documents** are also mock data — pending whatever system actually
-  tracks financing status.
+  tracks financing status. It's deliberately set further along than a
+  brand-new deal (`dealSteps` in `mock-data.ts`, "Picked Up" as the
+  current step) so the Car Ready photo and pickup camera are visible by
+  default instead of requiring someone to hand-edit the file to see them.
 - **The salesperson's photo** is an illustrated placeholder
   (`src/components/salesperson-avatar.tsx`) — the plan is admin-uploaded
   real photos, with the illustration as a fallback when none is set.

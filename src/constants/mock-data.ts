@@ -31,14 +31,18 @@ export interface DealStep {
   detail?: string;
 }
 
+// Advanced further along than a brand-new deal on purpose — this is what
+// lets the "Car Ready" photo and "Picked Up" camera step (both keyed off
+// a step's own status, not hardcoded to a step id) actually show up by
+// default instead of requiring someone to hand-edit this file to see them.
 export const dealSteps: DealStep[] = [
   { id: 'matched', title: 'Matched with Salesperson', status: 'done', detail: 'Completed · Aug 12' },
   { id: 'application', title: 'Application Submitted', status: 'done', detail: 'Completed · Aug 14' },
-  { id: 'documents', title: 'Documents Uploaded', status: 'current', detail: 'In progress' },
-  { id: 'financing', title: 'Financing Approved', status: 'upcoming' },
-  { id: 'contract', title: 'Contract Signed', status: 'upcoming' },
-  { id: 'ready', title: 'Car Ready', status: 'upcoming' },
-  { id: 'pickup', title: 'Picked Up', status: 'upcoming' },
+  { id: 'documents', title: 'Documents Uploaded', status: 'done', detail: 'Completed · Aug 16' },
+  { id: 'financing', title: 'Financing Approved', status: 'done', detail: 'Completed · Aug 19' },
+  { id: 'contract', title: 'Contract Signed', status: 'done', detail: 'Completed · Aug 21' },
+  { id: 'ready', title: 'Car Ready', status: 'done', detail: 'Completed · Aug 22' },
+  { id: 'pickup', title: 'Picked Up', status: 'current' },
 ];
 
 export type DocumentStatus = 'needed' | 'uploaded' | 'approved';
