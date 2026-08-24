@@ -4,6 +4,13 @@
  * will eventually come from whatever system tracks financing status.
  * Inventory itself is no longer mocked here — see src/lib/ucg-inventory.ts,
  * which reads live listings off usedcarguys.net.
+ *
+ * `DealIntake` below is the newest addition to this: what the customer
+ * tells us on the deal-intake screen (src/app/deal-intake.tsx) before a
+ * real deal exists — cash vs. financing, which base they're headed to,
+ * USAREUR license status. This is deliberately the *input* a salesperson
+ * would type into Dealer Team, not the deal itself; `dealSteps` further
+ * down is still the (separately mocked, further-along) deal record.
  */
 
 export interface Salesperson {
@@ -143,3 +150,59 @@ export const financingTerms: FinancingTerms = {
   monthlyPayment: 405,
   lender: 'USAA Auto Loans',
 };
+
+export type PaymentMethod = 'cash' | 'financing';
+
+export type LicenseStatus = 'have' | 'not_yet';
+
+/** Major US military communities in Germany a customer might be headed
+ * to — not exhaustive, and a list like this goes stale (units move,
+ * bases close), which is exactly why the intake form pairs this with a
+ * free-text "Other" option rather than pretending it covers everyone. */
+export const usareurBases: string[] = [
+  'Ramstein / KMC',
+  'Baumholder',
+  'Wiesbaden',
+  'Spangdahlem',
+  'Stuttgart',
+  'Grafenwoehr',
+  'Vilseck',
+  'Ansbach',
+  'Illesheim',
+  'Hohenfels',
+];
+
+/**
+ * Two real resources for the USAREUR driving test/license — found the same
+ * way the Google review links were (checked, not guessed), because sending
+ * someone to a fabricated URL here would actually waste their time before
+ * a PCS move:
+ *  - usareurpracticetest.com is a free study/practice site that doesn't
+ *    require a CAC or .mil account, so it works for anyone (even a
+ *    dependent who hasn't out-processed yet) — the right one to lead with.
+ *  - JKO (jko.jten.mil) hosts the actual official course + exam ("USA 007"
+ *    for the course, "USA 007B" for the exam) — this one genuinely
+ *    satisfies the requirement, but needs a CAC or JKO account, which not
+ *    everyone has yet at this point in the process, so it's offered as a
+ *    second link rather than the only one.
+ */
+export const USAREUR_PRACTICE_TEST_URL = 'https://www.usareurpracticetest.com/';
+export const USAREUR_OFFICIAL_JKO_URL = 'https://jko.jten.mil/';
+
+/**
+ * What the deal-intake screen gathers before a customer ever meets their
+ * salesperson — a stand-in for what a salesperson would actually be typing
+ * into Dealer Team (Salesforce) to open a real deal. See
+ * src/lib/deal-intake-context.tsx for how this is held and handed off.
+ */
+export interface DealIntake {
+  fullName: string;
+  contact: string;
+  base: string;
+  paymentMethod: PaymentMethod;
+  financingLender: string;
+  financingDownPayment: string;
+  licenseStatus: LicenseStatus;
+  licensePhotoUri: string | null;
+  notes: string;
+}

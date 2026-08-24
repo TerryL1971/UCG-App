@@ -2,16 +2,18 @@ import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { MessageIcon, PhoneIcon, StarIcon } from '@/components/icons';
+import { CheckCircleIcon, MessageIcon, PhoneIcon, StarIcon } from '@/components/icons';
 import { SalespersonAvatarFull } from '@/components/salesperson-avatar';
 import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
 import { salesperson, whatsappChatUrl } from '@/constants/mock-data';
 import { useDeal } from '@/lib/deal-context';
+import { useDealIntake } from '@/lib/deal-intake-context';
 
 export default function SalespersonScreen() {
   const { car } = useDeal();
+  const { intake } = useDealIntake();
   const carLabel = car ? `${car.year} ${car.title}` : 'your next car';
 
   return (
@@ -59,6 +61,16 @@ export default function SalespersonScreen() {
             every step — text me anytime, day or night.&rdquo;
           </Text>
         </View>
+
+        {intake && (
+          <View style={styles.intakeConfirm}>
+            <CheckCircleIcon />
+            <Text style={styles.intakeConfirmText}>
+              {salesperson.name.split(' ')[0]} already has what you sent — {intake.base},{' '}
+              {intake.paymentMethod === 'cash' ? 'paying cash' : 'financing'}. Expect a message soon.
+            </Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.ctaWrap}>
@@ -113,5 +125,17 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   quoteText: { fontFamily: Fonts.body, fontSize: 14, color: Colors.text, lineHeight: 21, fontStyle: 'italic' },
+  intakeConfirm: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: Colors.navyTint,
+    borderRadius: Radius.lg,
+    padding: 12,
+    paddingHorizontal: 14,
+    marginTop: 14,
+    width: '100%',
+  },
+  intakeConfirmText: { flex: 1, fontFamily: Fonts.body, fontSize: 12.5, color: Colors.navy, lineHeight: 17 },
   ctaWrap: { paddingHorizontal: Spacing.xxl, paddingTop: 16, paddingBottom: 8 },
 });

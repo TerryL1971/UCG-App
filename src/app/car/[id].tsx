@@ -104,7 +104,7 @@ export default function CarDetailScreen() {
           label="Choose This Car  →"
           onPress={() => {
             chooseCar(car);
-            router.push('/salesperson');
+            router.push('/deal-intake');
           }}
         />
       </SafeAreaView>

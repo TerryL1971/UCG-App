@@ -16,6 +16,7 @@ import { StatusBar } from 'react-native';
 
 import { AuthProvider } from '@/lib/auth-context';
 import { DealProvider } from '@/lib/deal-context';
+import { DealIntakeProvider } from '@/lib/deal-intake-context';
 import { SavedProvider } from '@/lib/saved-context';
 import { VinScanProvider } from '@/lib/vin-scan-context';
 
@@ -49,6 +50,7 @@ function AppShell({ fontsLoaded }: { fontsLoaded: boolean }) {
         <Stack.Screen name="log-in" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="car/[id]" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="deal-intake" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="salesperson" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="scan-vin" options={{ animation: 'slide_from_bottom', presentation: 'fullScreenModal' }} />
       </Stack>
@@ -69,11 +71,13 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <DealProvider>
-        <SavedProvider>
-          <VinScanProvider>
-            <AppShell fontsLoaded={fontsLoaded} />
-          </VinScanProvider>
-        </SavedProvider>
+        <DealIntakeProvider>
+          <SavedProvider>
+            <VinScanProvider>
+              <AppShell fontsLoaded={fontsLoaded} />
+            </VinScanProvider>
+          </SavedProvider>
+        </DealIntakeProvider>
       </DealProvider>
     </AuthProvider>
   );

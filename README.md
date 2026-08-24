@@ -33,6 +33,49 @@ first, or device testing breaks).
 - **The chosen car carries through the flow.** Tapping "Choose This Car"
   is tracked in-memory (`src/lib/deal-context.tsx`) so the salesperson and
   timeline screens reference the actual car, not a placeholder.
+- **"Choose This Car" leads to a real intake, not straight to a
+  salesperson with nothing behind it.** There's no real deal — and so no
+  real timeline — until someone knows cash vs. financed, which base the
+  customer's headed to, and where they stand on a license. The new
+  **Start Your Deal** screen (`src/app/deal-intake.tsx`) gathers exactly
+  that before the salesperson-match screen, standing in for what a
+  salesperson would type into Dealer Team (Salesforce) to open a real
+  deal (`DealIntake` in `mock-data.ts`, held in-memory by
+  `src/lib/deal-intake-context.tsx`):
+  - Name, a way to reach them, and which US base they're headed to (a
+    curated list of major US military communities in Germany, plus a
+    free-text "Other" — the list will always be incomplete, so it doesn't
+    pretend otherwise).
+  - Cash or financing, with lender/down-payment fields that only appear
+    once financing is picked.
+  - **USAREUR driver's license status** — genuinely researched, not
+    invented: if they haven't gotten one yet, a link to
+    [usareurpracticetest.com](https://www.usareurpracticetest.com/) (free
+    study/practice, no CAC or .mil account needed) plus a secondary link
+    to the *official* course+exam on [JKO](https://jko.jten.mil/) ("USA
+    007" / "USA 007B") for anyone who already has CAC access. If they
+    already have one, they can scan/photograph it straight into the app
+    (same `expo-image-picker` + `compressPhoto` pattern as Sell It Back's
+    photo grid, just a single photo here) instead of bringing the physical
+    card in later.
+  - Submitting **opens WhatsApp with everything above pre-filled** as a
+    message to the salesperson (`whatsappChatUrl(salesperson.whatsapp,
+    message)` — the same helper, now used with its optional message
+    argument for the first time), so the salesperson picks up the
+    conversation already knowing the basics. One honest limit: WhatsApp's
+    `wa.me` links can't attach a photo automatically, so the license photo
+    stays saved in the app and the message just flags that it's there —
+    documented in-app, not silently pretended to work.
+  - The salesperson-match screen shows a short confirmation once intake
+    was submitted ("Marcus already has what you sent — Ramstein / KMC,
+    financing...") instead of acting like the two screens don't know about
+    each other.
+  - **What this doesn't do yet, on purpose:** it doesn't change
+    `dealSteps`/the timeline itself — that's still the same
+    further-along-than-day-one mock it always was. Gating the *actual*
+    timeline on this intake (starting a brand-new deal at step zero, etc.)
+    is a real next step, not done here — the user asked to leave the
+    timeline alone for now while this got built.
 - **The journey timeline is a winding road with signs, not a straight
   line** (`src/components/timeline-road.tsx`) — an SVG road curving side
   to side down the screen, each step a small road-sign marker (one
