@@ -15,12 +15,15 @@ import { Colors, Fonts, Radius, Shadow } from '@/constants/theme';
 import type { DealStep } from '@/constants/mock-data';
 import type { InventoryDetail } from '@/lib/ucg-inventory';
 
-const ROAD_WIDTH = 320;
-const LEFT_X = 72;
-const RIGHT_X = ROAD_WIDTH - 72;
-const Y_STEP = 150;
-const TOP_PAD = 40;
-const BOTTOM_PAD = 70;
+// Vertical (portrait): road runs top-to-bottom, swinging between these two
+// x positions. Horizontal (landscape): road runs left-to-right instead,
+// swinging between two y positions — the same idea, axes swapped.
+const NEAR_EDGE = 72;
+const FAR_EDGE_V = 320 - NEAR_EDGE; // road width in vertical mode
+const FAR_EDGE_H = 220 - NEAR_EDGE; // road "height" (cross-axis) in horizontal mode
+const STEP_SPACING = 150; // distance between consecutive stops along the road
+const START_PAD = 40;
+const END_PAD = 70;
 const SIGN_SIZE = 40;
 const CAR_SIZE = 52;
 
@@ -29,24 +32,31 @@ interface Waypoint {
   y: number;
 }
 
-function buildWaypoints(count: number): Waypoint[] {
-  return Array.from({ length: count }, (_, i) => ({
-    x: i % 2 === 0 ? LEFT_X : RIGHT_X,
-    y: TOP_PAD + i * Y_STEP,
-  }));
+function buildWaypoints(count: number, horizontal: boolean): Waypoint[] {
+  return Array.from({ length: count }, (_, i) => {
+    const along = START_PAD + i * STEP_SPACING;
+    const cross = i % 2 === 0 ? NEAR_EDGE : horizontal ? FAR_EDGE_H : FAR_EDGE_V;
+    return horizontal ? { x: along, y: cross } : { x: cross, y: along };
+  });
 }
 
 /** Smooth S-curve road connecting each waypoint — a cubic bezier per
  * segment with control points pulled toward the midline, which is what
- * makes it swing side to side rather than zigzag with sharp corners. */
-function buildRoadPath(points: Waypoint[]): string {
+ * makes it swing side to side (or up and down, in horizontal mode) rather
+ * than zigzag with sharp corners. */
+function buildRoadPath(points: Waypoint[], horizontal: boolean): string {
   if (points.length < 2) return '';
   let d = `M ${points[0].x} ${points[0].y}`;
   for (let i = 0; i < points.length - 1; i++) {
     const p0 = points[i];
     const p1 = points[i + 1];
-    const midY = (p0.y + p1.y) / 2;
-    d += ` C ${p0.x} ${midY}, ${p1.x} ${midY}, ${p1.x} ${p1.y}`;
+    if (horizontal) {
+      const midX = (p0.x + p1.x) / 2;
+      d += ` C ${midX} ${p0.y}, ${midX} ${p1.y}, ${p1.x} ${p1.y}`;
+    } else {
+      const midY = (p0.y + p1.y) / 2;
+      d += ` C ${p0.x} ${midY}, ${p1.x} ${midY}, ${p1.x} ${p1.y}`;
+    }
   }
   return d;
 }
@@ -55,9 +65,9 @@ function buildRoadPath(points: Waypoint[]): string {
  * plain dot — done/current/upcoming shown through fill color the same way
  * the rest of the app already does (red = complete, matching StatusChip
  * etc.), just on a sign-shaped body instead of a circle. */
-function RoadSign({ status, isLast }: { status: DealStep['status']; isLast: boolean }) {
+function RoadSign({ status, isLast, horizontal }: { status: DealStep['status']; isLast: boolean; horizontal: boolean }) {
   return (
-    <View style={{ alignItems: 'center' }}>
+    <View style={{ alignItems: 'center', flexDirection: horizontal ? 'row' : 'column' }}>
       <View
         style={[
           signStyles.face,
@@ -69,7 +79,7 @@ function RoadSign({ status, isLast }: { status: DealStep['status']; isLast: bool
         {status === 'current' && <View style={signStyles.currentDot} />}
         {status === 'upcoming' && isLast && <PackageIcon size={16} color="#B7BBCB" />}
       </View>
-      <View style={signStyles.post} />
+      <View style={horizontal ? signStyles.postHorizontal : signStyles.post} />
     </View>
   );
 }
@@ -90,6 +100,7 @@ const signStyles = StyleSheet.create({
   faceUpcoming: { backgroundColor: '#fff', borderColor: '#D6D9E4' },
   currentDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#fff' },
   post: { width: 4, height: 12, backgroundColor: '#B9BDC9', marginTop: -2, borderRadius: 2 },
+  postHorizontal: { height: 4, width: 12, backgroundColor: '#B9BDC9', marginLeft: -2, borderRadius: 2 },
 });
 
 interface TimelineRoadProps {
@@ -99,12 +110,17 @@ interface TimelineRoadProps {
    * controlled by the parent so a back/forward control can drive it. */
   viewedIndex: number;
   onStepPress: (index: number) => void;
+  /** Landscape: road runs left-to-right instead of top-to-bottom. */
+  horizontal?: boolean;
 }
 
-export function TimelineRoad({ steps, car, viewedIndex, onStepPress }: TimelineRoadProps) {
-  const waypoints = buildWaypoints(steps.length);
-  const totalHeight = TOP_PAD + (steps.length - 1) * Y_STEP + BOTTOM_PAD;
-  const roadPath = buildRoadPath(waypoints);
+export function TimelineRoad({ steps, car, viewedIndex, onStepPress, horizontal = false }: TimelineRoadProps) {
+  const waypoints = buildWaypoints(steps.length, horizontal);
+  const alongTotal = START_PAD + (steps.length - 1) * STEP_SPACING + END_PAD;
+  const crossTotal = (horizontal ? FAR_EDGE_H : FAR_EDGE_V) + NEAR_EDGE;
+  const containerWidth = horizontal ? alongTotal : crossTotal;
+  const containerHeight = horizontal ? crossTotal : alongTotal;
+  const roadPath = buildRoadPath(waypoints, horizontal);
   const lastIndex = steps.length - 1;
   const isAtFinalStop = viewedIndex === lastIndex && steps[lastIndex].status !== 'upcoming';
 
@@ -125,7 +141,7 @@ export function TimelineRoad({ steps, car, viewedIndex, onStepPress }: TimelineR
       return () => clearTimeout(t);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewedIndex]);
+  }, [viewedIndex, horizontal]);
 
   const xs = waypoints.map((w) => w.x);
   const ys = waypoints.map((w) => w.y);
@@ -150,8 +166,8 @@ export function TimelineRoad({ steps, car, viewedIndex, onStepPress }: TimelineR
   const finalStop = waypoints[lastIndex];
 
   return (
-    <View style={{ width: ROAD_WIDTH, height: totalHeight, alignSelf: 'center' }}>
-      <Svg width={ROAD_WIDTH} height={totalHeight} style={StyleSheet.absoluteFill}>
+    <View style={{ width: containerWidth, height: containerHeight, alignSelf: 'center' }}>
+      <Svg width={containerWidth} height={containerHeight} style={StyleSheet.absoluteFill}>
         <Path d={roadPath} stroke="#3A3F4E" strokeWidth={46} strokeLinecap="round" strokeLinejoin="round" fill="none" opacity={0.18} />
         <Path d={roadPath} stroke="#575D6E" strokeWidth={42} strokeLinecap="round" strokeLinejoin="round" fill="none" />
         <Path
@@ -167,24 +183,44 @@ export function TimelineRoad({ steps, car, viewedIndex, onStepPress }: TimelineR
 
       {waypoints.map((wp, i) => {
         const step = steps[i];
-        const isLeft = i % 2 === 0;
+        const isNear = i % 2 === 0; // "near edge" side — left (vertical) or top (horizontal)
         const isViewed = i === viewedIndex;
+
+        const posStyle = horizontal
+          ? isNear
+            ? { left: wp.x - SIGN_SIZE / 2, top: wp.y - SIGN_SIZE / 2, flexDirection: 'column' as const }
+            : {
+                left: wp.x - SIGN_SIZE / 2,
+                bottom: containerHeight - wp.y - SIGN_SIZE / 2,
+                flexDirection: 'column-reverse' as const,
+              }
+          : isNear
+            ? { left: wp.x - SIGN_SIZE / 2, top: wp.y - SIGN_SIZE / 2, flexDirection: 'row' as const }
+            : {
+                right: containerWidth - wp.x - SIGN_SIZE / 2,
+                top: wp.y - SIGN_SIZE / 2,
+                flexDirection: 'row-reverse' as const,
+              };
+
+        const labelSpacing = horizontal
+          ? isNear
+            ? { marginTop: 6, alignItems: 'center' as const }
+            : { marginBottom: 6, alignItems: 'center' as const }
+          : isNear
+            ? { marginLeft: 8 }
+            : { marginRight: 8, alignItems: 'flex-end' as const };
+
         return (
           <Pressable
             key={step.id}
             onPress={() => onStepPress(i)}
-            style={[
-              styles.stopRow,
-              isViewed && styles.stopRowViewed,
-              isLeft
-                ? { left: wp.x - SIGN_SIZE / 2, top: wp.y - SIGN_SIZE / 2, flexDirection: 'row' }
-                : { right: ROAD_WIDTH - wp.x - SIGN_SIZE / 2, top: wp.y - SIGN_SIZE / 2, flexDirection: 'row-reverse' },
-            ]}>
-            <RoadSign status={step.status} isLast={i === lastIndex} />
-            <View style={[styles.labelWrap, isLeft ? { marginLeft: 8 } : { marginRight: 8, alignItems: 'flex-end' }]}>
+            style={[styles.stopRow, isViewed && styles.stopRowViewed, posStyle]}>
+            <RoadSign status={step.status} isLast={i === lastIndex} horizontal={horizontal} />
+            <View style={[styles.labelWrap, labelSpacing, horizontal && { maxWidth: 90 }]}>
               <Text
                 style={[
                   styles.label,
+                  horizontal && { textAlign: 'center' },
                   step.status === 'current' && styles.labelCurrent,
                   step.status === 'upcoming' && styles.labelUpcoming,
                 ]}

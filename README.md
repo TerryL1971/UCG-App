@@ -62,6 +62,13 @@ first, or device testing breaks).
   question. Both earlier versions are intact in git history if this one
   doesn't work out either — this is genuinely still an experiment, not
   a settled design.
+- **The road can go landscape.** Only the My Deal tab unlocks rotation
+  (`expo-screen-orientation` — unlocked on this screen's mount, re-locked
+  to portrait on unmount so leaving the tab doesn't unlock rotation
+  elsewhere in the app; every other screen stays portrait-only). Turn the
+  phone sideways and the road reflows to run left-to-right across a
+  horizontally-scrolling canvas instead of top-to-bottom — same
+  waypoint/curve math, axes swapped (`horizontal` prop on `TimelineRoad`).
 - **A real camera button on "Picked Up"** — snap a photo of the customer
   with their car and share it straight to whatever app you want
   (Instagram, Facebook, Messages…) via the native share sheet

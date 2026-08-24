@@ -1,9 +1,10 @@
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
+import * as ScreenOrientation from 'expo-screen-orientation';
 import * as Sharing from 'expo-sharing';
-import { useMemo, useState } from 'react';
-import { Alert, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { Alert, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ArrowLeftIcon, CameraIcon, DownloadIcon, MessageIcon, PhoneIcon, StarIcon } from '@/components/icons';
@@ -244,6 +245,19 @@ export default function TimelineScreen() {
   const goBack = () => setViewedIndex((i) => Math.max(0, i - 1));
   const goForward = () => setViewedIndex((i) => Math.min(targetIndex, i + 1));
 
+  // The rest of the app stays portrait-locked (app.json) — only this
+  // screen allows rotating, so the road can run sideways. Re-lock on the
+  // way out so leaving the tab doesn't leave landscape unlocked elsewhere.
+  useEffect(() => {
+    ScreenOrientation.unlockAsync().catch(() => {});
+    return () => {
+      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(() => {});
+    };
+  }, []);
+
+  const { width, height } = useWindowDimensions();
+  const isLandscape = width > height;
+
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <View style={styles.navbar}>
@@ -301,7 +315,16 @@ export default function TimelineScreen() {
           <StepDetailContent step={viewedStep} car={car} />
         </View>
 
-        <TimelineRoad steps={dealSteps} car={car} viewedIndex={viewedIndex} onStepPress={setViewedIndex} />
+        {isLandscape ? (
+          // Landscape: the road itself scrolls sideways, nested inside the
+          // page's normal vertical scroll (different scroll axes, so the
+          // two don't fight each other).
+          <ScrollView horizontal contentContainerStyle={styles.roadScrollHorizontal}>
+            <TimelineRoad steps={dealSteps} car={car} viewedIndex={viewedIndex} onStepPress={setViewedIndex} horizontal />
+          </ScrollView>
+        ) : (
+          <TimelineRoad steps={dealSteps} car={car} viewedIndex={viewedIndex} onStepPress={setViewedIndex} />
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -359,6 +382,7 @@ const styles = StyleSheet.create({
   },
   waitingChipText: { fontFamily: Fonts.bodyBold, fontSize: 11.5, color: Colors.red },
   scrollContent: { paddingVertical: Spacing.xl },
+  roadScrollHorizontal: { paddingHorizontal: Spacing.xl },
   detailPanel: {
     marginHorizontal: Spacing.xl,
     marginBottom: Spacing.xl,
