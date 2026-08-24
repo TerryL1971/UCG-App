@@ -1,10 +1,10 @@
 import { Image } from 'expo-image';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CarCard } from '@/components/car-card';
-import { FilterIcon, SearchIcon } from '@/components/icons';
+import { SearchIcon } from '@/components/icons';
 import { FilterChip } from '@/components/ui/chip';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { fetchInventoryList, type InventoryListItem } from '@/lib/ucg-inventory';
@@ -50,15 +50,6 @@ export default function BrowseScreen() {
           <Image source={icon} style={styles.icon} contentFit="contain" />
           <Text style={styles.title}>Browse Inventory</Text>
         </View>
-        <Pressable
-          style={styles.iconButton}
-          hitSlop={4}
-          onPress={() => {
-            setQuery('');
-            setActiveFilter('All');
-          }}>
-          <FilterIcon />
-        </Pressable>
       </View>
 
       <View style={styles.searchWrap}>
@@ -132,14 +123,6 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.display,
     fontSize: 20,
     color: Colors.text,
-  },
-  iconButton: {
-    width: 44,
-    height: 44,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.navyTint,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   searchWrap: {
     marginHorizontal: Spacing.xl,
