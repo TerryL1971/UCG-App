@@ -41,11 +41,15 @@ first, or device testing breaks).
   photo of the customer with their car and share it straight to whatever
   app you want (Instagram, Facebook, Messages…) via the native share
   sheet (`expo-sharing`), meant for posting to UCG's social pages.
-  Next to it, a "Leave a Google Review" button deep-links straight to
-  UCG's real Google Business write-a-review page (`googleReviewUrl` in
-  `mock-data.ts` — a real business identifier found in usedcarguys.net's
-  own site, not a placeholder; see the comment there for how it was
-  found/verified).
+  Next to it, a "Leave a Google Review" button opens a picker for UCG's
+  six real locations (Ramstein, Kaiserslautern, Stuttgart, Spangdahlem,
+  Grafenwoehr, Wiesbaden — `ucgLocations` in `mock-data.ts`) and opens
+  that location's actual Google Business listing — UCG turns out to have
+  a separate Google listing per lot, not one shared listing, so picking
+  the right one matters. See the comment on `ucgLocations` for how these
+  were found and verified (and for a real mistake this caught: an earlier
+  version hardcoded a single review link that turned out to be a stale,
+  unrelated identifier once actually checked against the real listings).
   Completed steps are tap-to-expand — Matched shows the salesperson's
   contact card, Documents shows the actual document list with real
   status chips, Financing shows the loan terms, Contract confirms it was

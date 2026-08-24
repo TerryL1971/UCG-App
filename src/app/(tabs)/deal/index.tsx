@@ -3,7 +3,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import { useState } from 'react';
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CameraIcon, ChevronDownIcon, DownloadIcon, MessageIcon, PhoneIcon, StarIcon } from '@/components/icons';
@@ -11,7 +11,7 @@ import { SalespersonAvatarMini } from '@/components/salesperson-avatar';
 import { StatusChip } from '@/components/ui/chip';
 import { DashedLine, FlowLine, SolidLine, TimelineDot } from '@/components/timeline-dot';
 import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
-import { dealDocuments, dealSteps, financingTerms, googleReviewUrl, salesperson } from '@/constants/mock-data';
+import { dealDocuments, dealSteps, financingTerms, salesperson, ucgLocations } from '@/constants/mock-data';
 import { useDeal } from '@/lib/deal-context';
 
 const ROW_HEIGHT = 80;
@@ -38,6 +38,12 @@ const EXPANDED_EXTRA_HEIGHT: Record<string, number> = {
  * captured photo, and hooks can't live directly inside a .map() callback. */
 function PickupPhotoAction() {
   const [photo, setPhoto] = useState<string | null>(null);
+  const [pickingLocation, setPickingLocation] = useState(false);
+
+  const openLocation = (reviewUrl: string) => {
+    setPickingLocation(false);
+    Linking.openURL(reviewUrl);
+  };
 
   const takePhoto = async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
@@ -84,10 +90,27 @@ function PickupPhotoAction() {
         </Pressable>
       )}
 
-      <Pressable style={styles.reviewButton} onPress={() => Linking.openURL(googleReviewUrl)}>
+      <Pressable style={styles.reviewButton} onPress={() => setPickingLocation(true)}>
         <StarIcon size={16} color={Colors.navy} />
         <Text style={styles.reviewButtonLabel}>Leave a Google Review</Text>
       </Pressable>
+
+      <Modal visible={pickingLocation} transparent animationType="slide" onRequestClose={() => setPickingLocation(false)}>
+        <Pressable style={styles.sheetBackdrop} onPress={() => setPickingLocation(false)}>
+          <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.sheetTitle}>Which location?</Text>
+            <Text style={styles.sheetSubtitle}>UCG has a separate Google listing per lot — pick the right one.</Text>
+            {ucgLocations.map((loc) => (
+              <Pressable key={loc.name} style={styles.sheetRow} onPress={() => openLocation(loc.reviewUrl)}>
+                <Text style={styles.sheetRowLabel}>{loc.name}</Text>
+              </Pressable>
+            ))}
+            <Pressable style={styles.sheetCancel} onPress={() => setPickingLocation(false)}>
+              <Text style={styles.sheetCancelLabel}>Cancel</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -405,6 +428,37 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   reviewButtonLabel: { fontFamily: Fonts.bodyBold, fontSize: 13.5, color: Colors.navy },
+  sheetBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(20,26,71,0.45)',
+    justifyContent: 'flex-end',
+  },
+  sheet: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: Radius.xl,
+    borderTopRightRadius: Radius.xl,
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.xl,
+    paddingBottom: 34,
+  },
+  sheetTitle: { fontFamily: Fonts.display, fontSize: 19, color: Colors.text },
+  sheetSubtitle: { fontFamily: Fonts.body, fontSize: 12.5, color: Colors.textMuted, marginTop: 4, marginBottom: 12 },
+  sheetRow: {
+    height: 50,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    justifyContent: 'center',
+  },
+  sheetRowLabel: { fontFamily: Fonts.bodySemibold, fontSize: 15, color: Colors.text },
+  sheetCancel: {
+    height: 50,
+    marginTop: 10,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.bg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sheetCancelLabel: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.red },
   pickupCard: {
     backgroundColor: '#fff',
     borderRadius: Radius.lg,
