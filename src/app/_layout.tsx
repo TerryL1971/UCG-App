@@ -15,6 +15,7 @@ import { useEffect } from 'react';
 import { StatusBar } from 'react-native';
 
 import { DealProvider } from '@/lib/deal-context';
+import { SavedProvider } from '@/lib/saved-context';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -40,14 +41,16 @@ export default function RootLayout() {
 
   return (
     <DealProvider>
-      <StatusBar barStyle="dark-content" />
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="index" />
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="car/[id]" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="salesperson" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="sell-back" options={{ animation: 'slide_from_right' }} />
-      </Stack>
+      <SavedProvider>
+        <StatusBar barStyle="dark-content" />
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="index" />
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="car/[id]" options={{ animation: 'slide_from_right' }} />
+          <Stack.Screen name="salesperson" options={{ animation: 'slide_from_right' }} />
+          <Stack.Screen name="sell-back" options={{ animation: 'slide_from_right' }} />
+        </Stack>
+      </SavedProvider>
     </DealProvider>
   );
 }

@@ -1,14 +1,15 @@
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { HeartIcon } from '@/components/icons';
 import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
+import { useSaved } from '@/lib/saved-context';
 import type { InventoryListItem } from '@/lib/ucg-inventory';
 
 export function CarCard({ car }: { car: InventoryListItem }) {
-  const [saved, setSaved] = useState(false);
+  const { isSaved, toggleSaved } = useSaved();
+  const saved = isSaved(car.slug);
 
   return (
     <Pressable
@@ -20,7 +21,7 @@ export function CarCard({ car }: { car: InventoryListItem }) {
           hitSlop={8}
           onPress={(e) => {
             e.stopPropagation();
-            setSaved((s) => !s);
+            toggleSaved(car);
           }}
           style={styles.saveButton}>
           <HeartIcon color={saved ? Colors.red : Colors.textFaint} filled={saved} />

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeftIcon, DrivetrainIcon, FuelIcon, GaugeIcon, HeartIcon, TransmissionIcon } from '@/components/icons';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { useDeal } from '@/lib/deal-context';
+import { useSaved } from '@/lib/saved-context';
 import { fetchInventoryDetail, type InventoryDetail } from '@/lib/ucg-inventory';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -15,9 +16,9 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 export default function CarDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { chooseCar } = useDeal();
+  const { isSaved, toggleSaved } = useSaved();
   const [car, setCar] = useState<InventoryDetail | null>(null);
   const [error, setError] = useState(false);
-  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -70,8 +71,8 @@ export default function CarDetailScreen() {
           <Pressable style={[styles.circleButton, styles.backButton]} onPress={() => router.back()} hitSlop={4}>
             <ArrowLeftIcon />
           </Pressable>
-          <Pressable style={[styles.circleButton, styles.heartButton]} onPress={() => setSaved((s) => !s)} hitSlop={4}>
-            <HeartIcon color={saved ? Colors.red : Colors.textFaint} filled={saved} />
+          <Pressable style={[styles.circleButton, styles.heartButton]} onPress={() => toggleSaved(car)} hitSlop={4}>
+            <HeartIcon color={isSaved(car.slug) ? Colors.red : Colors.textFaint} filled={isSaved(car.slug)} />
           </Pressable>
         </View>
       </SafeAreaView>

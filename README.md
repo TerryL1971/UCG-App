@@ -33,6 +33,9 @@ first, or device testing breaks).
   timeline screens reference the actual car, not a placeholder.
 - **An animated journey timeline** — Reanimated-driven pulse on the
   in-progress step and a particle animating down the connecting line.
+- **Saving a car actually saves it.** The heart button on a car card and
+  the Saved tab share real state (`src/lib/saved-context.tsx`), not just a
+  per-card toggle that went nowhere.
 
 ## What's still mocked / not wired up
 
@@ -57,7 +60,7 @@ src/
   app/           Screens (Expo Router — file-based routing)
   components/    Shared UI (buttons, chips, icons, car card, avatar, timeline dot)
   constants/     Theme (brand colors/fonts) + remaining mock data
-  lib/           Live inventory scraper, the deal-context
+  lib/           Live inventory scraper, deal-context, saved-cars context
 brand/           Source logo files + extracted brand colors
 design-mockup/   The original Claude Design canvas this app was built from
 docs/            Specs for integrations we're waiting on (WordPress API)
