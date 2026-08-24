@@ -192,7 +192,16 @@ first, or device testing breaks).
   real backend, no password check, no server-issued token — just a name
   and email saved locally.
 - **Salesperson assignment** is a hardcoded person (`src/constants/mock-data.ts`)
-  — this is the piece that needs the Salesforce Dealer Team API.
+  — this is the piece that needs the Salesforce Dealer Team API. DealerTeam
+  turns out to be a real, Salesforce-native DMS/CRM (confirmed, not
+  assumed — see
+  [docs/salesforce-dealerteam-integration-plan.md](./docs/salesforce-dealerteam-integration-plan.md)
+  for the architecture plan: REST API + Connected App for writes, Change
+  Data Capture + Streaming/Pub-Sub API for real-time reads, a backend
+  proxy either way since Salesforce credentials can't live in the app).
+  The new deal-intake screen (below) is Phase 0 of that plan — it gathers
+  real structured info but still hands it off by WhatsApp message, not an
+  API call, since none of the above exists yet.
 - **Deal progress** (application submitted, financing approved, etc.) and
   **documents** are also mock data — pending whatever system actually
   tracks financing status. It's deliberately set further along than a
@@ -216,7 +225,8 @@ src/
   lib/           Live inventory scraper, deal/saved/auth/vin-scan contexts
 brand/           Source logo files + extracted brand colors
 design-mockup/   The original Claude Design canvas this app was built from
-docs/            Specs for integrations we're waiting on (WordPress API)
+docs/            Specs/plans for integrations we're waiting on (WordPress
+                 inventory API, Salesforce DealerTeam sync)
 ```
 
 ## Known gaps worth knowing about
