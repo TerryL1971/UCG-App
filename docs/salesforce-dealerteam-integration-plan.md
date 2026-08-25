@@ -56,51 +56,102 @@ reference, no corrections needed to the shape of it:
    trigger firing a push notification (APNs/FCM), not the streaming
    connection itself.
 
-## How today's mock data would map over
+## What we've actually seen (from a real screenshot of UCG's org, Aug 25)
 
-Best guess, **not confirmed** — the actual DealerTeam object/field names
-need to come from whoever administers UCG's org, not be assumed from this
-table:
+Terry sent a screenshot of a live "Sales Up" record in UCG's own
+DealerTeam org (Josh Ingram / 2024 BMW X1). This is real, not guessed,
+and replaces the earlier best-guess mapping table:
 
-| App concept | Where it lives now | Likely DealerTeam-side equivalent |
-|---|---|---|
-| `salesperson` | `mock-data.ts` | Assigned User/Contact on the deal record |
-| `DealIntake` (new) | `deal-intake-context.tsx` | A new Deal/Opportunity-type record, created on submit |
-| `dealSteps` | `mock-data.ts` | A stage field on that record, or a related child object per step |
-| `dealDocuments` | `mock-data.ts` | Salesforce Files (ContentDocument) or a custom Document object |
-| `financingTerms` | `mock-data.ts` | Fields on the deal record or a related Financing object |
+- Top nav is **Home · Chatter · Accounts · Sales Up · Deals · Vehicle
+  Inventory · Appraisals · Credit Applications · Reports · Dashboards ·
+  Cashiering** — so a deal's lifecycle is spread across *separate*
+  objects/tabs (Sales Up → Appraisal → Credit Application → Deal →
+  Cashiering), not one flat "Deal" record. `dealSteps` in this app is a
+  simplified customer-facing view; it should not be assumed to map
+  1:1 onto a single DealerTeam object.
+- A **Sales Up** record (the lead/opportunity stage) has: `Salesperson
+  1` / `Salesperson 2`, `Email`, `Phone`, `Record Type`, `Stock#` (linked
+  to the vehicle), `Deal` (linked once one exists), `Lead Status`, `In
+  Store?`, `Be-Back`, `Lead Date`, `Store Location`, and a horizontal
+  stage tracker (…→ **Open → HOT → Won**) with a "Mark Lead Status as
+  Complete" action. Related tabs on the record: **Vehicle / Buyer /
+  Trade / Deals**, plus Chatter and Attached Files.
+- Confirms `salesperson` in this app maps to `Salesperson 1` on a Sales
+  Up record, and that DealerTeam already models "which vehicle" and
+  "store location" the same way this app does (`Stock#`, per-location).
+- Still unconfirmed: what a **Deal** record (the separate tab) actually
+  contains once Sales Up converts to one — that's almost certainly where
+  `financingTerms`/`dealDocuments` would really live, not on Sales Up.
+
+## The real blocker isn't only DealerTeam access — nothing updates the app yet
+
+Worth being blunt about, independent of any Salesforce question:
+**`dealSteps` is 100% static mock data right now.** There is no
+mechanism today — cheap or expensive — for a salesperson to push a
+status update that the customer's app reflects. So "will it be obtained
+through DealerTeam" is really two separate questions stacked together:
+
+1. Is there *any* way for a salesperson's update to reach the app at
+   all (today: no)?
+2. If yes, does it come from DealerTeam specifically, or from something
+   UCG builds and owns instead?
+
+Terry's screenshot also confirms the cost concern directly: DealerTeam
+markets **"Integrations & Add-Ons"** as its own separate page/tier
+(https://www.dealerteam.com/integrations-and-addons) — consistent with
+"UCG doesn't have access to everything, this costs a lot of money to
+get." That means Phase 1 below (writing/reading DealerTeam via its API)
+may not be available on UCG's current plan at all, not just "not built
+yet." Realistic planning should not assume it becomes available on any
+particular timeline.
 
 ## Phased approach
 
-Full real-time sync (CDC + Pub/Sub + push) is a lot to build before
-anything real ships. Suggested order:
+Reordered so the plan doesn't quietly depend on DealerTeam access UCG
+may not have:
 
 - **Phase 0 (shipped today):** The deal-intake screen's WhatsApp handoff
-  — zero backend, a human is the "sync." Good enough for a first real
-  customer, not a real integration.
-- **Phase 1:** One-way write only. Backend proxy + Connected App + REST
-  API — submitting the intake form actually creates/updates a DealerTeam
-  record, in addition to (or eventually instead of) the WhatsApp message.
-  No live updates back to the app yet.
-- **Phase 2:** Read-your-own-deal on demand — refresh-on-app-open against
-  the REST API, no streaming infrastructure yet. Cheap, and covers most
-  of the actual value ("is my financing approved" checked when someone
-  opens the app) without CDC/gRPC/CometD complexity.
+  — zero backend, a human (the salesperson) is the sync in both
+  directions. This is not just a stopgap "MVP" — given the DealerTeam
+  cost question above, this may need to be treated as the **durable
+  default**, not a placeholder guaranteed to be replaced.
+- **Phase 1a — cheapest real option, no DealerTeam dependency at all:**
+  A small, UCG-owned way for a salesperson to push a status update
+  themselves — as simple as a single authenticated web form ("mark this
+  customer's deal: financing approved / contract signed / car ready")
+  that the app polls, no Salesforce integration involved. Costs UCG dev
+  time, not a DealerTeam upsell, and doesn't depend on what tier
+  DealerTeam access they have.
+- **Phase 1b — if/when DealerTeam API access exists:** One-way write via
+  backend proxy + Connected App + REST API — submitting the intake form
+  actually creates/updates a Sales Up (or later, Deal) record, instead
+  of or alongside the WhatsApp message.
+- **Phase 2:** Read-your-own-deal on demand — refresh-on-app-open
+  against the REST API, no streaming infrastructure. Covers most of the
+  real value ("is my financing approved" checked on app open) without
+  CDC/gRPC/CometD complexity.
 - **Phase 3:** True real-time — CDC + Streaming/Pub-Sub API + Apex-
-  triggered push notifications, per the original research above. Worth
-  it once Phases 1–2 prove the rest of the pipeline works.
+  triggered push notifications. Only worth planning for once it's
+  confirmed UCG's DealerTeam plan (or a future upgrade) actually
+  includes this tier.
 
-## Open questions before any of this can start
+## Open questions before Phase 1b/2/3 can start
 
+- **Does UCG's current DealerTeam plan include any API/integration
+  access at all**, or does that require upgrading to whatever
+  "Integrations & Add-Ons" costs? This determines whether Phase 1b is
+  worth planning for right now, or whether Phase 1a (UCG-owned, no
+  DealerTeam dependency) is the only realistic near-term path.
 - Does UCG's DealerTeam subscription include Salesforce Setup access
   (to create a Connected App), or does that have to go through
   DealerTeam's own support/integration team?
-- What are the actual object/field API names for a deal, vehicle, and
-  customer in UCG's DealerTeam org?
+- What does a **Deal** record (the tab separate from Sales Up) actually
+  contain — that's the more likely home for financing/documents than
+  Sales Up.
 - Which Salesforce edition UCG is on — Change Data Capture and Pub/Sub
   API access depend on edition/licensing.
-- Who builds and hosts the backend proxy this requires? It doesn't exist
-  yet, and every phase above needs it.
+- Who builds and hosts the backend/proxy any of Phase 1a/1b needs? It
+  doesn't exist yet either way.
 
 ## Sources
 
