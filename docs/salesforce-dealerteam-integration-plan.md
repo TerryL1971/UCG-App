@@ -83,6 +83,55 @@ and replaces the earlier best-guess mapping table:
   contains once Sales Up converts to one — that's almost certainly where
   `financingTerms`/`dealDocuments` would really live, not on Sales Up.
 
+Three more real screenshots (Aug 25, same session) fill in the rest of
+the picture — a **Deal**, an **Appraisal**, and a Deal's **Forms** tab:
+
+- **Deal** (e.g. Deal 19852, Status "Won - Posted"): `Buyer Account`,
+  `Deal Date`, `Delivery Date`, `Vehicle`, a back-link to its `Sales Up`,
+  and a **Deal Outline** that's a real price breakdown — Vehicle price,
+  Aftermarket, Service Contract, Total Fees, Discounts and Rebates,
+  Total Tax (this is closer to what `financingTerms` should map to than
+  anything on Sales Up). Other tabs: Details / Buyer / Vehicle / Release
+  / Chatter / Tasks / History / Comms, and Outline / Adds / Adjustments
+  / Forms / Payments / Delivery / **Abgang Info**. Actions available:
+  Create Vehicle Transport, Submit for Approval, Request Release, Close
+  Deal, Unlock. Worth noting: **"Abgang Info" is its own tab on the Deal
+  record**, not something UCG bolted on — Abgang is German for
+  "departure/deregistration," so DealerTeam already has a built-in
+  concept for a vehicle leaving Germany with an outgoing service member,
+  which is exactly UCG's business. Good sign the package fits this use
+  case natively.
+- **Appraisal** (trade-in valuation — a separate object from Deal, e.g.
+  linked via `Deals (1)` / `Trade-Ins (1)` related lists): `Appraised
+  Value`, `Total Payoff`, `Estimated Recon`, `Anticipated Retail Price`,
+  `Profit Objective`, `Condition`, `Open Recalls`, `First Registration`,
+  links to `Sales Up` / `Deal` / `Inventory Vehicle`, and a `Laser
+  Appraiser Link` to a third-party VIN-decode/valuation service. Vehicle
+  sub-tab includes VIN, odometer, curb weight, exterior color, engine,
+  and even **F-Gas type/capacity** (EU A/C-refrigerant compliance
+  fields — another sign this is genuinely built for the European
+  market). **This, not Deal, is almost certainly the real target object
+  for the app's Sell It Back flow** if that ever gets wired up —
+  Sell It Back's current fields (plate/VIN, mileage, condition, photos)
+  are a rough subset of what an Appraisal actually tracks.
+- **Forms (on a Deal).** An "Available Forms" library — Bill of Sale
+  (plus a CANCELLED variant), Warranty Certificate, Purchase Order,
+  Vehicle Hand-Over Document, Buying Cover Sheet, Vehicle Inspection,
+  Bill of Sale - Trade 2 — vs. "Selected Forms" actually generated for
+  this specific deal (seen: Cost Estimate, **Abgang Form**, Bill of
+  Sale), each printable as a PDF. **This means DealerTeam-side
+  "documents" are dealership-generated deal paperwork, not
+  customer-uploaded KYC files** — meaningfully different from what
+  `dealDocuments` in this app currently mocks (Driver's License, Proof
+  of Insurance, Proof of Income, Proof of Residence, which read as
+  loan/KYC documents, not deal paperwork). Those two document
+  categories are probably genuinely different things that both need
+  tracking eventually (loan/KYC docs likely live under Credit
+  Applications, not shown yet) — worth deciding deliberately which one
+  (or both) the app's "Documents" timeline step should actually
+  represent, rather than assuming the current mock list already matches
+  either one.
+
 ## The real blocker isn't only DealerTeam access — nothing updates the app yet
 
 Worth being blunt about, independent of any Salesforce question:
