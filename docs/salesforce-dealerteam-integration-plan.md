@@ -142,6 +142,10 @@ may not have:
   "Integrations & Add-Ons" costs? This determines whether Phase 1b is
   worth planning for right now, or whether Phase 1a (UCG-owned, no
   DealerTeam dependency) is the only realistic near-term path.
+  **Status (Aug 25): unanswered — Terry doesn't know either, and will
+  need to check with David/Michelle/James or DealerTeam support
+  directly.** Nothing else here is blocked on the answer; Phase 0
+  (WhatsApp handoff) works regardless of what it turns out to be.
 - Does UCG's DealerTeam subscription include Salesforce Setup access
   (to create a Connected App), or does that have to go through
   DealerTeam's own support/integration team?
