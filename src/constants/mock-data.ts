@@ -204,8 +204,27 @@ export const usareurBases: string[] = [
  *    government exam, unverifiable for accuracy the way the two links
  *    above are (Quizlet also blocks this app's own fetch tooling with a
  *    403 either way, so neither could be checked even superficially).
- *    Terry flagged the same accuracy concern independently — don't add
- *    either without a better way to verify them first.
+ *    Terry flagged the same accuracy concern independently, and it held
+ *    up: a separate AI-generated answer Terry later checked also
+ *    recommended one of these same sets, with an equally unverifiable
+ *    claim ("nearly all the exact questions") — a second unverified
+ *    source repeating an unverified claim isn't confirmation of it, so
+ *    still not linked.
+ *  - Real, reproducible finding while checking a direct JKO login URL
+ *    Terry sent (jkodirect.jten.mil/.../Login.jsf): the fetch failed with
+ *    "self signed certificate in certificate chain" — the specific
+ *    signature of DoD PKI certs not being in a normal device's trust
+ *    store, a well-documented, common experience on fresh devices (search
+ *    confirmed this, not just this app's tooling). A real customer on
+ *    their own phone will very likely see a "connection is not private"
+ *    browser warning tapping into JKO — expected and safe to continue
+ *    through, but alarming if unexplained, so the app now warns about it
+ *    right next to the button rather than let it look like a broken link.
+ *  - Also folded in, once corroborated by the official Army Garrison page
+ *    Terry pasted (not just the second AI answer that repeated it): the
+ *    85%-or-higher passing score, and the arrival-day checklist (printed
+ *    certificate, stateside license, DoD ID/CAC, $30 fee, on-site vision
+ *    check) — now in the in-app copy too.
  */
 export const USAREUR_OFFICIAL_JKO_URL = 'https://jko.jten.mil/';
 export const USAREUR_STUDY_GUIDE_URL = 'https://home.army.mil/stuttgart/my-garrison/all-services/drivers-testing';

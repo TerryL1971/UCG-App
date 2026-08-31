@@ -32,7 +32,23 @@ real customer would hit it.
   content for a real government exam (Quizlet blocks this app's own
   fetch tooling with a 403 on both, so neither could even be
   superficially checked), and Terry flagged the same accuracy worry
-  independently before it was even raised.
+  independently before it was even raised. Held up a third time: a
+  separate AI-generated answer Terry checked also recommended one of
+  these sets, with an equally unverifiable "nearly all the exact
+  questions" claim — a second unverified source repeating an unverified
+  claim isn't confirmation.
+- **JKO certificate warning + arrival checklist, added same day.**
+  Checking a direct JKO login URL Terry sent turned up a real,
+  reproducible finding: the fetch failed with the specific signature of
+  a DoD PKI certificate not being in a normal device's trust store —
+  confirmed via search as common and well-documented, not a fluke of
+  this app's tooling. A real customer's own phone will likely show a
+  "connection is not private" warning tapping into JKO. The app now
+  warns about this right next to the button instead of letting it look
+  broken. Also added, once corroborated by the official Army Garrison
+  page itself (not just an AI summary repeating it): the 85%-or-higher
+  passing score, and the arrival-day checklist (printed certificate,
+  stateside license, DoD ID/CAC, $30 fee, on-site vision check).
 - **License scan is now front AND back**, not one photo — two separate
   capture slots on the deal-intake screen (`DealIntake.licensePhotoFrontUri`
   / `licensePhotoBackUri`).

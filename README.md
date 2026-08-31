@@ -70,8 +70,22 @@ first, or device testing breaks).
     while double-checking — user-submitted content for a real government
     exam that neither of us could verify (Quizlet 403's this app's own
     fetch tooling), and Terry raised the same accuracy concern
-    independently before it was even asked. If they already have a
-    license, they scan **both the front and back** straight into the app
+    independently before it was even asked — and held up again when a
+    separate AI-generated answer Terry checked repeated the same
+    unverifiable claim about one of those sets, which isn't
+    confirmation of it. One more real, reproducible finding along the
+    way: fetching a direct JKO login URL failed with the exact signature
+    of a DoD PKI certificate not being in a normal device's trust store
+    (confirmed via search as a common, well-documented experience, not
+    just this app's tooling) — so the app now warns right next to the
+    JKO button that a "connection is not private" browser warning is
+    normal there and safe to continue through, instead of letting it
+    look like a broken link. Also added, once corroborated by the
+    official Army Garrison page itself: the 85%-or-higher passing score
+    and the arrival-day checklist (printed certificate, stateside
+    license, DoD ID/CAC, $30 fee, on-site vision check). If they already
+    have a license, they scan **both the front and back** straight into
+    the app
     (same `expo-image-picker` + `compressPhoto` pattern as Sell It Back's
     photo grid, two slots here) instead of bringing the physical card in
     later.

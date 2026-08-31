@@ -262,9 +262,18 @@ export default function DealIntakeScreen() {
                 <Text style={styles.licenseLinkButtonLabel}>Take the Exam Online (JKO)  →</Text>
               </Pressable>
               <Text style={styles.licenseHint}>
-                On JKO, search course <Text style={styles.licenseHintBold}>USA 007</Text>, complete it, then take
-                exam <Text style={styles.licenseHintBold}>USA 007B</Text>. Your score is valid 60 days, so it&apos;s
-                worth timing this close to your move rather than doing it too early.
+                Heads up: your browser may flag this .mil site as &ldquo;not private.&rdquo; That&apos;s normal for
+                DoD sites (they use a certificate most phones don&apos;t trust by default) &mdash; it&apos;s safe to
+                continue through.
+              </Text>
+              <Text style={styles.licenseHint}>
+                Search course <Text style={styles.licenseHintBold}>USA 007</Text>, complete it, then pass exam{' '}
+                <Text style={styles.licenseHintBold}>USA 007B</Text> (85% or higher). Your score is valid 60 days
+                &mdash; worth timing this close to your move rather than doing it too early.
+              </Text>
+              <Text style={styles.licenseHint}>
+                On arrival: bring your printed certificate, stateside license, and DoD ID/CAC, plus a $30 fee, to
+                the base testing station for a quick vision check and your physical license.
               </Text>
               <Text style={styles.licenseSubLink} onPress={() => Linking.openURL(USAREUR_STUDY_GUIDE_URL)}>
                 Want to study the manual first? →
