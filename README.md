@@ -53,16 +53,28 @@ first, or device testing breaks).
   - Cash or financing, with lender/down-payment fields that only appear
     once financing is picked.
   - **USAREUR driver's license status** — genuinely researched, not
-    invented, and re-verified once already: the original practice-test
-    link 404'd on a real device, got independently reproduced (dead site,
-    not a typo), and was swapped for the U.S. Army's own official study
-    page (`home.army.mil/.../drivers-testing`) instead of a third-party
-    quiz site. A secondary link still points to the *official* course+exam
-    on [JKO](https://jko.jten.mil/) ("USA 007" / "USA 007B") for anyone
-    with CAC access. If they already have a license, they scan **both the
-    front and back** straight into the app (same `expo-image-picker` +
-    `compressPhoto` pattern as Sell It Back's photo grid, two slots here)
-    instead of bringing the physical card in later.
+    invented, and corrected twice in one afternoon by actually checking
+    what got reported back: the original practice-test link 404'd on a
+    real device, got independently reproduced (dead site, not a typo, so
+    it's gone for good, not re-added later), and got swapped for the U.S.
+    Army's own official page. Terry then pasted that page's full text back
+    while checking the fix, which caught a second thing: it's not an
+    interactive practice test (correctly labeled as a study-first
+    secondary link now, not "Practice the Test"), but it also revealed
+    [JKO](https://jko.jten.mil/) isn't CAC-gated the way the first pass
+    assumed — non-CAC family members can get a free sponsored account —
+    so JKO ("USA 007" the course, "USA 007B" the exam, 60-day-valid
+    certification) is now the **primary** link, since it's the actual
+    exam, doable online before a PCS move, not a proxy for it. Also
+    explicitly **not** linked: two Quizlet flashcard sets Terry found
+    while double-checking — user-submitted content for a real government
+    exam that neither of us could verify (Quizlet 403's this app's own
+    fetch tooling), and Terry raised the same accuracy concern
+    independently before it was even asked. If they already have a
+    license, they scan **both the front and back** straight into the app
+    (same `expo-image-picker` + `compressPhoto` pattern as Sell It Back's
+    photo grid, two slots here) instead of bringing the physical card in
+    later.
   - Submitting **opens WhatsApp with everything above pre-filled** as a
     message (`whatsappChatUrl(salesperson.whatsapp, message)` — the same
     helper, now used with its optional message argument for the first

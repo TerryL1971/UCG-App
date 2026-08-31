@@ -13,18 +13,26 @@ real customer would hit it.
   page's gallery doesn't follow them into the flow. `deal-intake.tsx`
   now shows the same swipeable gallery (all of `car.images`, not a
   subset) right under the header, with a "swipe for all N photos" hint.
-- **USAREUR practice-test link fixed.** The original
+- **USAREUR license link fixed — twice, same afternoon.** The original
   `usareurpracticetest.com` link Terry hit a 404 on is confirmed dead —
-  independently reproduced here (connection reset on both http and
-  https, every attempt). Replaced with the U.S. Army's own official
-  page (`home.army.mil/.../drivers-testing`), confirmed loading, which
-  links the real Drivers Handbook & Examination Manual and German Road
-  Signs page directly — no login needed, and more authoritative than
-  the old third-party quiz site besides. The secondary JKO link (course
-  USA 007 / exam USA 007B) is unchanged, but flagged in a code comment:
-  automated checks hit a TLS error on `jko.jten.mil` that's likely a
-  false alarm (common for tools without the DoD root CA) — worth a real
-  on-device check, the same way the dead link just got caught.
+  independently reproduced (connection reset on both http and https,
+  every attempt). First swap: the U.S. Army's own official page
+  (`home.army.mil/.../drivers-testing`). Terry then pasted that page's
+  full text back while checking the fix, which caught something more
+  useful than a bug report — that page isn't an interactive practice
+  test (now correctly framed as a secondary "study the manual first"
+  link, not "Practice the Test"), and it revealed
+  [JKO](https://jko.jten.mil/) isn't CAC-gated: non-CAC family members
+  can request a free sponsored account with their DoD ID number. JKO is
+  now the **primary** link — it's the real exam (course USA 007, exam
+  USA 007B, 60-day-valid certification), doable online before a PCS
+  move, which is strictly more useful than a practice quiz. Also
+  explicitly **not** linked: two USAREUR Quizlet flashcard sets Terry
+  found while double-checking this — unverifiable user-submitted
+  content for a real government exam (Quizlet blocks this app's own
+  fetch tooling with a 403 on both, so neither could even be
+  superficially checked), and Terry flagged the same accuracy worry
+  independently before it was even raised.
 - **License scan is now front AND back**, not one photo — two separate
   capture slots on the deal-intake screen (`DealIntake.licensePhotoFrontUri`
   / `licensePhotoBackUri`).

@@ -174,30 +174,41 @@ export const usareurBases: string[] = [
 
 /**
  * Two real resources for the USAREUR driving test/license — re-verified
- * 2026-08-31 after Terry reported the practice-test link 404ing on his own
- * phone:
- *  - usareurpracticetest.com (the original pick) is confirmed DEAD as of
- *    this check — every fetch attempt (http and https) got a connection
- *    reset, not just a slow load, matching Terry's 404 report exactly.
- *    It's an old, non-SSL, volunteer-run ASP site; still referenced
- *    around the web as "the" community practice-test site, but not
- *    reliably up. Swapped for the Army's own official page instead:
- *    it demonstrably loads, and links the REAL study manual (not a
- *    third-party quiz), so it's a strictly better default even though
- *    it's not an interactive practice test.
- *  - JKO (jko.jten.mil) hosts the actual official course + exam ("USA 007"
- *    for the course, "USA 007B" for the exam) — this one genuinely
- *    satisfies the requirement, but needs a CAC or JKO account, which not
- *    everyone has yet at this point in the process, so it stays a second
- *    link rather than the primary one. One honest caveat: automated
- *    fetches to this specific host hit a TLS chain-verification error in
- *    testing — possibly nothing (a common false alarm for .mil domains
- *    from tools that lack the DoD root CA), but if anyone reports this
- *    link failing on a real phone too, re-check it the same way the
- *    practice-test link just got caught.
+ * twice on 2026-08-31, first after Terry reported the practice-test link
+ * 404ing, then again after Terry independently pasted the full text of
+ * the official Army Garrison Stuttgart page while checking the fix:
+ *
+ *  - usareurpracticetest.com (the original pick) is confirmed DEAD — every
+ *    fetch attempt (http and https) got a connection reset, not just a
+ *    slow load, matching Terry's 404 report exactly. It's an old, non-SSL,
+ *    volunteer-run ASP site; still referenced around the web as "the"
+ *    community practice-test site, but not reliably up. Do not resurrect
+ *    this URL without re-checking it first.
+ *  - JKO (jko.jten.mil), promoted to the PRIMARY link after re-reading the
+ *    Army's own page text: it's not gated behind CAC access the way the
+ *    first pass here assumed — non-CAC family members can request a free
+ *    "sponsored account" using the DoD ID number on their ID card, so this
+ *    is realistically reachable by most customers, not just servicemembers
+ *    with a CAC. Search course "USA 007", complete it, then take exam
+ *    "USA 007B" — the certification is valid 60 days. This is better than
+ *    a practice quiz anyway: it's the REAL exam, doable online before a
+ *    PCS move, not a proxy for it.
+ *  - The Stuttgart garrison page (`USAREUR_STUDY_GUIDE_URL`) is kept as a
+ *    secondary "study first" link — it hosts the real drivers manual and
+ *    road signs, but Terry independently confirmed (by pasting its full
+ *    text back) that it is NOT an interactive practice test, just official
+ *    info — don't describe it as one in UI copy.
+ *  - Explicitly NOT linked: the Quizlet USAREUR flashcard sets Terry found
+ *    while checking this (both quizlet.com/512909008/... and
+ *    quizlet.com/de/619589929/...). User-submitted content for a real
+ *    government exam, unverifiable for accuracy the way the two links
+ *    above are (Quizlet also blocks this app's own fetch tooling with a
+ *    403 either way, so neither could be checked even superficially).
+ *    Terry flagged the same accuracy concern independently — don't add
+ *    either without a better way to verify them first.
  */
-export const USAREUR_STUDY_GUIDE_URL = 'https://home.army.mil/stuttgart/my-garrison/all-services/drivers-testing';
 export const USAREUR_OFFICIAL_JKO_URL = 'https://jko.jten.mil/';
+export const USAREUR_STUDY_GUIDE_URL = 'https://home.army.mil/stuttgart/my-garrison/all-services/drivers-testing';
 
 /**
  * What the deal-intake screen gathers before a customer ever meets their

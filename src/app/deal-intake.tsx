@@ -255,14 +255,19 @@ export default function DealIntakeScreen() {
             <View style={styles.licenseCard}>
               <IdCardIcon />
               <Text style={styles.licenseCardText}>
-                Get ahead of it now so it&apos;s ready when you land &mdash; the official study manual and road
-                signs, no login needed.
+                You can take the actual exam online before you even land &mdash; not just practice for it. No CAC?
+                Family members can request a free sponsored account instead.
               </Text>
-              <Pressable style={styles.licenseLinkButton} onPress={() => Linking.openURL(USAREUR_STUDY_GUIDE_URL)}>
-                <Text style={styles.licenseLinkButtonLabel}>Study the Official Manual  →</Text>
+              <Pressable style={styles.licenseLinkButton} onPress={() => Linking.openURL(USAREUR_OFFICIAL_JKO_URL)}>
+                <Text style={styles.licenseLinkButtonLabel}>Take the Exam Online (JKO)  →</Text>
               </Pressable>
-              <Text style={styles.licenseSubLink} onPress={() => Linking.openURL(USAREUR_OFFICIAL_JKO_URL)}>
-                Already have CAC/JKO access? Take the official course (USA 007) &amp; exam (USA 007B) →
+              <Text style={styles.licenseHint}>
+                On JKO, search course <Text style={styles.licenseHintBold}>USA 007</Text>, complete it, then take
+                exam <Text style={styles.licenseHintBold}>USA 007B</Text>. Your score is valid 60 days, so it&apos;s
+                worth timing this close to your move rather than doing it too early.
+              </Text>
+              <Text style={styles.licenseSubLink} onPress={() => Linking.openURL(USAREUR_STUDY_GUIDE_URL)}>
+                Want to study the manual first? →
               </Text>
             </View>
           ) : (
@@ -459,6 +464,7 @@ const styles = StyleSheet.create({
   licenseSideSlotLabel: { fontFamily: Fonts.bodySemibold, fontSize: 12, color: Colors.textMuted },
   licenseThumbBadge: { position: 'absolute', top: 4, right: 4 },
   licenseHint: { fontFamily: Fonts.body, fontSize: 11.5, color: Colors.navy, opacity: 0.8, lineHeight: 16 },
+  licenseHintBold: { fontFamily: Fonts.bodyBold, opacity: 1 },
   gallery: { backgroundColor: Colors.navyTint },
   galleryBadge: {
     position: 'absolute',
