@@ -80,7 +80,11 @@ export async function fetchInventoryList(): Promise<InventoryListItem[]> {
     const detailUrl = hrefMatch[1];
     const { year, title } = parseYearAndTitle(altMatch[1]);
     const slug = slugFromUrl(detailUrl);
-    const stockMatch = slug.match(/-([a-z]{2}\d+)$/i);
+    // 2 letters for a normal stock number (DE9917), but 3 for an EU-spec
+    // car that's never been registered on the USAREUR system (DEN12345 —
+    // the extra "N" is real, not a typo; see docs/deal-flow-roadmap.md,
+    // "EU-spec DEN stock numbers").
+    const stockMatch = slug.match(/-([a-z]{2,3}\d+)$/i);
 
     items.push({
       slug,

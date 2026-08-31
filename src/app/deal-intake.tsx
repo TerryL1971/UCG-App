@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Dimensions, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CameraIcon, CheckCircleIcon, IdCardIcon } from '@/components/icons';
@@ -14,7 +14,7 @@ import {
   usareurBases,
   whatsappChatUrl,
   USAREUR_OFFICIAL_JKO_URL,
-  USAREUR_PRACTICE_TEST_URL,
+  USAREUR_STUDY_GUIDE_URL,
   type DealIntake,
   type LicenseStatus,
   type PaymentMethod,
@@ -23,6 +23,10 @@ import { useAuth } from '@/lib/auth-context';
 import { useDeal } from '@/lib/deal-context';
 import { useDealIntake } from '@/lib/deal-intake-context';
 import { compressPhoto } from '@/lib/image';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+type LicenseSide = 'front' | 'back';
 
 /**
  * The screen that replaces jumping straight from "Choose This Car" to a
@@ -48,14 +52,15 @@ export default function DealIntakeScreen() {
   const [financingLender, setFinancingLender] = useState('');
   const [financingDownPayment, setFinancingDownPayment] = useState('');
   const [licenseStatus, setLicenseStatus] = useState<LicenseStatus>('not_yet');
-  const [licensePhotoUri, setLicensePhotoUri] = useState<string | null>(null);
-  const [isCapturingLicense, setIsCapturingLicense] = useState(false);
+  const [licensePhotoFrontUri, setLicensePhotoFrontUri] = useState<string | null>(null);
+  const [licensePhotoBackUri, setLicensePhotoBackUri] = useState<string | null>(null);
+  const [capturingSide, setCapturingSide] = useState<LicenseSide | null>(null);
   const [notes, setNotes] = useState('');
 
   const isOtherBase = base === 'Other';
   const effectiveBase = isOtherBase ? otherBase.trim() : base;
 
-  const captureLicense = async (useCamera: boolean) => {
+  const captureLicense = async (side: LicenseSide, useCamera: boolean) => {
     const permission = useCamera
       ? await ImagePicker.requestCameraPermissionsAsync()
       : await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -68,18 +73,20 @@ export default function DealIntakeScreen() {
     const result = await launch({ mediaTypes: ['images'], quality: 0.8 });
     if (result.canceled || !result.assets[0]) return;
 
-    setIsCapturingLicense(true);
+    setCapturingSide(side);
     try {
-      setLicensePhotoUri(await compressPhoto(result.assets[0].uri));
+      const compressed = await compressPhoto(result.assets[0].uri);
+      if (side === 'front') setLicensePhotoFrontUri(compressed);
+      else setLicensePhotoBackUri(compressed);
     } finally {
-      setIsCapturingLicense(false);
+      setCapturingSide(null);
     }
   };
 
-  const promptLicenseSource = () => {
-    Alert.alert('Add Your License', undefined, [
-      { text: 'Take Photo', onPress: () => captureLicense(true) },
-      { text: 'Choose from Library', onPress: () => captureLicense(false) },
+  const promptLicenseSource = (side: LicenseSide) => {
+    Alert.alert(`Add ${side === 'front' ? 'Front' : 'Back'} of License`, undefined, [
+      { text: 'Take Photo', onPress: () => captureLicense(side, true) },
+      { text: 'Choose from Library', onPress: () => captureLicense(side, false) },
       { text: 'Cancel', style: 'cancel' },
     ]);
   };
@@ -98,13 +105,14 @@ export default function DealIntakeScreen() {
       financingLender: financingLender.trim(),
       financingDownPayment: financingDownPayment.trim(),
       licenseStatus,
-      licensePhotoUri,
+      licensePhotoFrontUri,
+      licensePhotoBackUri,
       notes: notes.trim(),
     };
     submitIntake(intake);
 
     const lines = [
-      `Hi ${salesperson.name.split(' ')[0]}, I'd like to start a deal on the ${carLabel}.`,
+      `Hi, I'd like to start a deal on the ${carLabel}.`,
       '',
       `Name: ${intake.fullName}`,
       `Contact: ${intake.contact}`,
@@ -115,10 +123,11 @@ export default function DealIntakeScreen() {
       if (intake.financingLender) lines.push(`Preferred lender: ${intake.financingLender}`);
       if (intake.financingDownPayment) lines.push(`Planned down payment: ${intake.financingDownPayment}`);
     }
+    const licensePhotoCount = [intake.licensePhotoFrontUri, intake.licensePhotoBackUri].filter(Boolean).length;
     lines.push(
       `USAREUR license: ${
         intake.licenseStatus === 'have'
-          ? `Already have one${intake.licensePhotoUri ? ' (photo saved in the app)' : ''}`
+          ? `Already have one${licensePhotoCount ? ` (${licensePhotoCount === 2 ? 'front & back' : 'front'} photo saved in the app)` : ''}`
           : 'Still need to get one'
       }`,
     );
@@ -131,6 +140,21 @@ export default function DealIntakeScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <ScreenHeader title="Start Your Deal" subtitle={carLabel} />
+
+      {car && car.images.length > 0 && (
+        <View>
+          <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={styles.gallery}>
+            {car.images.map((uri) => (
+              <Image key={uri} source={{ uri }} style={{ width: SCREEN_WIDTH, height: 170 }} contentFit="cover" />
+            ))}
+          </ScrollView>
+          {car.images.length > 1 && (
+            <View style={styles.galleryBadge}>
+              <Text style={styles.galleryBadgeText}>Swipe for all {car.images.length} photos</Text>
+            </View>
+          )}
+        </View>
+      )}
 
       <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent}>
         <Text style={styles.intro}>
@@ -231,11 +255,11 @@ export default function DealIntakeScreen() {
             <View style={styles.licenseCard}>
               <IdCardIcon />
               <Text style={styles.licenseCardText}>
-                Get ahead of it now so it&apos;s ready when you land. This free practice site doesn&apos;t need a
-                CAC or .mil login &mdash; anyone can use it.
+                Get ahead of it now so it&apos;s ready when you land &mdash; the official study manual and road
+                signs, no login needed.
               </Text>
-              <Pressable style={styles.licenseLinkButton} onPress={() => Linking.openURL(USAREUR_PRACTICE_TEST_URL)}>
-                <Text style={styles.licenseLinkButtonLabel}>Practice the Test  →</Text>
+              <Pressable style={styles.licenseLinkButton} onPress={() => Linking.openURL(USAREUR_STUDY_GUIDE_URL)}>
+                <Text style={styles.licenseLinkButtonLabel}>Study the Official Manual  →</Text>
               </Pressable>
               <Text style={styles.licenseSubLink} onPress={() => Linking.openURL(USAREUR_OFFICIAL_JKO_URL)}>
                 Already have CAC/JKO access? Take the official course (USA 007) &amp; exam (USA 007B) →
@@ -243,34 +267,23 @@ export default function DealIntakeScreen() {
             </View>
           ) : (
             <View style={styles.licenseCard}>
-              {licensePhotoUri ? (
-                <>
-                  <View style={styles.licenseThumbWrap}>
-                    <Image source={{ uri: licensePhotoUri }} style={StyleSheet.absoluteFill} contentFit="cover" />
-                    <View style={styles.licenseThumbBadge}>
-                      <CheckCircleIcon />
-                    </View>
-                  </View>
-                  <Pressable style={styles.licenseLinkButtonOutline} onPress={promptLicenseSource}>
-                    <Text style={styles.licenseLinkButtonOutlineLabel}>Retake Photo</Text>
-                  </Pressable>
-                </>
-              ) : (
-                <>
-                  <Text style={styles.licenseCardText}>
-                    Scan it now so it&apos;s already on file &mdash; one less thing to bring in later.
-                  </Text>
-                  <Pressable
-                    style={styles.licenseLinkButton}
-                    disabled={isCapturingLicense}
-                    onPress={promptLicenseSource}>
-                    <CameraIcon color="#fff" strokeWidth={2.2} />
-                    <Text style={styles.licenseLinkButtonLabel}>
-                      {isCapturingLicense ? 'Saving...' : 'Scan My License'}
-                    </Text>
-                  </Pressable>
-                </>
-              )}
+              <Text style={styles.licenseCardText}>
+                Scan the front and back now so it&apos;s already on file &mdash; one less thing to bring in later.
+              </Text>
+              <View style={styles.licenseSideRow}>
+                <LicenseSideSlot
+                  label="Front"
+                  uri={licensePhotoFrontUri}
+                  isCapturing={capturingSide === 'front'}
+                  onPress={() => promptLicenseSource('front')}
+                />
+                <LicenseSideSlot
+                  label="Back"
+                  uri={licensePhotoBackUri}
+                  isCapturing={capturingSide === 'back'}
+                  onPress={() => promptLicenseSource('back')}
+                />
+              </View>
               <Text style={styles.licenseHint}>
                 Saved in the app for {salesperson.name.split(' ')[0]} to view &mdash; WhatsApp can&apos;t attach it
                 automatically yet, so mention it and he&apos;ll pull it up.
@@ -293,10 +306,40 @@ export default function DealIntakeScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <Button label="Send to My Salesperson  →" onPress={handleSubmit} />
+        <Button label="Submit for a Salesperson  →" onPress={handleSubmit} />
         <Text style={styles.footerHint}>Opens WhatsApp with everything above filled in for you.</Text>
       </View>
     </SafeAreaView>
+  );
+}
+
+function LicenseSideSlot({
+  label,
+  uri,
+  isCapturing,
+  onPress,
+}: {
+  label: string;
+  uri: string | null;
+  isCapturing: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable style={styles.licenseSideSlot} disabled={isCapturing} onPress={onPress}>
+      {uri ? (
+        <>
+          <Image source={{ uri }} style={StyleSheet.absoluteFill} contentFit="cover" />
+          <View style={styles.licenseThumbBadge}>
+            <CheckCircleIcon />
+          </View>
+        </>
+      ) : (
+        <>
+          <CameraIcon color={Colors.textFaint} strokeWidth={2} />
+          <Text style={styles.licenseSideSlotLabel}>{isCapturing ? 'Saving...' : `Scan ${label}`}</Text>
+        </>
+      )}
+    </Pressable>
   );
 }
 
@@ -392,17 +435,6 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   licenseLinkButtonLabel: { fontFamily: Fonts.bodyBold, fontSize: 13.5, color: '#fff' },
-  licenseLinkButtonOutline: {
-    height: 40,
-    paddingHorizontal: 16,
-    borderRadius: Radius.md,
-    borderWidth: 1.5,
-    borderColor: Colors.navy,
-    alignItems: 'center',
-    justifyContent: 'center',
-    alignSelf: 'flex-start',
-  },
-  licenseLinkButtonOutlineLabel: { fontFamily: Fonts.bodySemibold, fontSize: 13, color: Colors.navy },
   licenseSubLink: {
     fontFamily: Fonts.bodySemibold,
     fontSize: 12.5,
@@ -410,15 +442,34 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
     lineHeight: 18,
   },
-  licenseThumbWrap: {
-    width: 96,
-    height: 64,
+  licenseSideRow: { flexDirection: 'row', gap: 10 },
+  licenseSideSlot: {
+    width: 130,
+    height: 84,
     borderRadius: Radius.md,
-    overflow: 'hidden',
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: '#C9CDD9',
     backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    overflow: 'hidden',
   },
+  licenseSideSlotLabel: { fontFamily: Fonts.bodySemibold, fontSize: 12, color: Colors.textMuted },
   licenseThumbBadge: { position: 'absolute', top: 4, right: 4 },
   licenseHint: { fontFamily: Fonts.body, fontSize: 11.5, color: Colors.navy, opacity: 0.8, lineHeight: 16 },
+  gallery: { backgroundColor: Colors.navyTint },
+  galleryBadge: {
+    position: 'absolute',
+    bottom: 10,
+    alignSelf: 'center',
+    backgroundColor: 'rgba(39,51,104,0.85)',
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  galleryBadgeText: { fontFamily: Fonts.bodySemibold, fontSize: 11.5, color: '#fff' },
   footer: { paddingHorizontal: Spacing.xxl, paddingTop: 8, paddingBottom: 8 },
   footerHint: { fontFamily: Fonts.body, fontSize: 11.5, color: Colors.textMuted, textAlign: 'center', marginTop: 10 },
 });

@@ -1,0 +1,166 @@
+# Deal flow roadmap — what's next after "Start Your Deal"
+
+Notes from David's first real look at the app (Aug 31), captured in full
+so nothing gets lost — Terry had two minutes and more to say. Nothing
+below is built yet except where marked **(shipped)**. Treat this as the
+backlog for the deal-intake → My Deal pipeline, roughly in the order a
+real customer would hit it.
+
+## Shipped this pass (Aug 31)
+
+- **Car photo gallery on the deal-intake screen.** Once a customer
+  chooses a car, they were losing access to its photos — the detail
+  page's gallery doesn't follow them into the flow. `deal-intake.tsx`
+  now shows the same swipeable gallery (all of `car.images`, not a
+  subset) right under the header, with a "swipe for all N photos" hint.
+- **USAREUR practice-test link fixed.** The original
+  `usareurpracticetest.com` link Terry hit a 404 on is confirmed dead —
+  independently reproduced here (connection reset on both http and
+  https, every attempt). Replaced with the U.S. Army's own official
+  page (`home.army.mil/.../drivers-testing`), confirmed loading, which
+  links the real Drivers Handbook & Examination Manual and German Road
+  Signs page directly — no login needed, and more authoritative than
+  the old third-party quiz site besides. The secondary JKO link (course
+  USA 007 / exam USA 007B) is unchanged, but flagged in a code comment:
+  automated checks hit a TLS error on `jko.jten.mil` that's likely a
+  false alarm (common for tools without the DoD root CA) — worth a real
+  on-device check, the same way the dead link just got caught.
+- **License scan is now front AND back**, not one photo — two separate
+  capture slots on the deal-intake screen (`DealIntake.licensePhotoFrontUri`
+  / `licensePhotoBackUri`).
+- **Button copy no longer presumes a specific matched salesperson.**
+  "Send to My Salesperson" → **"Submit for a Salesperson"** — see the
+  open question below, this doesn't solve assignment, just stops the
+  copy from lying about it.
+- **EU-spec `DEN*****` stock numbers parse correctly.** The inventory
+  scraper's stock-number regex only matched 2-letter prefixes (`DE9917`)
+  and would have silently mis-parsed a 3-letter `DEN`-prefixed one
+  (`src/lib/ucg-inventory.ts`) — fixed before it ever shipped a visible
+  bug, since Terry's note about DEN cars is what surfaced the gap.
+
+## Open question: multiple salespeople per location
+
+Terry flagged this as genuinely undecided, not just undocumented:
+locations may have more than one salesperson, so "the" salesperson
+(`mock-data.ts`'s single hardcoded `salesperson`) doesn't reflect
+reality. Ideas floated, none chosen yet:
+
+- Someone receives every "Submit for a Salesperson" message and
+  manually assigns it to a specific person.
+- A per-location list of salespeople with round-robin/alternating
+  assignment.
+
+**Nothing changed in code for this** beyond the button copy — assigning
+a specific person algorithmically needs a real backend regardless of
+which model is picked (something has to hold "whose turn is it" or
+"who's free" state), so this waits for a decision, not an implementation
+guess. One reading worth considering: today's single `salesperson`
+mock could keep representing whoever triages incoming submissions (a
+real, common small-business pattern — one shared intake number, humans
+sort it out from there) rather than needing to be replaced outright.
+
+## Make A Deposit (new My Deal step, after "Matched with Salesperson")
+
+- A deposit puts a **5-day hold** on the car.
+- The hold reserves the car both on the public website and in
+  DealerTeam.
+- Once reserved in DealerTeam, that step "can be checked" — i.e. this
+  is a manual confirmation (someone checks DealerTeam and marks it),
+  not something the app can verify itself without the API access still
+  being sorted out (see
+  [docs/salesforce-dealerteam-integration-plan.md](./salesforce-dealerteam-integration-plan.md)).
+- Not yet specified: deposit amount, currency, how the deposit itself
+  is actually collected (this app has no payment processing today —
+  that's a separate, bigger question from just adding a timeline step).
+
+## Warranty upsell: 1-Year vs. 2-Year Premium Protection Plan (PPP)
+
+Real terms, from UCG's own flyers (preserved exactly, not paraphrased,
+since these are the actual coverage terms customers will see):
+
+| | 1-Year Comprehensive Warranty | 2-Year Premium Protection Plan |
+|---|---|---|
+| Coverage | Comprehensive warranty — only what's listed is covered | Everything in the 1-year plan **plus** all electronic and mechanical components, excluding wear-and-tear items and fluids ("bumper to bumper") |
+| Deductible | On cars over 40,000 miles, a deductible applies to parts (labor is 100% covered either way) | **$0 deductible**, parts and labor |
+| Rental car | €60/day after 4 days | €60/day after 4 days, **plus priority access to UCG's small fleet of courtesy cars** |
+| Mileage | — | **Unlimited mileage** |
+| Towing | — | Included |
+| Price | Included in the advertised price | **$999** (≈ $16–18/mo on a standard loan, 53–60¢/day) |
+| Max claim over the coverage period | €3,300 | €10,000 |
+| Eligibility | — | Vehicle must be newer than 2019 **and** under 70,000 miles on the odometer |
+
+Full 1-year comprehensive coverage list (for reference, this is what
+"comprehensive" actually includes): Engine, Manual & Auto Transmission,
+Axle/Transfer Case, Transmission Shafts, Steering, Brakes, Fuel System,
+Electrical System, Comfort Electric (power windows/sunroof/central
+locking), Exhaust System (Lambda probe), Safety System (airbags, seat
+belt pre-tensioners), Cooling System, and Mobility (rental/towing
+reimbursement up to €60/day, 4 days max). Full 2-year list is the same
+categories, described as "bumper to bumper... all electronic and
+mechanical components excluding wear and tear items and fluids," plus
+the higher claim cap and courtesy-car access above.
+
+**Planned flow (not built yet):** after the deposit step, offer the
+2-year PPP. If declined, show a second screen offering an insurance
+quote from **American Auto Nation** instead (see below) rather than
+just dropping the subject.
+
+## If PPP is declined: American Auto Nation insurance quote
+
+Terry showed [americanautonation.com](https://americanautonation.com) —
+a real site ("Tailor-made insurance for USAREUR drivers and expats"),
+which already has its own WhatsApp chat widget on the page. Planned
+integration:
+
+- A **WhatsApp submission**, same pattern as the deal-intake handoff —
+  not a live API, a formatted message.
+- Needs to carry **all the relevant car + customer info already
+  gathered** (from the deal intake), since American Auto Nation will
+  ask for more detail to actually quote — the point is not re-asking
+  the customer everything from scratch a second time.
+- Not yet specified: exactly what American Auto Nation needs beyond
+  what deal-intake already collects, and whether this is a formal
+  referral relationship or just "here's a resource" — worth confirming
+  with them directly before building the handoff, the same way the
+  DealerTeam architecture doc flags open questions rather than guessing.
+
+## EU-spec cars with a `DEN*****` stock number
+
+If a car is EU-spec and has **never been registered on the USAREUR
+system**, its stock number carries an extra letter: `DEN*****` instead
+of `DE*****` (now parses correctly — see "Shipped" above). These need a
+different process:
+
+- The customer needs to get a **"Super" VAT Form** from the VAT office.
+- That form needs a **cost estimate from UCG**, downloadable/printable
+  from the app (or site).
+- The cost estimate needs to be **stamped at the UCG location** where
+  they're buying the car.
+
+Not yet built: generating/hosting that cost-estimate document, or
+anything UI-side that tells a customer with a `DEN` car they're on a
+different path. This is a real, distinct workflow, not a variant of the
+normal purchase flow — needs its own screen(s) once scoped further.
+
+## Financing application: customer-private, salesperson sees only a checkbox
+
+The financing application's actual contents are private to the
+customer — the salesperson shouldn't see the details, only that it's
+been **completed and submitted**. Planned: a simple checked/unchecked
+indicator on the salesperson- or timeline-facing side (a checkbox, not
+a data dump), separate from wherever the actual application content
+lives.
+
+## Cash path: wire transfer + PIF
+
+If paying cash (chosen on the deal-intake screen already —
+`paymentMethod: 'cash'`), the customer needs **wire transfer
+instructions** made available in the app, and a **PIF (Paid In Full)**
+confirmation once funds arrive — presumably a manual check-off once
+UCG confirms receipt, mirroring the deposit step's "can be checked"
+pattern above.
+
+## Not covered yet
+
+Terry had more to go through and ran out of time before a meeting —
+expect this doc to grow. Don't treat the above as the complete list.

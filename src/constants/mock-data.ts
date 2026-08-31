@@ -173,20 +173,30 @@ export const usareurBases: string[] = [
 ];
 
 /**
- * Two real resources for the USAREUR driving test/license — found the same
- * way the Google review links were (checked, not guessed), because sending
- * someone to a fabricated URL here would actually waste their time before
- * a PCS move:
- *  - usareurpracticetest.com is a free study/practice site that doesn't
- *    require a CAC or .mil account, so it works for anyone (even a
- *    dependent who hasn't out-processed yet) — the right one to lead with.
+ * Two real resources for the USAREUR driving test/license — re-verified
+ * 2026-08-31 after Terry reported the practice-test link 404ing on his own
+ * phone:
+ *  - usareurpracticetest.com (the original pick) is confirmed DEAD as of
+ *    this check — every fetch attempt (http and https) got a connection
+ *    reset, not just a slow load, matching Terry's 404 report exactly.
+ *    It's an old, non-SSL, volunteer-run ASP site; still referenced
+ *    around the web as "the" community practice-test site, but not
+ *    reliably up. Swapped for the Army's own official page instead:
+ *    it demonstrably loads, and links the REAL study manual (not a
+ *    third-party quiz), so it's a strictly better default even though
+ *    it's not an interactive practice test.
  *  - JKO (jko.jten.mil) hosts the actual official course + exam ("USA 007"
  *    for the course, "USA 007B" for the exam) — this one genuinely
  *    satisfies the requirement, but needs a CAC or JKO account, which not
- *    everyone has yet at this point in the process, so it's offered as a
- *    second link rather than the only one.
+ *    everyone has yet at this point in the process, so it stays a second
+ *    link rather than the primary one. One honest caveat: automated
+ *    fetches to this specific host hit a TLS chain-verification error in
+ *    testing — possibly nothing (a common false alarm for .mil domains
+ *    from tools that lack the DoD root CA), but if anyone reports this
+ *    link failing on a real phone too, re-check it the same way the
+ *    practice-test link just got caught.
  */
-export const USAREUR_PRACTICE_TEST_URL = 'https://www.usareurpracticetest.com/';
+export const USAREUR_STUDY_GUIDE_URL = 'https://home.army.mil/stuttgart/my-garrison/all-services/drivers-testing';
 export const USAREUR_OFFICIAL_JKO_URL = 'https://jko.jten.mil/';
 
 /**
@@ -203,6 +213,10 @@ export interface DealIntake {
   financingLender: string;
   financingDownPayment: string;
   licenseStatus: LicenseStatus;
-  licensePhotoUri: string | null;
+  /** Both sides, not one photo — a license needs its back read too
+   * (class/restrictions, and for a German-issued license, the reverse
+   * side carries data the front doesn't). */
+  licensePhotoFrontUri: string | null;
+  licensePhotoBackUri: string | null;
   notes: string;
 }

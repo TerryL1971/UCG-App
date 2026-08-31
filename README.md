@@ -42,6 +42,10 @@ first, or device testing breaks).
   salesperson would type into Dealer Team (Salesforce) to open a real
   deal (`DealIntake` in `mock-data.ts`, held in-memory by
   `src/lib/deal-intake-context.tsx`):
+  - A **swipeable gallery of the car's own photos** at the top of the
+    screen (all of `car.images`, same pattern as the detail page) — added
+    after David's first look at the app surfaced that the customer loses
+    access to the car's photos the moment they leave the detail page.
   - Name, a way to reach them, and which US base they're headed to (a
     curated list of major US military communities in Germany, plus a
     free-text "Other" — the list will always be incomplete, so it doesn't
@@ -49,23 +53,28 @@ first, or device testing breaks).
   - Cash or financing, with lender/down-payment fields that only appear
     once financing is picked.
   - **USAREUR driver's license status** — genuinely researched, not
-    invented: if they haven't gotten one yet, a link to
-    [usareurpracticetest.com](https://www.usareurpracticetest.com/) (free
-    study/practice, no CAC or .mil account needed) plus a secondary link
-    to the *official* course+exam on [JKO](https://jko.jten.mil/) ("USA
-    007" / "USA 007B") for anyone who already has CAC access. If they
-    already have one, they can scan/photograph it straight into the app
-    (same `expo-image-picker` + `compressPhoto` pattern as Sell It Back's
-    photo grid, just a single photo here) instead of bringing the physical
-    card in later.
+    invented, and re-verified once already: the original practice-test
+    link 404'd on a real device, got independently reproduced (dead site,
+    not a typo), and was swapped for the U.S. Army's own official study
+    page (`home.army.mil/.../drivers-testing`) instead of a third-party
+    quiz site. A secondary link still points to the *official* course+exam
+    on [JKO](https://jko.jten.mil/) ("USA 007" / "USA 007B") for anyone
+    with CAC access. If they already have a license, they scan **both the
+    front and back** straight into the app (same `expo-image-picker` +
+    `compressPhoto` pattern as Sell It Back's photo grid, two slots here)
+    instead of bringing the physical card in later.
   - Submitting **opens WhatsApp with everything above pre-filled** as a
-    message to the salesperson (`whatsappChatUrl(salesperson.whatsapp,
-    message)` — the same helper, now used with its optional message
-    argument for the first time), so the salesperson picks up the
-    conversation already knowing the basics. One honest limit: WhatsApp's
-    `wa.me` links can't attach a photo automatically, so the license photo
-    stays saved in the app and the message just flags that it's there —
-    documented in-app, not silently pretended to work.
+    message (`whatsappChatUrl(salesperson.whatsapp, message)` — the same
+    helper, now used with its optional message argument for the first
+    time). The button reads **"Submit for a Salesperson"**, not "Send to
+    My Salesperson" — a location can have more than one salesperson and
+    how that gets assigned is still an open question (see
+    [docs/deal-flow-roadmap.md](./docs/deal-flow-roadmap.md)), so the copy
+    stopped presuming a specific person before that's decided. One honest
+    limit: WhatsApp's `wa.me` links can't attach a photo automatically, so
+    the license photos stay saved in the app and the message just flags
+    that they're there — documented in-app, not silently pretended to
+    work.
   - The salesperson-match screen shows a short confirmation once intake
     was submitted ("Marcus already has what you sent — Ramstein / KMC,
     financing...") instead of acting like the two screens don't know about
@@ -75,7 +84,10 @@ first, or device testing breaks).
     further-along-than-day-one mock it always was. Gating the *actual*
     timeline on this intake (starting a brand-new deal at step zero, etc.)
     is a real next step, not done here — the user asked to leave the
-    timeline alone for now while this got built.
+    timeline alone for now while this got built. What comes *after* this
+    screen — a deposit/hold step, a warranty upsell, an insurance
+    referral, and more — is written up, not built yet, in
+    [docs/deal-flow-roadmap.md](./docs/deal-flow-roadmap.md).
 - **The journey timeline is a winding road with signs, not a straight
   line** (`src/components/timeline-road.tsx`) — an SVG road curving side
   to side down the screen, each step a small road-sign marker (one
@@ -226,7 +238,8 @@ src/
 brand/           Source logo files + extracted brand colors
 design-mockup/   The original Claude Design canvas this app was built from
 docs/            Specs/plans for integrations we're waiting on (WordPress
-                 inventory API, Salesforce DealerTeam sync)
+                 inventory API, Salesforce DealerTeam sync) and the deal-
+                 flow roadmap (deposit, warranty, insurance, DEN/VAT, more)
 ```
 
 ## Known gaps worth knowing about
