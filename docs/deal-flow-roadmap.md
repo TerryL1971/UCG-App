@@ -184,9 +184,14 @@ sort it out from there) rather than needing to be replaced outright.
   check: no.** What it actually needs, so it's ready to wire up the
   moment credentials exist:
   - A real PayPal Business account, with API credentials (Client ID +
-    Secret) from the PayPal Developer Dashboard — sandbox credentials
+    Secret) from the PayPal Developer Dashboard — **sandbox credentials
     first for testing, live credentials only once this is genuinely
-    ready for real money.
+    ready for real money.** Sandbox credentials are free and available
+    immediately (developer.paypal.com, no business verification needed)
+    — this doesn't have to wait on the real business account at all; see
+    `docs/backend-and-ai-agent-plan.md`'s "Strategy: fake the APIs we
+    don't control yet" for why Sandbox is the right move here instead of
+    a homemade fake.
   - Same rule as every other credential in this app: PayPal secrets
     can't live in the shipped app. Collecting a deposit needs a real
     server-side call (PayPal's Orders API — create an order server-side,

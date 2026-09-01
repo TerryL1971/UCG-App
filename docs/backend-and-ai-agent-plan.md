@@ -29,6 +29,59 @@ customer accounts (replacing the AsyncStorage stand-in in
 `auth-context.tsx`), and a place for staff to log in and look at it.
 Build that once, then point a dashboard and an agent at it.
 
+## Strategy: fake the APIs we don't control yet, real ones we do
+
+Terry's framing (Sept 1): build minimized fakes of DealerTeam, PayPal,
+and anything else that needs an API, so development isn't blocked
+waiting on external access — then swap the real thing in behind the
+same interface once it exists. Good instinct, but it splits into two
+different answers depending on the API, and conflating them would waste
+effort:
+
+- **PayPal — don't build a fake, use PayPal's real Sandbox.** PayPal
+  already provides exactly this: a free developer account
+  (developer.paypal.com) generates sandbox business/buyer test accounts
+  and API credentials that hit the *same* endpoints and *same*
+  request/response shapes as production — just fake money. Building
+  against Sandbox from day one means "swap fake for real" becomes
+  swapping which credentials load, not a code change. No business
+  verification needed to get Sandbox credentials — this is a real,
+  available unblocker *today*, independent of the live PayPal Business
+  account Terry still needs to provide for the real thing. Applies the
+  same "secret never in the client" rule as everything else — a PayPal
+  route would follow the identical `chat+api.ts` pattern (server route,
+  key in `.env`).
+- **DealerTeam — a genuine custom fake makes sense.** No public sandbox
+  exists for it, and — separately from "for testing" — real API access
+  may never be affordable on UCG's plan (see
+  [docs/salesforce-dealerteam-integration-plan.md](./salesforce-dealerteam-integration-plan.md)'s
+  still-unanswered cost question). This is not new scope: it's exactly
+  **Phase 1a** from that doc (a small UCG-owned backend, independent of
+  DealerTeam access) — reframed with a sharper reason to actually start
+  it now (unblocks testing) rather than only "in case access never
+  comes through." Building the fake deal/salesperson/status data model
+  *is* building that backend's schema — same work, not two efforts.
+- **The AI agent already follows a lighter version of this idea** —
+  `chat+api.ts` degrades to an honest "not connected yet" fallback
+  when no real `ANTHROPIC_API_KEY` exists, rather than faking a
+  response. Worth deciding whether DealerTeam's fake should simulate
+  *plausible data* (a fake deal record with fake but realistic values)
+  or stay an honest "not connected" stub the way the AI agent does —
+  a fake deal record is more useful for testing UI states (what does a
+  financing-approved deal actually look like end to end?) but risks
+  being mistaken for real if anyone forgets it's fake. Recommendation:
+  simulate real-looking data, but label it unmistakably in the UI
+  during this phase (a debug banner, or similar) so it's never
+  ambiguous.
+
+**The discipline that makes "swap later" actually cheap:** the app
+should call one stable internal interface (e.g. "get this deal's
+status," "create a deposit") — never DealerTeam- or PayPal-specific
+shapes directly. Only the implementation behind that interface changes
+when the real API replaces the fake one. Skipping this and wiring
+DealerTeam/PayPal specifics directly into screens would mean "swap
+later" requires rewriting call sites, not just an implementation.
+
 ## Recommended backend: a managed platform, not a hand-rolled server
 
 The original DealerTeam research (Node/Python + hosting + auth + a
