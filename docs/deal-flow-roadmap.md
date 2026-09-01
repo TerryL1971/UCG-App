@@ -231,6 +231,19 @@ sort it out from there) rather than needing to be replaced outright.
     only knows a payment succeeded because the client-side capture call
     returned `COMPLETED`, not from PayPal notifying the server directly.
     Fine for solo testing, not something to treat as production-solid.
+  - **Going live, when ready — what's actually a credential swap and
+    what isn't (Terry asked Sept 1):** swapping `PAYPAL_CLIENT_ID`/
+    `PAYPAL_CLIENT_SECRET` for live values and setting
+    `PAYPAL_API_BASE=https://api-m.paypal.com` is genuinely all the code
+    needs. But **live credentials don't exist until PayPal's Business
+    account is actually verified** — the sandbox dashboard shows a banner
+    ("Upgrade your account to PayPal for Business to view live
+    credentials") confirming this is still ahead, not done. And a
+    credential swap alone doesn't make the app reachable by a real
+    customer either — this route still only runs against `npx expo
+    start`'s local dev server; real hosting (see
+    `docs/backend-and-ai-agent-plan.md`) and a real (not $50 placeholder)
+    deposit amount both need to land before this is customer-facing.
   - Still open: deposit amount (fixed $ or a % of price?), currency
     (USD given pricing elsewhere is in $, or does a EUR option matter
     for EU-spec cars?), and what happens on a failed/abandoned PayPal
