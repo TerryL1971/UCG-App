@@ -122,6 +122,15 @@ PII**, not something to assume away or that a backend platform's
 "compliance-ready" marketing page settles on its own. This isn't legal
 advice and shouldn't be treated as it — flagging it here so it's a
 decision made on purpose, before real data exists, not discovered after.
+A fuller research briefing (GDPR, the German-specific Impressum
+requirement, and — the highest-stakes one — a real open question about
+whether this app's sales flow counts as a "distance contract" carrying
+a statutory right of withdrawal on a completed car sale) is in
+[docs/legal-considerations-germany.md](./legal-considerations-germany.md),
+with starting drafts of a
+[Privacy Policy](./privacy-policy-draft.md) and an
+[Impressum](./impressum-template.md) — none of it publishable as-is,
+all of it meant to make the actual conversation with counsel faster.
 
 ### How access would actually be controlled
 

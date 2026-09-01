@@ -273,8 +273,10 @@ brand/           Source logo files + extracted brand colors
 design-mockup/   The original Claude Design canvas this app was built from
 docs/            Specs/plans for integrations we're waiting on (WordPress
                  inventory API, Salesforce DealerTeam sync), the deal-flow
-                 roadmap (deposit, warranty, referrals, DEN/VAT, more), and
-                 the real-backend + management-dashboard + AI-agent plan
+                 roadmap (deposit, warranty, referrals, DEN/VAT, more), the
+                 real-backend + management-dashboard + AI-agent plan, and
+                 Germany/EU legal research + draft Privacy Policy/Impressum
+                 (none of it legal advice — starting points for counsel)
 ```
 
 ## Known gaps worth knowing about
