@@ -123,6 +123,45 @@ PII**, not something to assume away or that a backend platform's
 advice and shouldn't be treated as it — flagging it here so it's a
 decision made on purpose, before real data exists, not discovered after.
 
+### How access would actually be controlled
+
+- **Data residency:** provision the backend in an EU region if the
+  platform offers one — customers are physically in Germany, so this is
+  a real setting to pick deliberately, not an afterthought.
+- **Row-level security, not app-side filtering.** A customer's login
+  should only be able to query *their own* deal record, enforced at the
+  database level — not something the app merely agrees to respect,
+  which could be bypassed. Staff get a separate role with broader
+  (still not unlimited) access.
+- **The key embedded in the shipped app is a public, restricted key** —
+  same rule as the DealerTeam Connected App credentials: no
+  service-role/admin key ever ships inside app code.
+- **Documents (license front/back, condition photos) deserve tighter
+  handling than general profile fields** — a license photo is an ID
+  document. Worth a deliberate retention rule (purged after the deal
+  closes? kept N days?) rather than indefinite storage by default.
+
+### What the app stores will require, not just recommend
+
+- **A published Privacy Policy URL** — mandatory the moment the app
+  collects real account data; doesn't exist yet. Needs real legal
+  review given GDPR + operating in Germany — a starting draft can be
+  written, but shouldn't ship without a lawyer's eyes on the actual
+  language.
+- **Apple's App Privacy "Nutrition Label"** and **Google Play's "Data
+  Safety" section** — mandatory declarations at submission time of
+  exactly what's collected and why, and whether it's shared with anyone
+  else (relevant the moment DealerTeam sync becomes real, since that
+  would be sharing customer data with a third-party system).
+- **Apple requires self-service account deletion** (App Store Review
+  Guideline 5.1.1(v)): if the app lets someone create an account, there
+  must be a way to delete that account *from inside the app*, not just
+  an email to support. This is the real-accounts version of the
+  "delete my test data" question already raised earlier — once
+  `auth-context.tsx`'s local stand-in becomes a real backend account,
+  this stops being a nice-to-have and becomes a hard submission
+  requirement, not optional polish.
+
 ## Open questions
 
 - Who owns the backend platform account — a personal account of Terry's,
@@ -137,3 +176,10 @@ decision made on purpose, before real data exists, not discovered after.
   truth and DealerTeam sync separately? Worth deciding once
   [[dealerteam-salesforce-confirmed]]'s open access question is answered,
   not now.
+- Who writes/reviews the actual Privacy Policy language, and on what
+  timeline relative to backend work starting? It's a submission blocker
+  for both stores, so it can't be left until the app is otherwise ready.
+- What's the retention rule for uploaded documents (license photos,
+  condition photos) — kept indefinitely, purged after the deal closes,
+  something else? Needs a real answer before storage is built, not
+  patched on after.
