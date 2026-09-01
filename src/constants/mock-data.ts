@@ -23,6 +23,15 @@ export interface Salesperson {
   whatsapp: string;
 }
 
+// FAKE NUMBER — has been since this file's very first version, long before
+// the AI agent's "Talk to a Human" fallback made it something a customer
+// might actually tap expecting a real person. 491700000000 doesn't reach
+// anyone. Needs UCG's real WhatsApp Business number (and to decide whose
+// number this actually is, now that "Marcus" himself may not exist as a
+// specific real person once assignment is real — see the open question in
+// docs/deal-flow-roadmap.md) before this goes anywhere near a real
+// customer. Every WhatsApp touchpoint in the app reads from this one
+// constant, so fixing it here fixes all of them at once.
 export const salesperson: Salesperson = {
   id: 'marcus-whitfield',
   name: 'Marcus Whitfield',

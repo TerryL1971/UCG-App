@@ -51,8 +51,20 @@ real customer would hit it.
   a Human" WhatsApp fallback for anything it can't answer. Full writeup
   in `docs/backend-and-ai-agent-plan.md`, "AI agent" — this is that
   plan's Tier 1, now built rather than only planned.
-
-## Still needed, re-confirmed Sept 1
+- **Found while testing the chat: "Talk to a Human" isn't real yet.**
+  `salesperson.whatsapp` (`491700000000`) has been a placeholder since
+  this file's first version — it doesn't reach anyone. Wasn't consequential
+  until "Talk to a Human" became a real fallback a customer might actually
+  tap. **Still needed: UCG's real WhatsApp Business number** before that
+  fallback (or anything else using this constant) means anything.
+- **Reported: typing in the chat box didn't work.** Couldn't reproduce
+  directly, so applied the standard fixes for the most common causes
+  (`keyboardShouldPersistTaps="handled"` + `keyboardDismissMode`,
+  `blurOnSubmit={false}` on the multiline input) rather than guessing at
+  one root cause — **not confirmed fixed**, needs a real on-device
+  retest. If it's still broken, the next useful details are: does the
+  keyboard open at all, does a character appear and then vanish, and
+  which platform/device.
 
 Terry re-raised these explicitly — they were already tracked below, not
 new, but worth surfacing as still-live priorities rather than assuming

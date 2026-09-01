@@ -289,7 +289,13 @@ first — see [docs/backend-and-ai-agent-plan.md](./docs/backend-and-ai-agent-pl
   real backend, no password check, no server-issued token — just a name
   and email saved locally.
 - **Salesperson assignment** is a hardcoded person (`src/constants/mock-data.ts`)
-  — this is the piece that needs the Salesforce Dealer Team API. DealerTeam
+  — this is the piece that needs the Salesforce Dealer Team API. **The
+  WhatsApp number attached to that person is a placeholder that reaches
+  no one** (`491700000000` — has been fake since this file's first
+  version), which matters more now than it used to: the AI agent's
+  "Talk to a Human" fallback (see below) is real, and a customer tapping
+  it today opens WhatsApp to a dead number. Needs UCG's real WhatsApp
+  Business number before that fallback means anything. DealerTeam
   turns out to be a real, Salesforce-native DMS/CRM (confirmed, not
   assumed — see
   [docs/salesforce-dealerteam-integration-plan.md](./docs/salesforce-dealerteam-integration-plan.md)

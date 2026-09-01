@@ -103,7 +103,8 @@ export default function SalespersonScreen() {
         <ScrollView
           style={styles.messageList}
           contentContainerStyle={styles.messageListContent}
-          onContentSizeChange={() => {}}>
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive">
           {messages.map((m, i) => (
             <View
               key={i}
@@ -126,7 +127,8 @@ export default function SalespersonScreen() {
             placeholderTextColor={Colors.textFaint}
             style={styles.input}
             multiline
-            onSubmitEditing={sendMessage}
+            blurOnSubmit={false}
+            onSubmitEditing={() => sendMessage()}
           />
           <Pressable style={styles.sendButton} onPress={sendMessage} disabled={isSending} hitSlop={8}>
             <SendIcon color="#fff" />
