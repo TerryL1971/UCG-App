@@ -17,6 +17,7 @@ import { StatusBar } from 'react-native';
 import { AuthProvider } from '@/lib/auth-context';
 import { DealProvider } from '@/lib/deal-context';
 import { DealIntakeProvider } from '@/lib/deal-intake-context';
+import { DealStepsProvider } from '@/lib/deal-steps-context';
 import { SavedProvider } from '@/lib/saved-context';
 import { VinScanProvider } from '@/lib/vin-scan-context';
 
@@ -72,11 +73,13 @@ export default function RootLayout() {
     <AuthProvider>
       <DealProvider>
         <DealIntakeProvider>
-          <SavedProvider>
-            <VinScanProvider>
-              <AppShell fontsLoaded={fontsLoaded} />
-            </VinScanProvider>
-          </SavedProvider>
+          <DealStepsProvider>
+            <SavedProvider>
+              <VinScanProvider>
+                <AppShell fontsLoaded={fontsLoaded} />
+              </VinScanProvider>
+            </SavedProvider>
+          </DealStepsProvider>
         </DealIntakeProvider>
       </DealProvider>
     </AuthProvider>

@@ -38,6 +38,19 @@ real customer would hit it.
   information" for testing; the same underlying idea (a complete,
   self-service delete) is also what Apple will require once real
   backend accounts exist — see `docs/backend-and-ai-agent-plan.md`.
+- **Reset Test Data now actually resets the My Deal timeline too.** Terry
+  caught that Reset didn't touch `dealSteps` 1-7 — because it was a
+  static export, not state, so there was nothing for any context to
+  reset. Wrapped it in `src/lib/deal-steps-context.tsx` (the further-
+  along demo default on first launch is unchanged; a reset now moves it
+  to a genuinely fresh, just-matched `freshDealSteps` state instead).
+- **"Meet Your Specialist" is now a real AI agent**, not a WhatsApp
+  handoff to a human — Terry's explicit call: submitting the intake form
+  no longer opens WhatsApp, and the salesperson screen is a real in-app
+  chat backed by a server route calling the Claude API, with a "Talk to
+  a Human" WhatsApp fallback for anything it can't answer. Full writeup
+  in `docs/backend-and-ai-agent-plan.md`, "AI agent" — this is that
+  plan's Tier 1, now built rather than only planned.
 
 ## Still needed, re-confirmed Sept 1
 
@@ -125,6 +138,14 @@ reality. Ideas floated, none chosen yet:
   manually assigns it to a specific person.
 - A per-location list of salespeople with round-robin/alternating
   assignment.
+
+**Partially superseded, Sept 1:** "Submit for a Salesperson" no longer
+opens WhatsApp at all — the actual next screen is a real AI agent chat
+(see `docs/backend-and-ai-agent-plan.md`, "AI agent"), not a message to
+a specific person. This question still matters for the **"Talk to a
+Human"** fallback the agent escalates to, which does still go through
+`salesperson.whatsapp` — but it's no longer the very next thing every
+customer hits after submitting.
 
 **Nothing changed in code for this** beyond the button copy — assigning
 a specific person algorithmically needs a real backend regardless of

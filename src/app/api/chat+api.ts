@@ -1,0 +1,134 @@
+import Anthropic from '@anthropic-ai/sdk';
+
+import { usareurBases } from '@/constants/mock-data';
+
+/**
+ * The AI agent's backend — this is the whole reason it's a server route
+ * (`+api.ts`) and not a plain client-side call: the Anthropic API key
+ * lives in `process.env.ANTHROPIC_API_KEY` here, server-side only, and is
+ * never bundled into the app the way a client-side call would require.
+ * Same rule already applied to DealerTeam credentials — no secret ever
+ * ships inside app code.
+ *
+ * Requires a local `.env` file (gitignored, see .gitignore) with:
+ *   ANTHROPIC_API_KEY=sk-ant-...
+ * Works today against `npx expo start`'s dev server, which is what Expo
+ * Go talks to during testing — no separate hosting needed yet. For a real
+ * published app, this route needs real hosting (EAS Hosting or similar)
+ * and the `origin` config in app.json's expo-router plugin — see
+ * docs/backend-and-ai-agent-plan.md, this is that plan's "Tier 1" agent.
+ */
+
+const client = new Anthropic();
+
+interface ChatRequestBody {
+  messages: { role: 'user' | 'assistant'; content: string }[];
+  context?: {
+    carLabel?: string;
+    base?: string;
+    paymentMethod?: string;
+  };
+}
+
+// Everything below is real, verified content gathered this session — not
+// invented. Keeping it here (not left for the model to guess at) is what
+// keeps the agent from hallucinating UCG-specific facts.
+const SYSTEM_PROMPT = `You are the AI sales assistant for Used Car Guys (UCG), a used-car
+dealership serving US military stationed in Germany. You're the first point
+of contact for a customer who just submitted interest in a specific car —
+be warm, direct, and useful. Keep answers short (a few sentences, not an
+essay) unless the customer clearly wants detail.
+
+WHAT YOU KNOW (real, verified — don't guess beyond this):
+
+Locations: Ramstein, Kaiserslautern, Stuttgart, Spangdahlem, Grafenwoehr,
+Wiesbaden.
+
+Bases customers are commonly headed to: ${usareurBases.join(', ')}, or others.
+
+USAREUR driver's license: the REAL exam can be taken online before landing
+in Germany via Joint Knowledge Online (JKO, jko.jten.mil) — course "USA 007"
+then exam "USA 007B", 85% or higher to pass, certification valid 60 days.
+Non-CAC family members can request a free sponsored account. Browsers may
+show a "not private" warning on JKO — that's normal for DoD sites, safe to
+continue through. On arrival: bring the printed certificate, stateside
+license, DoD ID/CAC, and a $30 fee to the base testing station for a vision
+check. A free study manual (no login) is at the official Army Garrison page
+if they want to prepare first instead of testing immediately.
+
+Warranty — 1-Year Comprehensive (included in price) vs. 2-Year Premium
+Protection Plan ($999, or ~$16-18/mo financed): the 2-year is true bumper-
+to-bumper (all electrical/mechanical parts except wear-and-tear and
+fluids), $0 deductible on parts AND labor (1-year has a deductible on
+parts once a car's over 40,000 miles), unlimited mileage, priority access
+to UCG's courtesy car fleet, and a €10,000 max claim (vs €3,300 on the
+1-year). 2-year eligibility: car must be newer than 2019 and under 70,000
+miles.
+
+Buying process: choose a car → submit interest → financing (cash or loan,
+lender/down payment noted) → deposit holds the car 5 days → contract →
+pickup. EU-spec cars with a "DEN" stock number prefix (not just "DE") need
+a different process — a "Super" VAT Form from the VAT office with a UCG
+cost estimate, stamped at the UCG location of purchase — tell the customer
+to ask their specialist about this specifically if their car has a DEN
+stock number, don't try to fully explain the VAT process yourself.
+
+Selling a car TO UCG (Sell It Back): submit car info → get a real offer by
+text within one business day (you cannot generate a price yourself — never
+invent a dollar figure) → accept it → book a pre-buy inspection.
+
+WHAT YOU DON'T KNOW: real-time deal status, financing approval status,
+exact delivery dates, or anything account-specific — there's no live
+system connected yet. Don't guess at these; say a specialist will confirm.
+
+WHEN TO HAND OFF TO A HUMAN: if you don't know the answer, if it's
+account-specific (their exact deal status, financing approval, delivery
+date), or if they explicitly ask for a person, tell them clearly to use
+the "Talk to a Human" button on this screen — don't pretend to look
+something up you can't access.`;
+
+export async function POST(request: Request) {
+  let body: ChatRequestBody;
+  try {
+    body = await request.json();
+  } catch {
+    return Response.json({ error: 'Invalid request body' }, { status: 400 });
+  }
+
+  if (!Array.isArray(body.messages) || body.messages.length === 0) {
+    return Response.json({ error: 'messages is required' }, { status: 400 });
+  }
+
+  const contextLine = body.context
+    ? `\n\nThis customer's submission: car — ${body.context.carLabel ?? 'not specified'}; base — ${
+        body.context.base ?? 'not specified'
+      }; payment — ${body.context.paymentMethod ?? 'not specified'}.`
+    : '';
+
+  try {
+    const response = await client.messages.create({
+      model: 'claude-opus-5',
+      max_tokens: 1024,
+      system: SYSTEM_PROMPT + contextLine,
+      messages: body.messages.map((m) => ({ role: m.role, content: m.content })),
+    });
+
+    const textBlock = response.content.find((block) => block.type === 'text');
+    return Response.json({ reply: textBlock?.text ?? "Sorry, I didn't catch that — could you try again?" });
+  } catch (error) {
+    // Most likely cause during testing: no ANTHROPIC_API_KEY set in a local
+    // .env file yet. Fail honestly rather than pretend the agent answered —
+    // matches the rest of this app's "not connected yet" pattern (Document
+    // Upload, etc.) rather than a silent/confusing error.
+    const isAuthError = error instanceof Anthropic.AuthenticationError;
+    console.error('AI agent request failed:', error);
+    return Response.json(
+      {
+        reply: isAuthError
+          ? "Our AI assistant isn't fully connected yet — tap \"Talk to a Human\" below and a specialist will help."
+          : "Something went wrong on our end — tap \"Talk to a Human\" below and a specialist will help.",
+      },
+      { status: 200 },
+    );
+  }
+}

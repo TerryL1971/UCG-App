@@ -18,6 +18,23 @@ Wi-Fi. This project is pinned to **Expo SDK 54** on purpose — see
 only supports SDK 54 as of writing; don't bump this without checking that
 first, or device testing breaks).
 
+### Enabling the AI agent
+
+The "Meet Your Specialist" chat (`src/app/salesperson.tsx`) needs a
+`.env` file at the project root (already gitignored — never commit a real
+key) with:
+
+```
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+That's read by `src/app/api/chat+api.ts`, a server route — the key never
+ships inside the app itself. Without it, the chat still works, but every
+reply is an honest "isn't fully connected yet, tap Talk to a Human"
+fallback rather than a real answer. Works against `npx expo start`'s dev
+server as-is; a real published app needs real hosting for this route
+first — see [docs/backend-and-ai-agent-plan.md](./docs/backend-and-ai-agent-plan.md).
+
 ## What's actually built
 
 - **Onboarding → Browse → Car Detail → Salesperson match → Journey timeline
@@ -130,8 +147,31 @@ first, or device testing breaks).
 - **Choosing a new car starts fresh, and test data is one tap to clear.**
   A previous car's deal-intake submission no longer lingers once a
   different car is chosen. The Account tab also has a **Reset Test
-  Data** action that clears the account, chosen car, deal-intake,
-  saved cars, and any pending VIN scan in one confirmed tap.
+  Data** action that clears the account, chosen car, deal-intake, the
+  **My Deal timeline's progress**, saved cars, and any pending VIN scan
+  in one confirmed tap — resetting the timeline was added after testing
+  showed a reset that left `dealSteps` untouched didn't feel like a real
+  reset at all (`src/lib/deal-steps-context.tsx`; the further-along
+  demo default on first launch is unchanged, only a reset moves it back
+  to a genuinely fresh, just-matched deal).
+- **"Meet Your Specialist" is a real AI agent, not a WhatsApp handoff to
+  a human.** Submitting the deal-intake form no longer opens WhatsApp —
+  it lands on an in-app chat window
+  (`src/app/salesperson.tsx`) backed by a real server route
+  (`src/app/api/chat+api.ts`, an Expo Router API route) that calls the
+  Claude API. The Anthropic API key lives only in that server route's
+  environment, never inside the shipped app — same rule already applied
+  to DealerTeam credentials. The agent's system prompt is built entirely
+  from real, verified content gathered this session (the actual USAREUR
+  licensing process, the real 1-yr/2-yr warranty terms, real locations)
+  rather than left to guess at UCG-specific facts, and is told exactly
+  when to hand off — a **"Talk to a Human"** link (still real WhatsApp)
+  stays on the same screen for anything account-specific or that it
+  can't answer. Works today against `npx expo start`'s dev server (see
+  "Enabling the AI agent" above); a real published app needs real
+  hosting for this route — this is
+  [docs/backend-and-ai-agent-plan.md](./docs/backend-and-ai-agent-plan.md)'s
+  Tier 1 agent, now actually built rather than only planned.
 - **The journey timeline is a winding road with signs, not a straight
   line** (`src/components/timeline-road.tsx`) — an SVG road curving side
   to side down the screen, each step a small road-sign marker (one
@@ -202,13 +242,14 @@ first, or device testing breaks).
   were found and verified (and for a real mistake this caught: an earlier
   version hardcoded a single review link that turned out to be a stale,
   unrelated identifier once actually checked against the real listings).
-  Both this and every Call/Text touchpoint (salesperson match screen, the
-  timeline's pinned bar) now go through **WhatsApp**
-  (`whatsappChatUrl` in `mock-data.ts`), not the native phone/SMS apps.
-  One honest limit: WhatsApp doesn't publish a way to auto-dial a voice
-  call the way `tel:` does, so "Call" opens the WhatsApp chat too (one
-  tap from the real call button inside WhatsApp) rather than faking a
-  one-tap call that wouldn't actually work.
+  Both this and the timeline's pinned-bar Call/Text touchpoint now go
+  through **WhatsApp** (`whatsappChatUrl` in `mock-data.ts`), not the
+  native phone/SMS apps. One honest limit: WhatsApp doesn't publish a way
+  to auto-dial a voice call the way `tel:` does, so "Call" opens the
+  WhatsApp chat too (one tap from the real call button inside WhatsApp)
+  rather than faking a one-tap call that wouldn't actually work. (The
+  salesperson-match screen itself no longer has Call/Text buttons — see
+  the AI agent bullet below for what replaced them.)
 - **Saving a car actually saves it.** The heart button on a car card and
   the Saved tab share real state (`src/lib/saved-context.tsx`), not just a
   per-card toggle that went nowhere.

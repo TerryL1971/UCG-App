@@ -14,7 +14,6 @@ import { TimelineRoad } from '@/components/timeline-road';
 import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
 import {
   dealDocuments,
-  dealSteps,
   financingTerms,
   salesperson,
   ucgLocations,
@@ -23,6 +22,7 @@ import {
   type DealStep,
 } from '@/constants/mock-data';
 import { useDeal } from '@/lib/deal-context';
+import { useDealSteps } from '@/lib/deal-steps-context';
 
 /** The camera/share action under "Picked Up" — its own component (not
  * inlined in the steps loop) since it needs its own local state for the
@@ -230,6 +230,7 @@ function FinanceStat({ label, value }: { label: string; value: string }) {
 
 export default function TimelineScreen() {
   const { car } = useDeal();
+  const { dealSteps } = useDealSteps();
 
   const targetIndex = useMemo(() => {
     let idx = 0;
@@ -237,10 +238,17 @@ export default function TimelineScreen() {
       if (dealSteps[i].status !== 'upcoming') idx = i;
     }
     return idx;
-  }, []);
+  }, [dealSteps]);
 
   const [viewedIndex, setViewedIndex] = useState(targetIndex);
   const viewedStep = dealSteps[viewedIndex];
+
+  // dealSteps can change out from under this screen — "Reset Test Data"
+  // resets it from the Account tab, and Expo Router keeps tab screens
+  // mounted across tab switches, so this isn't just a first-render concern.
+  useEffect(() => {
+    setViewedIndex(targetIndex);
+  }, [dealSteps, targetIndex]);
 
   const goBack = () => setViewedIndex((i) => Math.max(0, i - 1));
   const goForward = () => setViewedIndex((i) => Math.min(targetIndex, i + 1));

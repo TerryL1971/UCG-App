@@ -86,28 +86,34 @@ managed platform (Firebase, etc.) would fit the same shape. The point is
    for real usage of step 1 before guessing at this, rather than building
    it blind.
 
-## AI agent — two tiers, only one buildable right now
+## AI agent — two tiers, one now shipped
 
-- **Tier 1 (buildable without the backend above):** a general-FAQ agent
-  grounded in what's already been researched and verified this session —
-  USAREUR licensing (JKO process, the cert warning, arrival checklist),
-  the 1-yr/2-yr PPP warranty terms, base info, how financing vs. cash
-  works, what Sell It Back needs. Calls the Claude API through a small
-  serverless function (never from the app directly — same "credentials
-  can't live in a shipped app" rule as the DealerTeam plan), with a
-  system prompt built from real, curated content rather than letting the
-  model guess at UCG-specific facts. Escalates to a **real person via
-  WhatsApp** — the same `whatsappChatUrl` pattern already built — for
-  anything it can't answer or that's account-specific, consistent with
-  how the rest of this app already treats "hand off to a human" as the
-  answer to complexity, not a fallback of last resort.
-- **Tier 2 (needs the backend):** account-aware answers ("has my
-  financing been approved") by querying a logged-in customer's own
-  `deals` row. Waits on real accounts existing.
-
-Tier 1 could reasonably start before the full backend/dashboard work —
-worth deciding explicitly if that's wanted, rather than assuming
-"design together" means "build in strict lockstep."
+- **Tier 1 — SHIPPED (Sept 1), ahead of the rest of this plan.** Terry
+  decided this explicitly: "Meet Your Specialist" is a real AI agent,
+  not a WhatsApp handoff to a human — so `deal-intake.tsx` no longer
+  opens WhatsApp on submit, and `salesperson.tsx` is a real in-app chat
+  window backed by `src/app/api/chat+api.ts` (an Expo Router server
+  route). The Anthropic API key lives only in that route's environment
+  (`ANTHROPIC_API_KEY` in a local, gitignored `.env` — never in the
+  shipped app), matching the credentials rule from the DealerTeam plan.
+  The system prompt is built entirely from real, curated content
+  gathered this session — USAREUR licensing (the JKO process, the cert
+  warning, the arrival checklist), the real 1-yr/2-yr PPP warranty
+  terms, real base/location names, how financing vs. cash works, what
+  Sell It Back needs — rather than letting the model guess at
+  UCG-specific facts, and is explicitly told when to hand off. A
+  **"Talk to a Human"** link (still real WhatsApp, `whatsappChatUrl`)
+  stays on the same screen for anything account-specific or the agent
+  can't answer, consistent with how the rest of this app already treats
+  "hand off to a human" as the answer to complexity, not a last resort.
+  **What this doesn't yet solve:** it works today because Expo Go talks
+  to `npx expo start`'s local dev server directly — a real published
+  app needs this route actually hosted somewhere (EAS Hosting or
+  similar) and the `origin` config set in app.json's expo-router plugin,
+  which hasn't happened yet.
+- **Tier 2 (needs the backend, not built):** account-aware answers ("has
+  my financing been approved") by querying a logged-in customer's own
+  `deals` row. Still waits on real accounts existing.
 
 ## Before this goes live: real data changes what this app is
 
@@ -178,8 +184,11 @@ all of it meant to make the actual conversation with counsel faster.
   what happens if Terry stops being the one running this.
 - GDPR/data-handling posture (above) — needs a real answer, likely
   outside a coding session, before real customer data is stored.
-- Tier 1 AI agent: build now (doesn't need the backend) or hold until
-  the backend work starts, so it's not a separate thread?
+- ~~Tier 1 AI agent: build now or hold?~~ Resolved Sept 1 — built now
+  (see "AI agent" above). New question in its place: **who's setting up
+  the real Anthropic API key and, eventually, real hosting for
+  `chat+api.ts`** — this works against a local dev server today but
+  needs both before a real customer ever uses it.
 - Does the eventual DealerTeam integration (if UCG gets API access) feed
   *into* this new database, or does this database stay the source of
   truth and DealerTeam sync separately? Worth deciding once

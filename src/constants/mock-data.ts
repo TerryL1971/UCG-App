@@ -125,6 +125,22 @@ export const dealSteps: DealStep[] = [
   { id: 'pickup', title: 'Picked Up', status: 'current', waitingOn: 'you' },
 ];
 
+// What "Reset Test Data" (Account tab) actually resets the timeline to —
+// a genuinely fresh deal, not the further-along demo default above. Kept
+// as a separate constant rather than mutating `dealSteps` so the default
+// on first launch stays exactly as designed (Car Ready/Picked Up visible
+// without hand-editing this file), while a reset gives testers what they
+// actually expect: steps 1-7 back to a real starting point.
+export const freshDealSteps: DealStep[] = [
+  { id: 'matched', title: 'Matched with Salesperson', status: 'current', waitingOn: 'ucg' },
+  { id: 'application', title: 'Application Submitted', status: 'upcoming', waitingOn: 'you' },
+  { id: 'documents', title: 'Documents Uploaded', status: 'upcoming', waitingOn: 'you' },
+  { id: 'financing', title: 'Financing Approved', status: 'upcoming', waitingOn: 'bank' },
+  { id: 'contract', title: 'Contract Signed', status: 'upcoming', waitingOn: 'you' },
+  { id: 'ready', title: 'Car Ready', status: 'upcoming', waitingOn: 'ucg' },
+  { id: 'pickup', title: 'Picked Up', status: 'upcoming', waitingOn: 'you' },
+];
+
 export type DocumentStatus = 'needed' | 'uploaded' | 'approved';
 
 export interface DealDocument {

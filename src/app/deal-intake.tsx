@@ -12,7 +12,6 @@ import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import {
   salesperson,
   usareurBases,
-  whatsappChatUrl,
   USAREUR_OFFICIAL_JKO_URL,
   USAREUR_STUDY_GUIDE_URL,
   type DealIntake,
@@ -109,31 +108,12 @@ export default function DealIntakeScreen() {
       licensePhotoBackUri,
       notes: notes.trim(),
     };
+    // No WhatsApp handoff here anymore — the "salesperson" you land on next
+    // is the AI agent, not a human, so there's nothing to text. The intake
+    // itself is what seeds the agent's first message on that screen (see
+    // salesperson.tsx), and "Talk to a Human" (WhatsApp) is still there as
+    // a real fallback if the agent can't help.
     submitIntake(intake);
-
-    const lines = [
-      `Hi, I'd like to start a deal on the ${carLabel}.`,
-      '',
-      `Name: ${intake.fullName}`,
-      `Contact: ${intake.contact}`,
-      `Base: ${intake.base}`,
-      `Payment: ${intake.paymentMethod === 'cash' ? 'Cash' : 'Financing'}`,
-    ];
-    if (intake.paymentMethod === 'financing') {
-      if (intake.financingLender) lines.push(`Preferred lender: ${intake.financingLender}`);
-      if (intake.financingDownPayment) lines.push(`Planned down payment: ${intake.financingDownPayment}`);
-    }
-    const licensePhotoCount = [intake.licensePhotoFrontUri, intake.licensePhotoBackUri].filter(Boolean).length;
-    lines.push(
-      `USAREUR license: ${
-        intake.licenseStatus === 'have'
-          ? `Already have one${licensePhotoCount ? ` (${licensePhotoCount === 2 ? 'front & back' : 'front'} photo saved in the app)` : ''}`
-          : 'Still need to get one'
-      }`,
-    );
-    if (intake.notes) lines.push(`Notes: ${intake.notes}`);
-
-    Linking.openURL(whatsappChatUrl(salesperson.whatsapp, lines.join('\n')));
     router.replace('/salesperson');
   };
 

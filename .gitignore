@@ -30,7 +30,9 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
+# local env files — .env holds ANTHROPIC_API_KEY for the AI agent's server
+# route (src/app/api/chat+api.ts); never commit a real key
+.env
 .env*.local
 
 # typescript

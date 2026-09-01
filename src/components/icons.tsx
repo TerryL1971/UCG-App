@@ -26,6 +26,14 @@ export function ArrowLeftIcon({ size = 20, color = '#273368', strokeWidth = 2.4 
   );
 }
 
+export function SendIcon({ size = 20, color = '#fff', strokeWidth = 2.2 }: IconProps) {
+  return (
+    <Svg {...base(size)}>
+      <Path d="M22 2 11 13M22 2 15 22l-4-9-9-4 20-7Z" {...strokeProps(color, strokeWidth)} />
+    </Svg>
+  );
+}
+
 export function ChevronDownIcon({ size = 18, color = '#9AA0B4', strokeWidth = 2.4 }: IconProps) {
   return (
     <Svg {...base(size)}>
