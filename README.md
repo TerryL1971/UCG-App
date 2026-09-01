@@ -202,9 +202,9 @@ published app needs real hosting for these routes first — see
   [docs/backend-and-ai-agent-plan.md](./docs/backend-and-ai-agent-plan.md)'s
   "Strategy" section: this uses PayPal's own Sandbox rather than a
   homemade fake, so going live later is a credential swap
-  (`PAYPAL_API_BASE` + real keys), not a rewrite. **The deposit amount
-  shown ($50) is an explicit placeholder**, not a real business decision
-  — see `deposit.tsx`'s own comment and
+  (`PAYPAL_API_BASE` + real keys), not a rewrite. **The deposit is a
+  flat $300.00 USD**, a real decision (not a placeholder) — see
+  `deposit.tsx`'s own comment and
   [docs/deal-flow-roadmap.md](./docs/deal-flow-roadmap.md). Unlike the
   AI agent, there's no graceful "not connected" fallback if
   `PAYPAL_CLIENT_ID`/`SECRET` are missing — it fails with a visible

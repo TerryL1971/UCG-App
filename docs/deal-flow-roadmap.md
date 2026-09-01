@@ -216,10 +216,9 @@ sort it out from there) rather than needing to be replaced outright.
   live later is a credential/env swap, not a rewrite — see
   `docs/backend-and-ai-agent-plan.md`'s "Strategy" section for why
   Sandbox was the right move over a homemade fake.
-  - **The $50 deposit amount shown is an explicit placeholder** — the
-    real amount (fixed $ vs. a % of price) is still an open business
-    decision, not something to treat as settled just because a number
-    now appears on screen.
+  - **Deposit amount decided, Sept 1: a flat $300.00 USD**, not a
+    percentage of price. No longer a placeholder — `DEPOSIT_AMOUNT` in
+    `src/app/deposit.tsx`.
   - **Not done:** this isn't wired into the My Deal timeline
     (`timeline-road.tsx`) as an actual step — deliberately kept as its
     own screen instead, both because that component is complex/still
@@ -242,12 +241,13 @@ sort it out from there) rather than needing to be replaced outright.
     credential swap alone doesn't make the app reachable by a real
     customer either — this route still only runs against `npx expo
     start`'s local dev server; real hosting (see
-    `docs/backend-and-ai-agent-plan.md`) and a real (not $50 placeholder)
-    deposit amount both need to land before this is customer-facing.
-  - Still open: deposit amount (fixed $ or a % of price?), currency
-    (USD given pricing elsewhere is in $, or does a EUR option matter
-    for EU-spec cars?), and what happens on a failed/abandoned PayPal
-    checkout (retry? hold expires? notify the salesperson?).
+    `docs/backend-and-ai-agent-plan.md`) still needs to land before this
+    is customer-facing (the deposit amount itself is decided now, see
+    above).
+  - Still open: currency (USD given pricing elsewhere is in $, or does a
+    EUR option matter for EU-spec cars?), and what happens on a
+    failed/abandoned PayPal checkout (retry? hold expires? notify the
+    salesperson?).
 
 ## Warranty upsell: 1-Year vs. 2-Year Premium Protection Plan (PPP)
 

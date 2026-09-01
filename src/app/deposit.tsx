@@ -12,14 +12,14 @@ import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { useDeal } from '@/lib/deal-context';
 
 /**
- * The deposit's actual dollar amount is a real open business decision
- * (fixed $ vs. a % of price — see docs/deal-flow-roadmap.md) that hasn't
- * been made yet. This is deliberately a labeled TEST amount, not a real
- * one — don't quietly turn this into the real figure without that
- * decision actually being made, and don't let this screen go live with
- * real PayPal credentials while it's still a placeholder.
+ * Real decision, confirmed by Terry (Sept 1): a flat $300.00 USD, not a
+ * percentage of price. This is no longer a placeholder — see
+ * docs/deal-flow-roadmap.md's "Make A Deposit" section. Still running
+ * through PayPal *Sandbox* until real/live credentials replace the ones
+ * in `.env` (see that doc for what else "going live" needs beyond this),
+ * so no real money moves yet even though the number itself is real.
  */
-const TEST_DEPOSIT_AMOUNT = '50.00';
+const DEPOSIT_AMOUNT = '300.00';
 
 type DepositStatus = 'idle' | 'opening' | 'capturing' | 'success' | 'cancelled' | 'error';
 
@@ -41,7 +41,7 @@ export default function DepositScreen() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          amount: TEST_DEPOSIT_AMOUNT,
+          amount: DEPOSIT_AMOUNT,
           description: `Deposit to hold the ${carLabel} for 5 days`,
           returnUrl,
           cancelUrl,
@@ -102,8 +102,8 @@ export default function DepositScreen() {
 
             <View style={styles.amountCard}>
               <Text style={styles.amountLabel}>Deposit Amount</Text>
-              <Text style={styles.amountValue}>${TEST_DEPOSIT_AMOUNT}</Text>
-              <Text style={styles.amountNote}>Test amount — sandbox mode, no real charge.</Text>
+              <Text style={styles.amountValue}>${DEPOSIT_AMOUNT}</Text>
+              <Text style={styles.amountNote}>Sandbox mode — no real charge yet.</Text>
             </View>
 
             {(status === 'opening' || status === 'capturing') && (
