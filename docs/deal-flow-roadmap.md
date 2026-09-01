@@ -6,7 +6,45 @@ below is built yet except where marked **(shipped)**. Treat this as the
 backlog for the deal-intake → My Deal pipeline, roughly in the order a
 real customer would hit it.
 
-## Shipped this pass (Aug 31)
+## Shipped Sept 1
+
+- **Pre-Buy Inspection booking (car detail screen).** Terry sent a real
+  Microsoft Bookings link for Ramstein/KMC
+  (`outlook.office.com/book/PreBuyInspection@usedcarguys.net`, confirmed
+  to redirect through real Microsoft Bookings infrastructure using UCG's
+  own domain — not verifiable content-wise since it's a client-rendered
+  widget, but the redirect chain itself is legitimate). Added a secondary
+  "Book a Pre-Buy Inspection (Ramstein)" button on the car detail screen,
+  above "Choose This Car." `UcgLocation` in `mock-data.ts` gained an
+  optional `bookingUrl` field so more locations can be added the moment
+  their links exist — **still needed: booking links for the other five
+  locations** (Kaiserslautern, Stuttgart, Spangdahlem, Grafenwoehr,
+  Wiesbaden). Also worth knowing: there's no per-car location data yet
+  (the inventory scraper doesn't expose which lot a car is at — see
+  `docs/wordpress-inventory-api-spec.md`), so this button can't yet pick
+  the *right* location automatically for a given car; it's labeled
+  "(Ramstein)" specifically rather than presented as universal.
+
+## Still needed, re-confirmed Sept 1
+
+Terry re-raised these explicitly — they were already tracked below, not
+new, but worth surfacing as still-live priorities rather than assuming
+"documented" means "deprioritized":
+
+- **The PPP warranty offer** (see "Warranty upsell" below) — still needs
+  to actually be built, not just planned.
+- **Refer a Friend** — genuinely new, not previously captured anywhere.
+  No design details given yet (referral code? reward — cash, service
+  credit, something else? tracked how, since it needs the same "real
+  backend" this app doesn't have yet — see
+  [docs/backend-and-ai-agent-plan.md](./backend-and-ai-agent-plan.md)).
+  Flagging the dependency now rather than guessing at a mechanism: a
+  referral program needs to attribute one customer to another and likely
+  needs a reward to actually issue, which is account-and-backend-shaped
+  work, not a screen that can be bolted onto the current in-memory/
+  WhatsApp-only flow the way the Pre-Buy Inspection button just was.
+
+## Shipped Aug 31
 
 - **Car photo gallery on the deal-intake screen.** Once a customer
   chooses a car, they were losing access to its photos — the detail

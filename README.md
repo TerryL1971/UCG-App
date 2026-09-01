@@ -114,6 +114,14 @@ first, or device testing breaks).
     screen — a deposit/hold step, a warranty upsell, an insurance
     referral, and more — is written up, not built yet, in
     [docs/deal-flow-roadmap.md](./docs/deal-flow-roadmap.md).
+- **Book a real Pre-Buy Inspection from the car detail screen.** A
+  secondary button above "Choose This Car" opens UCG's actual Microsoft
+  Bookings calendar for Ramstein/KMC (`ucgLocations[].bookingUrl` in
+  `mock-data.ts`). Only that one location's link exists so far, so the
+  button is honestly labeled "(Ramstein)" rather than presented as
+  universal — the other five locations' links, and a way to know which
+  lot a given car is actually at, are both still needed (see
+  [docs/deal-flow-roadmap.md](./docs/deal-flow-roadmap.md)).
 - **The journey timeline is a winding road with signs, not a straight
   line** (`src/components/timeline-road.tsx`) — an SVG road curving side
   to side down the screen, each step a small road-sign marker (one
@@ -264,8 +272,9 @@ src/
 brand/           Source logo files + extracted brand colors
 design-mockup/   The original Claude Design canvas this app was built from
 docs/            Specs/plans for integrations we're waiting on (WordPress
-                 inventory API, Salesforce DealerTeam sync) and the deal-
-                 flow roadmap (deposit, warranty, insurance, DEN/VAT, more)
+                 inventory API, Salesforce DealerTeam sync), the deal-flow
+                 roadmap (deposit, warranty, referrals, DEN/VAT, more), and
+                 the real-backend + management-dashboard + AI-agent plan
 ```
 
 ## Known gaps worth knowing about

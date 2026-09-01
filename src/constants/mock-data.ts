@@ -48,6 +48,12 @@ export function whatsappChatUrl(phoneDigits: string, message?: string): string {
 export interface UcgLocation {
   name: string;
   reviewUrl: string;
+  /** Real Microsoft Bookings link for a pre-buy inspection appointment at
+   * this location, e.g. https://outlook.office.com/book/PreBuyInspection@usedcarguys.net/.
+   * Only Ramstein/KMC's has been provided so far — the rest are `undefined`
+   * on purpose rather than guessed at, since a wrong booking link is worse
+   * than none (see PreBuyInspectionButton in car/[id].tsx). */
+  bookingUrl?: string;
 }
 
 /**
@@ -71,7 +77,11 @@ export interface UcgLocation {
  * marketing team already has "g.page" short links for these.
  */
 export const ucgLocations: UcgLocation[] = [
-  { name: 'Ramstein', reviewUrl: 'https://www.google.com/maps?cid=8526847724461781786' },
+  {
+    name: 'Ramstein',
+    reviewUrl: 'https://www.google.com/maps?cid=8526847724461781786',
+    bookingUrl: 'https://outlook.office.com/book/PreBuyInspection@usedcarguys.net/?ismsaljsauthenabled',
+  },
   { name: 'Kaiserslautern', reviewUrl: 'https://www.google.com/maps?cid=10345390024072882796' },
   { name: 'Stuttgart', reviewUrl: 'https://www.google.com/maps?cid=11332413732306729190' },
   { name: 'Spangdahlem', reviewUrl: 'https://www.google.com/maps?cid=2225439998252218189' },
