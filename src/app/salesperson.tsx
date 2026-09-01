@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { salesperson, whatsappChatUrl } from '@/constants/mock-data';
+import { parseJsonResponse } from '@/lib/api-fetch';
 import { useDeal } from '@/lib/deal-context';
 import { useDealIntake } from '@/lib/deal-intake-context';
 
@@ -63,9 +64,14 @@ export default function SalespersonScreen() {
           context: { carLabel, base: intake?.base, paymentMethod: intake?.paymentMethod },
         }),
       });
-      const data = await res.json();
+      const data = await parseJsonResponse<{ reply: string }>(res);
       setMessages((prev) => [...prev, { role: 'assistant', content: data.reply }]);
-    } catch {
+    } catch (error) {
+      // Shown to the customer stays friendly on purpose — but log the
+      // real cause (e.g. a non-JSON response, same class of bug as the
+      // deposit flow's "Unexpected character: N" crash) so it's
+      // diagnosable from device logs instead of only "something broke."
+      console.error('AI agent chat request failed:', error);
       setMessages((prev) => [
         ...prev,
         { role: 'assistant', content: 'Something went wrong reaching the AI agent — tap "Talk to a Human" below.' },

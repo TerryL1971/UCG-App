@@ -9,6 +9,7 @@ import { CheckCircleIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
+import { parseJsonResponse } from '@/lib/api-fetch';
 import { useDeal } from '@/lib/deal-context';
 
 /**
@@ -47,7 +48,9 @@ export default function DepositScreen() {
           cancelUrl,
         }),
       });
-      const createData = await createRes.json();
+      const createData = await parseJsonResponse<{ approveUrl?: string; orderId?: string; error?: string }>(
+        createRes,
+      );
       if (!createRes.ok || !createData.approveUrl) {
         throw new Error(createData.error ?? 'Could not start checkout');
       }
@@ -65,7 +68,7 @@ export default function DepositScreen() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderId: createData.orderId }),
       });
-      const captureData = await captureRes.json();
+      const captureData = await parseJsonResponse<{ status?: string; error?: string }>(captureRes);
       if (!captureRes.ok || captureData.status !== 'COMPLETED') {
         throw new Error(captureData.error ?? 'Payment could not be confirmed');
       }

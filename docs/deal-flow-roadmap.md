@@ -8,6 +8,21 @@ real customer would hit it.
 
 ## Shipped Sept 1
 
+- **Fixed: a real "JSON Parse error: Unexpected character: N" Terry hit
+  while testing.** That exact message is what `JSON.parse` throws when
+  fed plain text starting with "N" instead of JSON — most likely
+  "Not Found" or "Network request failed" — not something a customer
+  should ever see. Root cause: `deposit.tsx` and `salesperson.tsx` both
+  called `res.json()` directly and, in `deposit.tsx`'s case, passed the
+  resulting error's raw `.message` straight into the UI (`salesperson.tsx`
+  already caught and hid it behind a friendly fallback, so this was only
+  ever visibly broken on the deposit screen). New shared
+  `src/lib/api-fetch.ts` (`parseJsonResponse`) reads the body as text
+  first, so a non-JSON response now surfaces the actual status code and
+  a snippet of what the server returned instead of the opaque native
+  parse error — used by both screens now. **Root cause of *why* the
+  response wasn't JSON in the first place is still unconfirmed** — this
+  makes it diagnosable next time, not necessarily impossible again.
 - **Pre-Buy Inspection booking — corrected location, not the car detail
   screen.** Originally placed on the car detail screen (buying FROM
   UCG), which was wrong — Terry caught this: a "pre-buy inspection" is
