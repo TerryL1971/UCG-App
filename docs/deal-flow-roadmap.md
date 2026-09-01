@@ -178,9 +178,26 @@ sort it out from there) rather than needing to be replaced outright.
   not something the app can verify itself without the API access still
   being sorted out (see
   [docs/salesforce-dealerteam-integration-plan.md](./salesforce-dealerteam-integration-plan.md)).
-- Not yet specified: deposit amount, currency, how the deposit itself
-  is actually collected (this app has no payment processing today —
-  that's a separate, bigger question from just adding a timeline step).
+- **Payment method specified Sept 1: PayPal.** Terry confirmed the
+  deposit should go through PayPal, and that PayPal account credentials
+  will be provided when ready. **Not built yet — status as of this
+  check: no.** What it actually needs, so it's ready to wire up the
+  moment credentials exist:
+  - A real PayPal Business account, with API credentials (Client ID +
+    Secret) from the PayPal Developer Dashboard — sandbox credentials
+    first for testing, live credentials only once this is genuinely
+    ready for real money.
+  - Same rule as every other credential in this app: PayPal secrets
+    can't live in the shipped app. Collecting a deposit needs a real
+    server-side call (PayPal's Orders API — create an order server-side,
+    capture it after the customer approves) — this is exactly what
+    `src/app/api/chat+api.ts` already proved out for the Claude API
+    (Expo Router server route, secret in `.env`, never in the client
+    bundle). A PayPal route would follow the identical pattern.
+  - Still open: deposit amount (fixed $ or a % of price?), currency
+    (USD given pricing elsewhere is in $, or does a EUR option matter
+    for EU-spec cars?), and what happens on a failed/abandoned PayPal
+    checkout (retry? hold expires? notify the salesperson?).
 
 ## Warranty upsell: 1-Year vs. 2-Year Premium Protection Plan (PPP)
 
@@ -214,6 +231,44 @@ the higher claim cap and courtesy-car access above.
 quote from **American Auto Nation** instead (see below) rather than
 just dropping the subject.
 
+**New UX requirement, Sept 1:** the warranty offer needs to be an
+explicit **accept/decline choice**, not just a link to read about it —
+a real yes/no the customer checks, and **if no, capture why** (price,
+already has coverage elsewhere, doesn't want it, etc. — exact reason
+options not specified yet). That "why" matters: it's presumably what a
+salesperson would want to see, and/or what decides whether the American
+Auto Nation handoff below makes sense for this specific decline reason.
+
+## Add-on upsells: Service (winter tires), PPF — content pending
+
+Terry described a **"Service" button on a bottom row of options, before
+a final pricing summary**, for a winter-tire upsell, plus a separate
+**PPF (paint protection film)** upsell option. Read together with the
+2-year warranty requirement just above, this sounds like one combined
+add-ons/checkout-style screen (Service/winter tires, PPF, 2-yr
+warranty, each with its own accept/decline) that sits before a final
+price total — but that's my working interpretation of the description,
+not confirmed, and **nothing is built here yet**. Deliberately not
+guessing at a screen layout blind:
+
+- **Winter tires (the "Service" button):** Terry is getting the actual
+  flyer — waiting on that before building real content, the same way
+  the PPP warranty section above only has real numbers because the real
+  flyer was provided first.
+  - **Assumption worth naming, not treating as decided**: given
+    UCG serves customers heading to a country with genuinely cold,
+    snowy winters (unlike much of the continental US many customers are
+    coming from), a winter-tire upsell probably isn't just a nice-to-have
+    accessory pitch — it may be closer to a safety/legal-requirement
+    conversation (Germany has a winter-tire requirement in relevant
+    conditions). Worth confirming with the flyer/Terry whether that
+    framing ("recommended add-on" vs. "you may be required to have
+    these") should shape the copy, rather than assuming either way.
+- **PPF:** no details or flyer yet — waiting on that too.
+- Once both flyers exist, this becomes buildable the same way the PPP
+  section did: real terms transcribed exactly, not paraphrased or
+  invented.
+
 ## If PPP is declined: American Auto Nation insurance quote
 
 Terry showed [americanautonation.com](https://americanautonation.com) —
@@ -233,7 +288,14 @@ integration:
   with them directly before building the handoff, the same way the
   DealerTeam architecture doc flags open questions rather than guessing.
 
-## EU-spec cars with a `DEN*****` stock number
+## US-spec vs. EU-spec buying: a Purchase Order or a Cost Estimate
+
+Restated and confirmed Sept 1: which paperwork the deal generates
+depends on US-spec vs. EU-spec buying —
+
+- **US-spec (or already USAREUR-registered) → a Purchase Order.**
+- **EU-spec, never registered on USAREUR (`DEN*****` stock number) → a
+  Cost Estimate instead**, because of the VAT process below.
 
 If a car is EU-spec and has **never been registered on the USAREUR
 system**, its stock number carries an extra letter: `DEN*****` instead
@@ -246,10 +308,13 @@ different process:
 - The cost estimate needs to be **stamped at the UCG location** where
   they're buying the car.
 
-Not yet built: generating/hosting that cost-estimate document, or
-anything UI-side that tells a customer with a `DEN` car they're on a
-different path. This is a real, distinct workflow, not a variant of the
-normal purchase flow — needs its own screen(s) once scoped further.
+Not yet built: generating/hosting either document (Purchase Order or
+Cost Estimate), or anything UI-side that tells a customer which path
+they're on based on their car's stock number. This is a real, distinct
+workflow, not a variant of the normal purchase flow — needs its own
+screen(s) once scoped further, including what fields each document
+actually needs (not yet specified beyond "a cost estimate" for the
+EU-spec path).
 
 ## Financing application: customer-private, salesperson sees only a checkbox
 
