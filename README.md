@@ -114,14 +114,24 @@ first, or device testing breaks).
     screen — a deposit/hold step, a warranty upsell, an insurance
     referral, and more — is written up, not built yet, in
     [docs/deal-flow-roadmap.md](./docs/deal-flow-roadmap.md).
-- **Book a real Pre-Buy Inspection from the car detail screen.** A
-  secondary button above "Choose This Car" opens UCG's actual Microsoft
-  Bookings calendar for Ramstein/KMC (`ucgLocations[].bookingUrl` in
-  `mock-data.ts`). Only that one location's link exists so far, so the
-  button is honestly labeled "(Ramstein)" rather than presented as
-  universal — the other five locations' links, and a way to know which
-  lot a given car is actually at, are both still needed (see
+- **Book a real Pre-Buy Inspection — on Sell It Back, after an offer is
+  accepted, not on the car detail screen.** First built in the wrong
+  place (buying *from* UCG) and corrected once flagged: a pre-buy
+  inspection is UCG inspecting a car it's about to buy *from a
+  customer*, so it lives in Sell It Back, gated behind a real
+  submit → "awaiting your accept" → "offer accepted" flow (no fake
+  dollar figure shown, since there's no real pricing backend — an
+  honest "I've Accepted My Offer" step stands in for that until one
+  exists). Opens UCG's actual Microsoft Bookings calendar for
+  Ramstein/KMC (`ucgLocations[].bookingUrl` in `mock-data.ts`); the
+  other five locations' links, and a way to know which lot a car is
+  actually at, are both still needed (see
   [docs/deal-flow-roadmap.md](./docs/deal-flow-roadmap.md)).
+- **Choosing a new car starts fresh, and test data is one tap to clear.**
+  A previous car's deal-intake submission no longer lingers once a
+  different car is chosen. The Account tab also has a **Reset Test
+  Data** action that clears the account, chosen car, deal-intake,
+  saved cars, and any pending VIN scan in one confirmed tap.
 - **The journey timeline is a winding road with signs, not a straight
   line** (`src/components/timeline-road.tsx`) — an SVG road curving side
   to side down the screen, each step a small road-sign marker (one

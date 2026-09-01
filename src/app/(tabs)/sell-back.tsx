@@ -2,12 +2,13 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { CameraIcon, ClockIcon, MapPinIcon, PlusIcon, ShieldIcon } from '@/components/icons';
+import { CameraIcon, CheckCircleIcon, ClockIcon, MapPinIcon, PlusIcon, ShieldIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
+import { ucgLocations } from '@/constants/mock-data';
 import { useDeal } from '@/lib/deal-context';
 import { compressPhoto } from '@/lib/image';
 import { useVinScan } from '@/lib/vin-scan-context';
@@ -19,9 +20,20 @@ const mileageUnits = ['mi', 'km'] as const;
 // realistic limit anyone should actually hit.
 const MAX_PHOTOS = 15;
 
+// A pre-buy inspection happens once UCG is about to buy a car FROM a
+// customer — after an offer is made and the customer accepts it, not
+// before (this was originally, incorrectly, placed on the car detail
+// screen for the opposite direction — buying FROM UCG — and moved here
+// once that was caught). Only Ramstein/KMC's real booking link exists so
+// far; see ucgLocations in mock-data.ts.
+const preBuyInspectionLocation = ucgLocations.find((l) => l.bookingUrl);
+
+type OfferStatus = 'form' | 'awaitingAccept' | 'accepted';
+
 export default function SellBackScreen() {
   const { car } = useDeal();
   const { lastScannedVin, clearLastScannedVin } = useVinScan();
+  const [offerStatus, setOfferStatus] = useState<OfferStatus>('form');
 
   // If they chose this car from our own inventory earlier in the app, we
   // already know its VIN — no reason to make them type it again. If they
@@ -94,9 +106,13 @@ export default function SellBackScreen() {
       Alert.alert('Almost there', 'Add your license plate/VIN and mileage so we can put together an offer.');
       return;
     }
-    // No real offer-generation backend yet — confirm the submission was
-    // received rather than doing nothing when tapped.
-    Alert.alert('Request sent', "We'll text you a real offer within one business day.");
+    // No real offer-generation backend yet, so there's no real dollar
+    // amount to show here — showing a made-up number would look like a
+    // working pricing engine when it isn't. What IS real: moving the
+    // screen into "awaiting your accept" so the next real step (booking
+    // a pre-buy inspection once you've accepted the offer texted to you)
+    // is reachable without a backend to drive it yet.
+    setOfferStatus('awaitingAccept');
   };
 
   return (
@@ -105,112 +121,174 @@ export default function SellBackScreen() {
         <Text style={styles.title}>Sell It Back</Text>
       </View>
 
-      <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent}>
-        <Text style={styles.intro}>
-          Already own a Used Car Guys vehicle? Get a real offer in minutes — no obligation.
-        </Text>
-
-        {car && (
-          <View style={styles.recognizedCard}>
-            <Text style={styles.recognizedTitle}>
-              Selling back your {car.year} {car.title}?
+      {offerStatus !== 'form' ? (
+        <OfferStatusView
+          status={offerStatus}
+          onAccept={() => setOfferStatus('accepted')}
+          onStartOver={() => setOfferStatus('form')}
+        />
+      ) : (
+        <>
+          <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent}>
+            <Text style={styles.intro}>
+              Already own a Used Car Guys vehicle? Get a real offer in minutes — no obligation.
             </Text>
-            <Text style={styles.recognizedBody}>
-              {car.vin ? "We've filled in the VIN below." : 'Add its VIN below to get started.'}
-            </Text>
-          </View>
-        )}
 
-        <Field label="License Plate or VIN">
-          <View style={styles.plateRow}>
-            <TextInput
-              value={plate}
-              onChangeText={setPlate}
-              placeholder="e.g. 1HGCM82633A004352"
-              placeholderTextColor={Colors.textFaint}
-              autoCapitalize="characters"
-              style={[styles.input, styles.plateInput]}
-            />
-            <Pressable style={styles.scanButton} onPress={() => router.push('/scan-vin')}>
-              <CameraIcon color="#fff" strokeWidth={2.2} />
-              <Text style={styles.scanButtonLabel}>Scan</Text>
-            </Pressable>
-          </View>
-        </Field>
+            {car && (
+              <View style={styles.recognizedCard}>
+                <Text style={styles.recognizedTitle}>
+                  Selling back your {car.year} {car.title}?
+                </Text>
+                <Text style={styles.recognizedBody}>
+                  {car.vin ? "We've filled in the VIN below." : 'Add its VIN below to get started.'}
+                </Text>
+              </View>
+            )}
 
-        <Field label="Current Mileage / Kilometers">
-          <View style={styles.mileageRow}>
-            <TextInput
-              value={mileage}
-              onChangeText={setMileage}
-              placeholder={mileageUnit === 'mi' ? 'e.g. 41,200' : 'e.g. 66,300'}
-              placeholderTextColor={Colors.textFaint}
-              keyboardType="number-pad"
-              style={[styles.input, styles.mileageInput]}
-            />
-            <View style={styles.unitToggle}>
-              {mileageUnits.map((unit) => (
-                <Pressable
-                  key={unit}
-                  onPress={() => setMileageUnit(unit)}
-                  style={[styles.unitOption, mileageUnit === unit && styles.unitOptionActive]}>
-                  <Text style={[styles.unitLabel, mileageUnit === unit && styles.unitLabelActive]}>{unit}</Text>
+            <Field label="License Plate or VIN">
+              <View style={styles.plateRow}>
+                <TextInput
+                  value={plate}
+                  onChangeText={setPlate}
+                  placeholder="e.g. 1HGCM82633A004352"
+                  placeholderTextColor={Colors.textFaint}
+                  autoCapitalize="characters"
+                  style={[styles.input, styles.plateInput]}
+                />
+                <Pressable style={styles.scanButton} onPress={() => router.push('/scan-vin')}>
+                  <CameraIcon color="#fff" strokeWidth={2.2} />
+                  <Text style={styles.scanButtonLabel}>Scan</Text>
                 </Pressable>
-              ))}
+              </View>
+            </Field>
+
+            <Field label="Current Mileage / Kilometers">
+              <View style={styles.mileageRow}>
+                <TextInput
+                  value={mileage}
+                  onChangeText={setMileage}
+                  placeholder={mileageUnit === 'mi' ? 'e.g. 41,200' : 'e.g. 66,300'}
+                  placeholderTextColor={Colors.textFaint}
+                  keyboardType="number-pad"
+                  style={[styles.input, styles.mileageInput]}
+                />
+                <View style={styles.unitToggle}>
+                  {mileageUnits.map((unit) => (
+                    <Pressable
+                      key={unit}
+                      onPress={() => setMileageUnit(unit)}
+                      style={[styles.unitOption, mileageUnit === unit && styles.unitOptionActive]}
+                    >
+                      <Text style={[styles.unitLabel, mileageUnit === unit && styles.unitLabelActive]}>{unit}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+              <Text style={styles.mileageHint}>
+                US-spec cars in miles, EU-spec in kilometers — whichever&apos;s on the odometer.
+              </Text>
+            </Field>
+
+            <Field label="Overall Condition">
+              <View style={styles.segRow}>
+                {conditions.map((c) => (
+                  <Pressable
+                    key={c}
+                    onPress={() => setCondition(c)}
+                    style={[styles.segOption, condition === c && styles.segOptionActive]}
+                  >
+                    <Text style={[styles.segLabel, condition === c && styles.segLabelActive]}>{c}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </Field>
+
+            <Field label={`Add Photos${photos.length ? ` (${photos.length})` : ''}`}>
+              <View style={styles.photoRow}>
+                {photos.map((uri, i) => (
+                  <Pressable
+                    key={uri + i}
+                    style={[styles.photoTile, styles.photoTileFilled]}
+                    onPress={() => handleExistingPhotoPress(i)}
+                  >
+                    <Image source={{ uri }} style={StyleSheet.absoluteFill} contentFit="cover" />
+                  </Pressable>
+                ))}
+                {photos.length < MAX_PHOTOS && (
+                  <Pressable style={styles.photoTile} disabled={isAdding} onPress={() => promptSource(null)}>
+                    <PlusIcon color={Colors.red} />
+                  </Pressable>
+                )}
+              </View>
+              <Text style={styles.photoHint}>
+                Photos are automatically resized to keep things quick to send — take as many as you need.
+              </Text>
+            </Field>
+          </ScrollView>
+
+          <View style={styles.footer}>
+            <Button label="Get My Offer" onPress={handleSubmit} />
+            <View style={styles.trustRow}>
+              <Trust icon={<ShieldIcon size={20} />} label="No obligation" />
+              <Trust icon={<ClockIcon size={20} />} label="Real offers, real fast" />
+              <Trust icon={<MapPinIcon size={20} />} label="We come to you" />
             </View>
           </View>
-          <Text style={styles.mileageHint}>
-            US-spec cars in miles, EU-spec in kilometers — whichever&apos;s on the odometer.
-          </Text>
-        </Field>
-
-        <Field label="Overall Condition">
-          <View style={styles.segRow}>
-            {conditions.map((c) => (
-              <Pressable
-                key={c}
-                onPress={() => setCondition(c)}
-                style={[styles.segOption, condition === c && styles.segOptionActive]}>
-                <Text style={[styles.segLabel, condition === c && styles.segLabelActive]}>{c}</Text>
-              </Pressable>
-            ))}
-          </View>
-        </Field>
-
-        <Field label={`Add Photos${photos.length ? ` (${photos.length})` : ''}`}>
-          <View style={styles.photoRow}>
-            {photos.map((uri, i) => (
-              <Pressable
-                key={uri + i}
-                style={[styles.photoTile, styles.photoTileFilled]}
-                onPress={() => handleExistingPhotoPress(i)}>
-                <Image source={{ uri }} style={StyleSheet.absoluteFill} contentFit="cover" />
-              </Pressable>
-            ))}
-            {photos.length < MAX_PHOTOS && (
-              <Pressable
-                style={styles.photoTile}
-                disabled={isAdding}
-                onPress={() => promptSource(null)}>
-                <PlusIcon color={Colors.red} />
-              </Pressable>
-            )}
-          </View>
-          <Text style={styles.photoHint}>
-            Photos are automatically resized to keep things quick to send — take as many as you need.
-          </Text>
-        </Field>
-      </ScrollView>
-
-      <View style={styles.footer}>
-        <Button label="Get My Offer" onPress={handleSubmit} />
-        <View style={styles.trustRow}>
-          <Trust icon={<ShieldIcon size={20} />} label="No obligation" />
-          <Trust icon={<ClockIcon size={20} />} label="Real offers, real fast" />
-          <Trust icon={<MapPinIcon size={20} />} label="We come to you" />
-        </View>
-      </View>
+        </>
+      )}
     </SafeAreaView>
+  );
+}
+
+function OfferStatusView({
+  status,
+  onAccept,
+  onStartOver,
+}: {
+  status: Exclude<OfferStatus, 'form'>;
+  onAccept: () => void;
+  onStartOver: () => void;
+}) {
+  return (
+    <View style={styles.statusScreen}>
+      <View style={styles.statusIconWrap}>
+        <CheckCircleIcon size={40} />
+      </View>
+
+      {status === 'awaitingAccept' ? (
+        <>
+          <Text style={styles.statusTitle}>Your Request Is In</Text>
+          <Text style={styles.statusBody}>
+            A specialist will text you a real offer within one business day. Once you&apos;ve accepted it over text or
+            WhatsApp, come back here to confirm and book your inspection.
+          </Text>
+          <Button label="I've Accepted My Offer" onPress={onAccept} style={styles.statusButton} />
+        </>
+      ) : (
+        <>
+          <Text style={styles.statusTitle}>Offer Accepted</Text>
+          <Text style={styles.statusBody}>
+            Last step: a specialist needs to physically inspect your car before the sale is final.
+          </Text>
+          {preBuyInspectionLocation?.bookingUrl ? (
+            <Button
+              label={`Book a Pre-Buy Inspection (${preBuyInspectionLocation.name})`}
+              onPress={() => Linking.openURL(preBuyInspectionLocation.bookingUrl!)}
+              style={styles.statusButton}
+            />
+          ) : (
+            <Text style={styles.statusBody}>
+              Booking links for the other locations aren&apos;t set up yet — your specialist will schedule this with you
+              directly.
+            </Text>
+          )}
+        </>
+      )}
+
+      <Text style={styles.statusStartOver} onPress={onStartOver}>
+        Start Over
+      </Text>
+    </View>
   );
 }
 
@@ -357,4 +435,31 @@ const styles = StyleSheet.create({
   trustRow: { flexDirection: 'row', marginTop: 20, paddingHorizontal: 4 },
   trustItem: { flex: 1, alignItems: 'center', gap: 6 },
   trustLabel: { fontFamily: Fonts.bodySemibold, fontSize: 10.5, color: Colors.textMuted, textAlign: 'center' },
+  statusScreen: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.xxl },
+  statusIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: Colors.navyTint,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 18,
+  },
+  statusTitle: { fontFamily: Fonts.display, fontSize: 21, color: Colors.text, marginBottom: 8 },
+  statusBody: {
+    fontFamily: Fonts.body,
+    fontSize: 14,
+    color: Colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 21,
+    marginBottom: 20,
+  },
+  statusButton: { width: '100%' },
+  statusStartOver: {
+    marginTop: 22,
+    fontFamily: Fonts.bodySemibold,
+    fontSize: 13.5,
+    color: Colors.textMuted,
+    textDecorationLine: 'underline',
+  },
 });

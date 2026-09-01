@@ -12,6 +12,8 @@ interface SavedContextValue {
   savedCars: InventoryListItem[];
   isSaved: (slug: string) => boolean;
   toggleSaved: (car: InventoryListItem) => void;
+  /** Available for a full test-data reset (see Account tab). */
+  clearSaved: () => void;
 }
 
 const SavedContext = createContext<SavedContextValue | null>(null);
@@ -27,6 +29,7 @@ export function SavedProvider({ children }: { children: ReactNode }) {
         setSavedCars((cars) =>
           cars.some((c) => c.slug === car.slug) ? cars.filter((c) => c.slug !== car.slug) : [...cars, car],
         ),
+      clearSaved: () => setSavedCars([]),
     }),
     [savedCars],
   );

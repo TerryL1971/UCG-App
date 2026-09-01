@@ -8,22 +8,36 @@ real customer would hit it.
 
 ## Shipped Sept 1
 
-- **Pre-Buy Inspection booking (car detail screen).** Terry sent a real
-  Microsoft Bookings link for Ramstein/KMC
+- **Pre-Buy Inspection booking — corrected location, not the car detail
+  screen.** Originally placed on the car detail screen (buying FROM
+  UCG), which was wrong — Terry caught this: a "pre-buy inspection" is
+  UCG inspecting a car it's about to buy **from a customer**, so it
+  belongs in **Sell It Back**, and specifically *after an offer is made
+  and accepted*, not before. Moved: Sell It Back now has a real
+  `awaitingAccept` → `accepted` status flow (no fake dollar amount shown
+  — there's no real offer-generation backend, so a made-up number would
+  misrepresent a working pricing engine that doesn't exist; instead,
+  submitting moves the screen to "your offer is on the way," and an
+  honest "I've Accepted My Offer" button — standing in for a real
+  accept-confirmation once a backend exists — reveals the actual "Book a
+  Pre-Buy Inspection (Ramstein)" button). Uses the same real Microsoft
+  Bookings link
   (`outlook.office.com/book/PreBuyInspection@usedcarguys.net`, confirmed
   to redirect through real Microsoft Bookings infrastructure using UCG's
-  own domain — not verifiable content-wise since it's a client-rendered
-  widget, but the redirect chain itself is legitimate). Added a secondary
-  "Book a Pre-Buy Inspection (Ramstein)" button on the car detail screen,
-  above "Choose This Car." `UcgLocation` in `mock-data.ts` gained an
-  optional `bookingUrl` field so more locations can be added the moment
-  their links exist — **still needed: booking links for the other five
-  locations** (Kaiserslautern, Stuttgart, Spangdahlem, Grafenwoehr,
-  Wiesbaden). Also worth knowing: there's no per-car location data yet
-  (the inventory scraper doesn't expose which lot a car is at — see
-  `docs/wordpress-inventory-api-spec.md`), so this button can't yet pick
-  the *right* location automatically for a given car; it's labeled
-  "(Ramstein)" specifically rather than presented as universal.
+  own domain) and the same `UcgLocation.bookingUrl` field as before —
+  **still needed: booking links for the other five locations**
+  (Kaiserslautern, Stuttgart, Spangdahlem, Grafenwoehr, Wiesbaden).
+- **Choosing a new car now actually starts fresh.** A previous car's
+  deal-intake submission was staying in memory even after choosing a
+  *different* car, so the salesperson-match screen could show a stale
+  "already submitted" confirmation for a car that was no longer the one
+  being pursued. "Choose This Car" now clears any prior intake first.
+- **A real "Reset Test Data" action** (Account tab) — wipes account,
+  chosen car, deal-intake, saved cars, and any pending VIN scan in one
+  tap, with a confirmation prompt. Directly answers "can you delete my
+  information" for testing; the same underlying idea (a complete,
+  self-service delete) is also what Apple will require once real
+  backend accounts exist — see `docs/backend-and-ai-agent-plan.md`.
 
 ## Still needed, re-confirmed Sept 1
 

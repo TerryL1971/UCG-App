@@ -1,14 +1,47 @@
 import { router } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { UserIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
+import { useDeal } from '@/lib/deal-context';
+import { useDealIntake } from '@/lib/deal-intake-context';
+import { useSaved } from '@/lib/saved-context';
+import { useVinScan } from '@/lib/vin-scan-context';
 
 export default function AccountScreen() {
   const { user, logOut } = useAuth();
+  const { clearCar } = useDeal();
+  const { clearIntake } = useDealIntake();
+  const { clearSaved } = useSaved();
+  const { clearLastScannedVin } = useVinScan();
+
+  // Wipes everything this app holds about you — account, chosen car,
+  // deal-intake submission, saved cars, any pending VIN scan — and
+  // starts over from onboarding. Meant for testing (there's no real
+  // backend yet, so this IS the complete deletion, not a partial one),
+  // but the same underlying idea (a real, complete, self-service delete)
+  // is what Apple will require once real backend accounts exist — see
+  // docs/backend-and-ai-agent-plan.md.
+  const resetTestData = () => {
+    Alert.alert('Reset Test Data', 'This clears your account, chosen car, saved cars, and everything you’ve entered. Continue?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Reset',
+        style: 'destructive',
+        onPress: () => {
+          clearIntake();
+          clearCar();
+          clearSaved();
+          clearLastScannedVin();
+          logOut();
+          router.replace('/');
+        },
+      },
+    ]);
+  };
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
@@ -42,8 +75,8 @@ export default function AccountScreen() {
 
       <View style={styles.spacer} />
 
-      {user && (
-        <View style={styles.footer}>
+      <View style={styles.footer}>
+        {user && (
           <Text
             style={styles.logOut}
             onPress={() => {
@@ -52,8 +85,11 @@ export default function AccountScreen() {
             }}>
             Log Out
           </Text>
-        </View>
-      )}
+        )}
+        <Text style={styles.resetTestData} onPress={resetTestData}>
+          Reset Test Data
+        </Text>
+      </View>
     </SafeAreaView>
   );
 }
@@ -98,5 +134,12 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.bodySemibold,
     fontSize: 14,
     color: Colors.red,
+  },
+  resetTestData: {
+    textAlign: 'center',
+    fontFamily: Fonts.bodySemibold,
+    fontSize: 12.5,
+    color: Colors.textMuted,
+    marginTop: 12,
   },
 });

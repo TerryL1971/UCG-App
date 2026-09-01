@@ -13,13 +13,20 @@ import type { DealIntake } from '@/constants/mock-data';
 interface DealIntakeContextValue {
   intake: DealIntake | null;
   submitIntake: (intake: DealIntake) => void;
+  /** Clears any submitted intake — called when a new car is chosen (a
+   * previous car's intake shouldn't linger and look "submitted" for a
+   * car it was never about), and available for a full data reset. */
+  clearIntake: () => void;
 }
 
 const DealIntakeContext = createContext<DealIntakeContextValue | null>(null);
 
 export function DealIntakeProvider({ children }: { children: ReactNode }) {
   const [intake, setIntake] = useState<DealIntake | null>(null);
-  const value = useMemo(() => ({ intake, submitIntake: setIntake }), [intake]);
+  const value = useMemo(
+    () => ({ intake, submitIntake: setIntake, clearIntake: () => setIntake(null) }),
+    [intake],
+  );
   return <DealIntakeContext.Provider value={value}>{children}</DealIntakeContext.Provider>;
 }
 

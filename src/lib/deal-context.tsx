@@ -15,13 +15,18 @@ import type { InventoryDetail } from '@/lib/ucg-inventory';
 interface DealContextValue {
   car: InventoryDetail | null;
   chooseCar: (car: InventoryDetail) => void;
+  /** Available for a full test-data reset (see Account tab). */
+  clearCar: () => void;
 }
 
 const DealContext = createContext<DealContextValue | null>(null);
 
 export function DealProvider({ children }: { children: ReactNode }) {
   const [car, setCar] = useState<InventoryDetail | null>(null);
-  const value = useMemo(() => ({ car, chooseCar: setCar }), [car]);
+  const value = useMemo(
+    () => ({ car, chooseCar: setCar, clearCar: () => setCar(null) }),
+    [car],
+  );
   return <DealContext.Provider value={value}>{children}</DealContext.Provider>;
 }
 

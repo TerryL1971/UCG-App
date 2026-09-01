@@ -1,29 +1,23 @@
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Dimensions, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Dimensions, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
 import { ArrowLeftIcon, DrivetrainIcon, FuelIcon, GaugeIcon, HeartIcon, TransmissionIcon } from '@/components/icons';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
-import { ucgLocations } from '@/constants/mock-data';
 import { useDeal } from '@/lib/deal-context';
+import { useDealIntake } from '@/lib/deal-intake-context';
 import { useSaved } from '@/lib/saved-context';
 import { fetchInventoryDetail, type InventoryDetail } from '@/lib/ucg-inventory';
-
-// Only Ramstein/KMC's real booking link exists so far (see ucgLocations in
-// mock-data.ts) — there's no per-car location data from the scraper yet to
-// pick the right one automatically (see wordpress-inventory-api-spec.md),
-// so this is deliberately labeled by location rather than presented as if
-// it applies to every car everywhere.
-const preBuyInspectionLocation = ucgLocations.find((l) => l.bookingUrl);
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function CarDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { chooseCar } = useDeal();
+  const { clearIntake } = useDealIntake();
   const { isSaved, toggleSaved } = useSaved();
   const [car, setCar] = useState<InventoryDetail | null>(null);
   const [error, setError] = useState(false);
@@ -108,17 +102,14 @@ export default function CarDetailScreen() {
       </ScrollView>
 
       <SafeAreaView edges={['bottom']} style={styles.ctaBar}>
-        {preBuyInspectionLocation?.bookingUrl && (
-          <Button
-            label={`Book a Pre-Buy Inspection (${preBuyInspectionLocation.name})`}
-            variant="secondary"
-            style={styles.inspectionButton}
-            onPress={() => Linking.openURL(preBuyInspectionLocation.bookingUrl!)}
-          />
-        )}
         <Button
           label="Choose This Car  →"
           onPress={() => {
+            // A previous car's deal-intake shouldn't linger and look
+            // "submitted" for a car that's no longer the one being
+            // pursued — starting fresh on a new car means an actual
+            // fresh start, not stale data from a prior test run.
+            clearIntake();
             chooseCar(car);
             router.push('/deal-intake');
           }}
@@ -205,5 +196,4 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: Colors.border,
   },
-  inspectionButton: { marginBottom: 10 },
 });
