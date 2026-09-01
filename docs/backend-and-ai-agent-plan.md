@@ -38,19 +38,23 @@ same interface once it exists. Good instinct, but it splits into two
 different answers depending on the API, and conflating them would waste
 effort:
 
-- **PayPal — don't build a fake, use PayPal's real Sandbox.** PayPal
-  already provides exactly this: a free developer account
+- **PayPal — don't build a fake, use PayPal's real Sandbox. DONE, same
+  day.** PayPal already provides exactly this: a free developer account
   (developer.paypal.com) generates sandbox business/buyer test accounts
   and API credentials that hit the *same* endpoints and *same*
-  request/response shapes as production — just fake money. Building
-  against Sandbox from day one means "swap fake for real" becomes
-  swapping which credentials load, not a code change. No business
-  verification needed to get Sandbox credentials — this is a real,
-  available unblocker *today*, independent of the live PayPal Business
-  account Terry still needs to provide for the real thing. Applies the
-  same "secret never in the client" rule as everything else — a PayPal
-  route would follow the identical `chat+api.ts` pattern (server route,
-  key in `.env`).
+  request/response shapes as production — just fake money. Terry set up
+  a real sandbox app within the hour and provided credentials, so this
+  went straight to built: `src/app/deposit.tsx` + two server routes
+  (`src/app/api/paypal/create-order+api.ts`, `capture-order+api.ts`) +
+  `src/lib/paypal-server.ts`. Building against Sandbox from day one means
+  "swap fake for real" is swapping `PAYPAL_API_BASE` and the credentials
+  in `.env` — no code change. Full writeup in
+  `docs/deal-flow-roadmap.md`'s "Make A Deposit" section, including two
+  real things this caught: `new Anthropic()`'s module-scope construction
+  in `chat+api.ts` was a real crash bug (fixed), and a shared PayPal
+  helper first got exposed as its own client-facing route before moving
+  to `src/lib` (also fixed) — worth remembering for any *future* `+api.ts`
+  work: only put files meant to become endpoints under `src/app`.
 - **DealerTeam — a genuine custom fake makes sense.** No public sandbox
   exists for it, and — separately from "for testing" — real API access
   may never be affordable on UCG's plan (see

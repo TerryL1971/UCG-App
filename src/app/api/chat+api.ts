@@ -19,8 +19,6 @@ import { usareurBases } from '@/constants/mock-data';
  * docs/backend-and-ai-agent-plan.md, this is that plan's "Tier 1" agent.
  */
 
-const client = new Anthropic();
-
 interface ChatRequestBody {
   messages: { role: 'user' | 'assistant'; content: string }[];
   context?: {
@@ -106,6 +104,13 @@ export async function POST(request: Request) {
     : '';
 
   try {
+    // Constructed here, inside the try — not at module scope. The SDK
+    // throws SYNCHRONOUSLY at construction (not just when a request is
+    // made) when it can't resolve any credentials at all, which was a
+    // real bug: a module-scope `new Anthropic()` threw before this
+    // function's own try/catch ever got a chance to run, crashing the
+    // whole route instead of degrading to the honest fallback below.
+    const client = new Anthropic();
     const response = await client.messages.create({
       model: 'claude-opus-5',
       max_tokens: 1024,
@@ -120,7 +125,9 @@ export async function POST(request: Request) {
     // .env file yet. Fail honestly rather than pretend the agent answered —
     // matches the rest of this app's "not connected yet" pattern (Document
     // Upload, etc.) rather than a silent/confusing error.
-    const isAuthError = error instanceof Anthropic.AuthenticationError;
+    const isAuthError =
+      error instanceof Anthropic.AuthenticationError ||
+      (error instanceof Error && error.message.includes('ANTHROPIC_API_KEY'));
     console.error('AI agent request failed:', error);
     return Response.json(
       {

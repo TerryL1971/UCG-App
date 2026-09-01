@@ -65,6 +65,25 @@ real customer would hit it.
   retest. If it's still broken, the next useful details are: does the
   keyboard open at all, does a character appear and then vanish, and
   which platform/device.
+- **Found from the terminal crash after adding `.env`: a real bug in
+  `chat+api.ts`.** `new Anthropic()` was constructed at module scope,
+  outside the route's own try/catch — the SDK throws *synchronously* at
+  construction when no credentials resolve at all, which crashed the
+  whole route (matching the stack trace Terry showed) instead of
+  degrading to the intended "not connected yet" fallback. Fixed by
+  constructing the client inside the try block. Unrelated: the VS Code
+  notification about `python.terminal.useEnvFile` in that same
+  screenshot is a red herring for this project — that's the Python
+  extension's own terminal-env feature, unrelated to whether Expo/Node
+  reads `.env` (confirmed separately: `expo lint`/`expo-doctor` both
+  logged `env: load .env` correctly).
+- **PayPal deposit flow — shipped, see "Make A Deposit" below** for the
+  full writeup. Also caught and fixed a real architecture bug while
+  building it: a shared PayPal helper first lived at
+  `src/app/api/paypal/client.ts` and got exposed as its own client-facing
+  page route (`/api/paypal/client`) — Expo Router treats every file
+  under `src/app`, not just `+api.ts` ones, as potentially routable.
+  Moved to `src/lib/paypal-server.ts` instead.
 
 Terry re-raised these explicitly — they were already tracked below, not
 new, but worth surfacing as still-live priorities rather than assuming
@@ -178,27 +197,40 @@ sort it out from there) rather than needing to be replaced outright.
   not something the app can verify itself without the API access still
   being sorted out (see
   [docs/salesforce-dealerteam-integration-plan.md](./salesforce-dealerteam-integration-plan.md)).
-- **Payment method specified Sept 1: PayPal.** Terry confirmed the
-  deposit should go through PayPal, and that PayPal account credentials
-  will be provided when ready. **Not built yet — status as of this
-  check: no.** What it actually needs, so it's ready to wire up the
-  moment credentials exist:
-  - A real PayPal Business account, with API credentials (Client ID +
-    Secret) from the PayPal Developer Dashboard — **sandbox credentials
-    first for testing, live credentials only once this is genuinely
-    ready for real money.** Sandbox credentials are free and available
-    immediately (developer.paypal.com, no business verification needed)
-    — this doesn't have to wait on the real business account at all; see
-    `docs/backend-and-ai-agent-plan.md`'s "Strategy: fake the APIs we
-    don't control yet" for why Sandbox is the right move here instead of
-    a homemade fake.
-  - Same rule as every other credential in this app: PayPal secrets
-    can't live in the shipped app. Collecting a deposit needs a real
-    server-side call (PayPal's Orders API — create an order server-side,
-    capture it after the customer approves) — this is exactly what
-    `src/app/api/chat+api.ts` already proved out for the Claude API
-    (Expo Router server route, secret in `.env`, never in the client
-    bundle). A PayPal route would follow the identical pattern.
+- **Payment method: PayPal — SHIPPED (Sept 1), against real PayPal
+  Sandbox.** Terry set up a real PayPal Developer sandbox app the same
+  day and provided sandbox credentials, so this went from "specified"
+  to "built" in one pass rather than staying queued. "Hold This Car —
+  Make a Deposit" on the salesperson screen
+  (`src/app/deposit.tsx`) creates and captures a real PayPal Orders API
+  order via two server routes
+  (`src/app/api/paypal/create-order+api.ts`,
+  `capture-order+api.ts`, sharing `src/lib/paypal-server.ts`) —
+  `PAYPAL_CLIENT_ID`/`PAYPAL_CLIENT_SECRET` in `.env`, same
+  "server-only, never in the client bundle" pattern
+  `src/app/api/chat+api.ts` already proved out for the Claude API. No
+  PayPal native SDK (would need a custom dev client, breaking Expo Go
+  testing) — instead, `expo-web-browser`'s `openAuthSessionAsync` opens
+  PayPal's own hosted approval page and catches the redirect back via a
+  deep link. `PAYPAL_API_BASE` defaults to the sandbox host, so going
+  live later is a credential/env swap, not a rewrite — see
+  `docs/backend-and-ai-agent-plan.md`'s "Strategy" section for why
+  Sandbox was the right move over a homemade fake.
+  - **The $50 deposit amount shown is an explicit placeholder** — the
+    real amount (fixed $ vs. a % of price) is still an open business
+    decision, not something to treat as settled just because a number
+    now appears on screen.
+  - **Not done:** this isn't wired into the My Deal timeline
+    (`timeline-road.tsx`) as an actual step — deliberately kept as its
+    own screen instead, both because that component is complex/still
+    being iterated on and separately paused, and because the "reserved
+    in DealerTeam, can be checked" confirmation above still needs the
+    DealerTeam access question resolved before it means anything.
+  - **Not done:** webhook handling. PayPal's sandbox app has webhooks
+    available (up to 10) but none are configured — right now the app
+    only knows a payment succeeded because the client-side capture call
+    returned `COMPLETED`, not from PayPal notifying the server directly.
+    Fine for solo testing, not something to treat as production-solid.
   - Still open: deposit amount (fixed $ or a % of price?), currency
     (USD given pricing elsewhere is in $, or does a EUR option matter
     for EU-spec cars?), and what happens on a failed/abandoned PayPal

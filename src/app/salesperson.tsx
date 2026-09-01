@@ -141,6 +141,12 @@ export default function SalespersonScreen() {
       </KeyboardAvoidingView>
 
       <View style={styles.ctaWrap}>
+        <Button
+          label="Hold This Car — Make a Deposit"
+          variant="secondary"
+          style={styles.depositButton}
+          onPress={() => router.push('/deposit')}
+        />
         <Button label="View My Timeline  →" onPress={() => router.push('/(tabs)/deal')} />
       </View>
     </SafeAreaView>
@@ -213,5 +219,6 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     paddingVertical: 10,
   },
-  ctaWrap: { paddingHorizontal: Spacing.xxl, paddingTop: 4, paddingBottom: 8 },
+  ctaWrap: { paddingHorizontal: Spacing.xxl, paddingTop: 4, paddingBottom: 8, gap: 10 },
+  depositButton: { marginBottom: 0 },
 });

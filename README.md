@@ -18,22 +18,40 @@ Wi-Fi. This project is pinned to **Expo SDK 54** on purpose — see
 only supports SDK 54 as of writing; don't bump this without checking that
 first, or device testing breaks).
 
-### Enabling the AI agent
+### Enabling server-side integrations
 
-The "Meet Your Specialist" chat (`src/app/salesperson.tsx`) needs a
-`.env` file at the project root (already gitignored — never commit a real
-key) with:
+Both of these need a `.env` file at the project root (already gitignored
+— never commit real values):
 
 ```
 ANTHROPIC_API_KEY=sk-ant-...
+
+PAYPAL_CLIENT_ID=...
+PAYPAL_CLIENT_SECRET=...
+# Optional — defaults to PayPal's sandbox host. Only change this to
+# api-m.paypal.com once genuinely ready to take real payments.
+# PAYPAL_API_BASE=https://api-m.sandbox.paypal.com
 ```
 
-That's read by `src/app/api/chat+api.ts`, a server route — the key never
-ships inside the app itself. Without it, the chat still works, but every
-reply is an honest "isn't fully connected yet, tap Talk to a Human"
-fallback rather than a real answer. Works against `npx expo start`'s dev
-server as-is; a real published app needs real hosting for this route
-first — see [docs/backend-and-ai-agent-plan.md](./docs/backend-and-ai-agent-plan.md).
+- **`ANTHROPIC_API_KEY`** powers the "Meet Your Specialist" chat
+  (`src/app/salesperson.tsx`), read by `src/app/api/chat+api.ts`. Without
+  it, the chat still works, but every reply is an honest "isn't fully
+  connected yet, tap Talk to a Human" fallback rather than a real answer.
+- **`PAYPAL_CLIENT_ID` / `PAYPAL_CLIENT_SECRET`** power the deposit flow
+  (`src/app/deposit.tsx`, reached from "Hold This Car — Make a Deposit"
+  on the salesperson screen), read by `src/app/api/paypal/create-order+api.ts`
+  and `capture-order+api.ts`. Get free sandbox credentials at
+  developer.paypal.com — no live business account or verification
+  needed for sandbox. Without these set, tapping the deposit button
+  fails with a real, visible error (there's no graceful fallback for
+  this one — starting a payment with no way to complete it isn't
+  something to paper over the way an unanswered chat message can be).
+
+None of these keys ever ship inside the app itself — they're only read
+by server routes (`+api.ts` files), which Expo Router excludes from the
+client bundle. Works against `npx expo start`'s dev server as-is; a real
+published app needs real hosting for these routes first — see
+[docs/backend-and-ai-agent-plan.md](./docs/backend-and-ai-agent-plan.md).
 
 ## What's actually built
 
@@ -168,10 +186,30 @@ first — see [docs/backend-and-ai-agent-plan.md](./docs/backend-and-ai-agent-pl
   when to hand off — a **"Talk to a Human"** link (still real WhatsApp)
   stays on the same screen for anything account-specific or that it
   can't answer. Works today against `npx expo start`'s dev server (see
-  "Enabling the AI agent" above); a real published app needs real
-  hosting for this route — this is
+  "Enabling server-side integrations" above); a real published app needs
+  real hosting for this route — this is
   [docs/backend-and-ai-agent-plan.md](./docs/backend-and-ai-agent-plan.md)'s
   Tier 1 agent, now actually built rather than only planned.
+- **A real PayPal deposit flow.** "Hold This Car — Make a Deposit" on the
+  salesperson screen opens `src/app/deposit.tsx`, which puts a 5-day hold
+  on a car via real PayPal Sandbox checkout — server routes
+  (`src/app/api/paypal/create-order+api.ts` / `capture-order+api.ts`,
+  sharing `src/lib/paypal-server.ts`) create and capture a real Orders
+  API order, opened in-app via `expo-web-browser`'s
+  `openAuthSessionAsync` and returned via a deep link (no PayPal native
+  SDK — those need a custom dev client, which would break testing via
+  plain Expo Go). Per
+  [docs/backend-and-ai-agent-plan.md](./docs/backend-and-ai-agent-plan.md)'s
+  "Strategy" section: this uses PayPal's own Sandbox rather than a
+  homemade fake, so going live later is a credential swap
+  (`PAYPAL_API_BASE` + real keys), not a rewrite. **The deposit amount
+  shown ($50) is an explicit placeholder**, not a real business decision
+  — see `deposit.tsx`'s own comment and
+  [docs/deal-flow-roadmap.md](./docs/deal-flow-roadmap.md). Unlike the
+  AI agent, there's no graceful "not connected" fallback if
+  `PAYPAL_CLIENT_ID`/`SECRET` are missing — it fails with a visible
+  error instead, since silently accepting a customer into a payment flow
+  with no way to complete it would be worse than an honest error.
 - **The journey timeline is a winding road with signs, not a straight
   line** (`src/components/timeline-road.tsx`) — an SVG road curving side
   to side down the screen, each step a small road-sign marker (one
