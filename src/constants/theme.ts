@@ -1,3 +1,5 @@
+import { Platform } from 'react-native';
+
 /**
  * Used Car Guys brand theme.
  * Colors are lifted directly from the logo (brand/ucg-logo-wide.pdf) — see
@@ -55,21 +57,33 @@ export const Fonts = {
   bodyBold: 'Barlow_700Bold',
 } as const;
 
+// react-native-web warns that the classic shadow* style props are
+// deprecated there in favor of CSS `boxShadow` — but boxShadow doesn't
+// exist on native (iOS reads shadow*, Android reads elevation), so
+// switching to it outright would silently drop shadows on a real device.
+// Platform.select gives each platform the form it actually understands:
+// boxShadow (a CSS string) on web only, shadow*/elevation everywhere else.
 export const Shadow = {
-  card: {
-    shadowColor: '#273368',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 18,
-    elevation: 3,
-  },
-  button: {
-    shadowColor: '#C33531',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 4,
-  },
+  card: Platform.select({
+    web: { boxShadow: '0px 6px 18px rgba(39, 51, 104, 0.08)' },
+    default: {
+      shadowColor: '#273368',
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.08,
+      shadowRadius: 18,
+      elevation: 3,
+    },
+  }),
+  button: Platform.select({
+    web: { boxShadow: '0px 8px 16px rgba(195, 53, 49, 0.3)' },
+    default: {
+      shadowColor: '#C33531',
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.3,
+      shadowRadius: 16,
+      elevation: 4,
+    },
+  }),
 } as const;
 
 /** Minimum comfortable tap target, per Apple/Google HIG. */

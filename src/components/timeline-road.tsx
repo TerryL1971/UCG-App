@@ -160,7 +160,7 @@ function RoadStop({
       : { marginRight: 8, alignItems: 'flex-end' as const };
 
   return (
-    <Animated.View pointerEvents="box-none" style={[styles.stopRow, posStyle, fadeStyle]}>
+    <Animated.View style={[styles.stopRow, posStyle, fadeStyle, { pointerEvents: 'box-none' }]}>
       <Pressable
         onPress={onPress}
         style={[styles.stopPressable, { flexDirection: pressableDirection }, isViewed && styles.stopRowViewed]}>
@@ -314,14 +314,17 @@ export function TimelineRoad({ steps, car, viewedIndex, onStepPress, horizontal 
 
       {showPhoto && car && (
         <Animated.View
-          pointerEvents="none"
-          style={[styles.photoWrap, { left: finalStop.x - 34, top: finalStop.y - 34 - 6 }, photoStyle]}>
+          style={[
+            styles.photoWrap,
+            { left: finalStop.x - 34, top: finalStop.y - 34 - 6, pointerEvents: 'none' },
+            photoStyle,
+          ]}>
           <Image source={{ uri: car.thumbnail }} style={styles.photo} contentFit="cover" />
         </Animated.View>
       )}
 
-      <Animated.View pointerEvents="none" style={[styles.carShadow, carStyle]} />
-      <Animated.View pointerEvents="none" style={[styles.carWrap, carStyle]}>
+      <Animated.View style={[styles.carShadow, carStyle, { pointerEvents: 'none' }]} />
+      <Animated.View style={[styles.carWrap, carStyle, { pointerEvents: 'none' }]}>
         <CarSideIcon size={CAR_SIZE} />
       </Animated.View>
     </View>

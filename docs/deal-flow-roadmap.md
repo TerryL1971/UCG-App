@@ -63,6 +63,20 @@ real customer would hit it.
   `keyboardDismissMode` from `"interactive"` (requires a synced drag,
   not very discoverable) to `"on-drag"` (dismisses as soon as a scroll
   starts, the more standard behavior).
+- **Fixed two console deprecation warnings Terry spotted testing the web
+  preview** (`"shadow*" style props are deprecated. Use "boxShadow"` and
+  `props.pointerEvents is deprecated. Use style.pointerEvents`) — real,
+  worth fixing, but neither affects the mobile app itself: `boxShadow`
+  is CSS-only and doesn't exist on native (iOS reads `shadow*`, Android
+  reads `elevation`), so `Shadow` in `theme.ts` now uses
+  `Platform.select` — `boxShadow` on web, the classic
+  `shadow*`/`elevation` object everywhere else — rather than switching
+  outright and silently dropping shadows on a real device.
+  `pointerEvents` as a direct prop (3 spots in `timeline-road.tsx`) is a
+  React Native-wide deprecation, not web-only, so those moved into
+  `style.pointerEvents` for both platforms. Purely a console-warning
+  fix — no visible behavior changed on either platform, and nothing
+  about the paused timeline-road animation work was touched.
 
 ## Shipped Sept 1
 
