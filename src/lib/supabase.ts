@@ -2,6 +2,7 @@ import 'react-native-url-polyfill/auto';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { Platform } from 'react-native';
 
 /**
  * Real backend, Sept 2 decision: Supabase (see docs/backend-and-ai-agent-plan.md,
@@ -33,16 +34,29 @@ const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 
-export const supabase: SupabaseClient | null = isSupabaseConfigured
-  ? createClient(supabaseUrl!, supabaseAnonKey!, {
-      auth: {
-        storage: AsyncStorage,
-        autoRefreshToken: true,
-        persistSession: true,
-        // Mobile apps don't receive OAuth redirects the way a browser
-        // tab does — this is the React-Native-specific setting, not web's
-        // default of `true`.
-        detectSessionInUrl: false,
-      },
-    })
-  : null;
+// `expo export --platform web` prerenders every route in a headless
+// Node process — no `window` — before it ever reaches a real browser.
+// Real device/browser runs are fine (native has no DOM dependency here at
+// all; a real browser tab always has `window`); this guard is only for
+// that one Node-side pass. Without it, the Supabase client's constructor
+// eagerly tries to recover a session via AsyncStorage's *web* backend,
+// which reads `window.localStorage` unconditionally and throws
+// `ReferenceError: window is not defined`, crashing the entire static
+// export the moment real credentials exist — found by actually running
+// the export after adding them, not guessed at in advance.
+const canInitSupabase = Platform.OS !== 'web' || typeof window !== 'undefined';
+
+export const supabase: SupabaseClient | null =
+  isSupabaseConfigured && canInitSupabase
+    ? createClient(supabaseUrl!, supabaseAnonKey!, {
+        auth: {
+          storage: AsyncStorage,
+          autoRefreshToken: true,
+          persistSession: true,
+          // Mobile apps don't receive OAuth redirects the way a browser
+          // tab does — this is the React-Native-specific setting, not web's
+          // default of `true`.
+          detectSessionInUrl: false,
+        },
+      })
+    : null;
