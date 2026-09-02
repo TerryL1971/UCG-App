@@ -13,6 +13,7 @@ import { StatusChip } from '@/components/ui/chip';
 import { TimelineRoad } from '@/components/timeline-road';
 import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
 import {
+  FINANCE_APPLICATION_URL,
   financingTerms,
   salesperson,
   ucgLocations,
@@ -117,6 +118,9 @@ function StepDetailContent({ step, car }: { step: DealStep; car: ReturnType<type
   // down, but every render needs it available regardless of which
   // branch this step takes.
   const { documents } = useDealDocuments();
+  // Same rule — only the 'application' branch actually reads this (to
+  // decide financing vs. cash copy), but it has to be called every render.
+  const { intake } = useDealIntake();
 
   if (step.id === 'ready') {
     return car ? (
@@ -156,12 +160,39 @@ function StepDetailContent({ step, car }: { step: DealStep; car: ReturnType<type
   }
 
   if (step.id === 'application') {
+    const carLabel = car ? `${car.year} ${car.title}` : 'your chosen car';
+
+    if (intake?.paymentMethod === 'cash') {
+      return (
+        <View style={[styles.detailCard, { flexDirection: 'column', alignItems: 'stretch', gap: 8 }]}>
+          <Text style={styles.detailPlainText}>
+            Paying cash for {carLabel} — no financing application needed. If you&apos;re sending a wire, the
+            instructions are one tap away.
+          </Text>
+          <Pressable style={styles.detailLinkRow} onPress={() => router.push('/wire-instructions')}>
+            <DownloadIcon size={14} color={Colors.navy} />
+            <Text style={styles.detailLink}>View Wire Instructions</Text>
+          </Pressable>
+        </View>
+      );
+    }
+
+    // Financing (or no intake on file yet, e.g. viewing the demo default
+    // data) — link out to UCG's own real application rather than
+    // duplicate it in-app; see FINANCE_APPLICATION_URL's doc comment in
+    // mock-data.ts for why. Lender choice(s) came from deal-intake.tsx.
     return (
-      <View style={styles.detailCard}>
+      <View style={[styles.detailCard, { flexDirection: 'column', alignItems: 'stretch', gap: 8 }]}>
         <Text style={styles.detailPlainText}>
-          Application received and matched to {car ? `${car.year} ${car.title}` : 'your chosen car'}. No action
-          needed from you.
+          Application received and matched to {carLabel}.
+          {intake?.financingLenders?.length
+            ? ` Submitted to ${intake.financingLenders.join(', ')}.`
+            : ''}
         </Text>
+        <Pressable style={styles.detailLinkRow} onPress={() => Linking.openURL(FINANCE_APPLICATION_URL)}>
+          <DownloadIcon size={14} color={Colors.navy} />
+          <Text style={styles.detailLink}>View Finance Application</Text>
+        </Pressable>
       </View>
     );
   }

@@ -163,10 +163,17 @@ export interface DealDocument {
 // done above. (These previously stayed partly "Needed" even once the
 // timeline claimed the step was complete, which contradicted itself the
 // moment someone actually looked at the document list.)
+//
+// "Orders" (Sept 2, Terry): renamed from "Proof of Income" — this is a
+// dealership for US military in Germany, so what's actually needed is
+// PCS/deployment orders, not a civilian pay-stub-style income proof.
+// Kept the internal `id`/`icon` as 'income' on purpose (touches
+// iconFor/statusLabel lookups elsewhere) — only the customer-facing
+// `name` changed.
 export const dealDocuments: DealDocument[] = [
   { id: 'license', name: "Driver's License", status: 'approved', icon: 'id' },
   { id: 'insurance', name: 'Proof of Insurance', status: 'approved', icon: 'insurance' },
-  { id: 'income', name: 'Proof of Income', status: 'approved', icon: 'income' },
+  { id: 'income', name: 'Orders', status: 'approved', icon: 'income' },
   { id: 'residence', name: 'Proof of Residence', status: 'approved', icon: 'residence' },
 ];
 
@@ -184,6 +191,61 @@ export const financingTerms: FinancingTerms = {
   termMonths: 60,
   monthlyPayment: 405,
   lender: 'USAA Auto Loans',
+};
+
+/**
+ * The actual finance application UCG already runs — usedcarguys.net/finance/
+ * (verified real, Sept 2: a genuine form collecting personal, military
+ * service, and financial details, including SSN/DOB). Deliberately NOT
+ * rebuilt inside this app — that form collects sensitive PII this app has
+ * no secure backend to receive yet (see docs/legal-considerations-germany.md
+ * and docs/backend-and-ai-agent-plan.md's data-handling notes). The app's
+ * job here is to point the customer at UCG's own, already-hosted form, not
+ * to duplicate it.
+ */
+export const FINANCE_APPLICATION_URL = 'https://www.usedcarguys.net/finance/';
+
+/**
+ * Named lender options for the deal-intake financing preference — real
+ * institutions Terry named directly (Sept 2), not invented. "Other" stays
+ * free-text. A customer can pick more than one ("or all of the above").
+ * A proper lender-lookup/search feature was also asked for but isn't
+ * built — see docs/deal-flow-roadmap.md, it needs more specification
+ * (search through what directory?) before it's buildable honestly.
+ */
+export const financingLenderOptions = ['Service Federal Credit Union', 'Community Bank'] as const;
+
+/**
+ * Real wire transfer instructions for cash deals, provided directly by
+ * Terry (Sept 2) — preserved exactly. Two small spelling fixes only
+ * (COMMMERZBANK → COMMERZBANK, "Whats App" → "WhatsApp"), since neither
+ * touches an actual routing/account number; every number, code, and IBAN
+ * below is copied character-for-character as given, not reformatted or
+ * "corrected" — a wrong digit here sends someone's money to the wrong
+ * place, so nothing here should ever be edited without going back to the
+ * original source.
+ */
+export const wireInstructions = {
+  adminOffice: {
+    phone: '06371 92 00 00',
+    email: 'online@usedcarguys.net',
+    usFax: '(734) 574 6004',
+    address: 'The Used Car Guys, Weilerbacher Str 110, 67661, Kaiserslautern',
+  },
+  supportWhatsapp: '491604440011',
+  step1: {
+    label: 'STEP 1 — WIRE TRANSFER',
+    bank: 'CITIBANK, NEW YORK BRANCH',
+    account: '10925832',
+    swiftBic: 'CITIUS33',
+    abaRouting: '021 000 089',
+  },
+  step2: {
+    label: 'STEP 2 — FURTHER CREDIT TO OUR USD ACCOUNT AT COMMERZBANK',
+    bank: 'COMMERZBANK AG MANNHEIM BRANCH',
+    iban: 'DE1867 0400 3106 2116 4300',
+    swiftBic: 'COBADEFF',
+  },
 };
 
 export type PaymentMethod = 'cash' | 'financing';
@@ -275,7 +337,10 @@ export interface DealIntake {
   contact: string;
   base: string;
   paymentMethod: PaymentMethod;
-  financingLender: string;
+  /** One or more selected lenders — "or all of the above" (Terry, Sept 2)
+   * means this is a multi-select, not a single choice. Values are either
+   * an entry from `financingLenderOptions` or free text from "Other." */
+  financingLenders: string[];
   financingDownPayment: string;
   licenseStatus: LicenseStatus;
   /** Both sides, not one photo — a license needs its back read too

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { DocumentIcon, IdCardIcon, MapPinIcon, ShieldIcon, UploadIcon } from '@/components/icons';
+import { DocumentIcon, IdCardIcon, MapPinIcon, PlusIcon, ShieldIcon } from '@/components/icons';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { StatusChip } from '@/components/ui/chip';
 import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
@@ -25,46 +25,81 @@ const statusLabel: Record<DealDocument['status'], string> = {
   approved: 'Approved',
 };
 
-function DocRow({
+/**
+ * A document card holding 1-to-many pages (Terry, Sept 2: "allowing for
+ * 1-x pages" — Proof of Insurance, Orders, and Proof of Residence can
+ * genuinely run multiple pages, not just one photo). This isn't a true
+ * edge-detection/auto-crop document scanner — that needs a native module
+ * outside what Expo Go can run, which would break the live device testing
+ * AGENTS.md pins this project's Expo SDK version around. What's here is
+ * real multi-page capture: add as many photos as a document needs, see
+ * them as a thumbnail strip, remove one that came out bad without losing
+ * the rest.
+ */
+function DocCard({
   doc,
-  isReplacing,
-  onReplace,
+  isAdding,
+  onAddPage,
+  onRemovePage,
 }: {
   doc: DocumentState;
-  isReplacing: boolean;
-  onReplace: () => void;
+  isAdding: boolean;
+  onAddPage: () => void;
+  onRemovePage: (pageIndex: number) => void;
 }) {
+  const pageCount = doc.uris.length;
+
+  const confirmRemove = (pageIndex: number) => {
+    Alert.alert('Remove this page?', undefined, [
+      { text: 'Remove', style: 'destructive', onPress: () => onRemovePage(pageIndex) },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
   return (
-    <Pressable style={[styles.row, Shadow.card]} onPress={onReplace} disabled={isReplacing}>
-      <View style={styles.rowIcon}>
-        {doc.uri ? (
-          <Image source={{ uri: doc.uri }} style={StyleSheet.absoluteFill} contentFit="cover" />
-        ) : (
-          iconFor[doc.icon](Colors.navy)
-        )}
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={styles.rowName}>{doc.name}</Text>
-        <View style={{ marginTop: 5 }}>
-          <StatusChip status={doc.status} label={isReplacing ? 'Saving…' : statusLabel[doc.status]} />
+    <View style={[styles.card, Shadow.card]}>
+      <View style={styles.cardHeader}>
+        <View style={styles.rowIcon}>{iconFor[doc.icon](Colors.navy)}</View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.rowName}>{doc.name}</Text>
+          <View style={{ marginTop: 5, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <StatusChip status={doc.status} label={isAdding ? 'Saving…' : statusLabel[doc.status]} />
+            {pageCount > 0 && (
+              <Text style={styles.pageCount}>
+                {pageCount} page{pageCount === 1 ? '' : 's'}
+              </Text>
+            )}
+          </View>
         </View>
       </View>
-      <View style={[styles.action, { backgroundColor: Colors.red }]}>
-        <UploadIcon color="#fff" />
-      </View>
-    </Pressable>
+
+      {pageCount > 0 && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.pageStrip}>
+          {doc.uris.map((uri, i) => (
+            <Pressable key={uri + i} style={styles.pageThumb} onPress={() => confirmRemove(i)} disabled={isAdding}>
+              <Image source={{ uri }} style={StyleSheet.absoluteFill} contentFit="cover" />
+              <View style={styles.pageThumbBadge}>
+                <Text style={styles.pageThumbBadgeText}>×</Text>
+              </View>
+            </Pressable>
+          ))}
+        </ScrollView>
+      )}
+
+      <Pressable style={styles.addPageButton} onPress={onAddPage} disabled={isAdding}>
+        <PlusIcon size={16} color={Colors.red} />
+        <Text style={styles.addPageLabel}>{pageCount > 0 ? 'Add Another Page' : 'Add Page'}</Text>
+      </Pressable>
+    </View>
   );
 }
 
 export default function DocumentsScreen() {
   // Shared with the "Documents Uploaded" summary on My Deal
-  // (deal/index.tsx) via documents-context.tsx — a replacement made here
-  // needs to actually show up there too, not just in this screen's own
-  // state. That mismatch was a real bug: this screen used to hold its
-  // own local copy, so replacing a document here never updated the My
-  // Deal summary, which kept reading the original mock data directly.
-  const { documents, replaceDocument } = useDealDocuments();
-  const [replacingId, setReplacingId] = useState<string | null>(null);
+  // (deal/index.tsx) via documents-context.tsx — a page added here needs
+  // to actually show up there too, not just in this screen's own state.
+  const { documents, addDocumentPage, removeDocumentPage } = useDealDocuments();
+  const [addingId, setAddingId] = useState<string | null>(null);
 
   const captureFor = async (id: string, useCamera: boolean) => {
     const permission = useCamera
@@ -79,17 +114,17 @@ export default function DocumentsScreen() {
     const result = await launch({ mediaTypes: ['images'], quality: 0.8 });
     if (result.canceled || !result.assets[0]) return;
 
-    setReplacingId(id);
+    setAddingId(id);
     try {
       const compressed = await compressPhoto(result.assets[0].uri);
-      replaceDocument(id, compressed);
+      addDocumentPage(id, compressed);
     } finally {
-      setReplacingId(null);
+      setAddingId(null);
     }
   };
 
-  const promptReplace = (doc: DocumentState) => {
-    Alert.alert(doc.status === 'needed' ? `Upload ${doc.name}` : `Replace ${doc.name}`, undefined, [
+  const promptAddPage = (doc: DocumentState) => {
+    Alert.alert(`Add Page — ${doc.name}`, undefined, [
       { text: 'Take Photo', onPress: () => captureFor(doc.id, true) },
       { text: 'Choose from Library', onPress: () => captureFor(doc.id, false) },
       { text: 'Cancel', style: 'cancel' },
@@ -104,11 +139,17 @@ export default function DocumentsScreen() {
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.list}>
         {documents.map((doc) => (
-          <DocRow key={doc.id} doc={doc} isReplacing={replacingId === doc.id} onReplace={() => promptReplace(doc)} />
+          <DocCard
+            key={doc.id}
+            doc={doc}
+            isAdding={addingId === doc.id}
+            onAddPage={() => promptAddPage(doc)}
+            onRemovePage={(pageIndex) => removeDocumentPage(doc.id, pageIndex)}
+          />
         ))}
         <Text style={styles.hint}>
-          Tap any document — including an already-approved one — to upload a replacement. We&apos;ll notify{' '}
-          {salesperson.name.split(' ')[0]} the moment it&apos;s ready for review.
+          Add as many pages as a document needs — insurance and orders often run more than one page. We&apos;ll
+          notify {salesperson.name.split(' ')[0]} the moment a document&apos;s ready for review.
         </Text>
       </ScrollView>
     </SafeAreaView>
@@ -119,14 +160,13 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: Colors.bg },
   headerWrap: { backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: Colors.border },
   list: { padding: Spacing.xl, gap: Spacing.md, paddingBottom: 40 },
-  row: {
+  card: {
     backgroundColor: '#fff',
     borderRadius: Radius.xl,
     padding: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+    gap: 10,
   },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   rowIcon: {
     width: 42,
     height: 42,
@@ -137,13 +177,40 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   rowName: { fontFamily: Fonts.bodyBold, fontSize: 14.5, color: Colors.text },
-  action: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  pageCount: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textMuted },
+  pageStrip: { flexGrow: 0 },
+  pageThumb: {
+    width: 64,
+    height: 64,
+    borderRadius: Radius.md,
+    overflow: 'hidden',
+    marginRight: 8,
+    backgroundColor: Colors.navyTint,
+  },
+  pageThumbBadge: {
+    position: 'absolute',
+    bottom: 4,
+    right: 4,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: 'rgba(0,0,0,0.55)',
     alignItems: 'center',
     justifyContent: 'center',
   },
+  pageThumbBadgeText: { color: '#fff', fontSize: 14, lineHeight: 16, fontFamily: Fonts.bodyBold },
+  addPageButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    height: 40,
+    borderRadius: Radius.md,
+    borderWidth: 1.5,
+    borderColor: Colors.red,
+    borderStyle: 'dashed',
+  },
+  addPageLabel: { fontFamily: Fonts.bodySemibold, fontSize: 13, color: Colors.red },
   hint: {
     textAlign: 'center',
     fontFamily: Fonts.body,

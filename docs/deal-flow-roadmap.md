@@ -193,6 +193,77 @@ real customer would hit it.
   `style.pointerEvents` for both platforms. Purely a console-warning
   fix — no visible behavior changed on either platform, and nothing
   about the paused timeline-road animation work was touched.
+- **Financing lender choice, real wire instructions, a real license
+  camera overlay, and multi-page documents** — the big multi-part
+  request Terry gave in one message. Broken down:
+  - **Financing lender multi-select.** deal-intake.tsx's old single
+    "Preferred Lender" text field is now a chip multi-select
+    (`financingLenderOptions` — Service Federal Credit Union, Community
+    Bank, both real names Terry gave directly) plus a free-text "Other"
+    field, matching "or all of the above check boxes." `DealIntake.
+    financingLender: string` → `financingLenders: string[]`. The
+    "Application Submitted" step on My Deal (`deal/index.tsx`) now reads
+    `intake.paymentMethod`: financing shows which lender(s) were picked
+    and links out to the real https://www.usedcarguys.net/finance/
+    (verified live, Sept 2 — collects SSN/DOB/military/financial detail,
+    which is exactly why it's linked rather than rebuilt in-app; no
+    secure backend exists yet for that level of PII, see
+    docs/legal-considerations-germany.md).
+  - **NOT built: a lender "search function."** Terry asked for a way to
+    "find where the application should be sent" beyond the two named
+    lenders. Building that would mean either fabricating a directory of
+    financial institutions or standing up a real lookup against
+    something — neither is honest to ship right now. Needs Terry to say
+    what it should actually search (a fixed UCG-approved list? routing
+    number lookup? something else) before it's buildable.
+  - **Real wire instructions (cash deals).** New `wire-instructions.tsx`
+    screen with the exact two-step wire Terry provided (Citibank NY →
+    further credit to Commerzbank Mannheim), shown on-screen and as a
+    real, shareable/printable PDF (`expo-print` + `expo-sharing`).
+    Reachable from deal-intake.tsx's cash path and from the "Application
+    Submitted" step for a cash deal. Every account/routing/SWIFT/IBAN
+    number is preserved character-for-character; only two prose-only
+    spelling fixes were made ("COMMMERZBANK" → "COMMERZBANK,"
+    "Whats App" → "WhatsApp") — see the doc comment on `wireInstructions`
+    in mock-data.ts.
+  - **License photo alignment rectangle.** New `capture-license.tsx` —
+    a real `CameraView` screen (same pattern as `scan-vin.tsx`) with an
+    ID-1-card-shaped frame (85.6×54mm proportions) the customer lines
+    the license up with, replacing `ImagePicker.launchCameraAsync`'s
+    native camera UI, which can't show a custom overlay. "Choose from
+    Library" still uses ImagePicker, unchanged. Hands the captured photo
+    back to deal-intake.tsx via a new `license-capture-context.tsx`
+    (same pattern as `vin-scan-context.tsx`).
+  - **Multi-page documents, not a true document scanner.** Terry asked
+    for "a real document scanner allowing for 1-x pages." A genuine
+    edge-detection/auto-crop scanner needs a native module outside what
+    Expo Go can run — that would break live device testing, which is
+    exactly why AGENTS.md pins this project's Expo SDK to what the
+    published Expo Go app supports. Built instead: real multi-page
+    capture. `documents-context.tsx`'s `DocumentState.uri?: string`
+    became `uris: string[]`; `deal/documents.tsx` now shows a thumbnail
+    strip per document with "Add Page"/"Add Another Page" and per-page
+    removal, so Proof of Insurance, Orders, and Proof of Residence can
+    each carry as many pages as they actually need.
+  - **"Proof of Income" → "Orders."** Renamed in mock-data.ts — PCS/
+    deployment orders make more sense for this customer base than a
+    civilian income proof. Internal `id`/`icon` left as `'income'` on
+    purpose (touches lookup tables elsewhere); only the customer-facing
+    name changed.
+  - **Steps 4 & 5 (Financing Approved, Contract Signed):** Terry flagged
+    that the bank may not be able to feed status back into the app
+    automatically. Acknowledged, not something to build around — no
+    change made; both steps already read as `waitingOn: 'bank'` /
+    `'you'` rather than implying an automatic feed.
+  - **"There are more steps between 5 and 6, a lot more":** not
+    actionable yet — no specifics given. Tracked under "Not covered
+    yet" below; needs Terry to enumerate what's actually missing.
+  - **Not raised as an action item, and not acted on:** Terry's aside
+    that the insurance company sends a "white card" to the VRO (Vehicle
+    Registration Office) for the buyer. Read as context, not a request
+    — the exact German term/process (eVB confirmation? Grüne Karte?)
+    isn't something to guess at and put in front of a customer without
+    verifying it first. Left out of Documents' UI copy for now.
 
 ## Shipped Sept 1
 
@@ -586,6 +657,11 @@ instructions** made available in the app, and a **PIF (Paid In Full)**
 confirmation once funds arrive — presumably a manual check-off once
 UCG confirms receipt, mirroring the deposit step's "can be checked"
 pattern above.
+
+**(shipped Sept 2, wire instructions half only)** — see this date's
+entry above: `wire-instructions.tsx`, on-screen + printable/shareable
+PDF, real numbers. The **PIF confirmation** half is still not built —
+no manual check-off exists yet for "funds received."
 
 ## Not covered yet
 

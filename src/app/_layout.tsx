@@ -19,6 +19,7 @@ import { DealProvider } from '@/lib/deal-context';
 import { DealIntakeProvider } from '@/lib/deal-intake-context';
 import { DealStepsProvider } from '@/lib/deal-steps-context';
 import { DealDocumentsProvider } from '@/lib/documents-context';
+import { LicenseCaptureProvider } from '@/lib/license-capture-context';
 import { SavedProvider } from '@/lib/saved-context';
 import { VinScanProvider } from '@/lib/vin-scan-context';
 
@@ -55,7 +56,12 @@ function AppShell({ fontsLoaded }: { fontsLoaded: boolean }) {
         <Stack.Screen name="deal-intake" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="salesperson" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="deposit" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="wire-instructions" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="scan-vin" options={{ animation: 'slide_from_bottom', presentation: 'fullScreenModal' }} />
+        <Stack.Screen
+          name="capture-license"
+          options={{ animation: 'slide_from_bottom', presentation: 'fullScreenModal' }}
+        />
       </Stack>
     </>
   );
@@ -79,7 +85,9 @@ export default function RootLayout() {
             <DealDocumentsProvider>
               <SavedProvider>
                 <VinScanProvider>
-                  <AppShell fontsLoaded={fontsLoaded} />
+                  <LicenseCaptureProvider>
+                    <AppShell fontsLoaded={fontsLoaded} />
+                  </LicenseCaptureProvider>
                 </VinScanProvider>
               </SavedProvider>
             </DealDocumentsProvider>

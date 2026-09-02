@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Dimensions, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import {
+  financingLenderOptions,
   salesperson,
   usareurBases,
   USAREUR_OFFICIAL_JKO_URL,
@@ -22,6 +23,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useDeal } from '@/lib/deal-context';
 import { useDealIntake } from '@/lib/deal-intake-context';
 import { compressPhoto } from '@/lib/image';
+import { useLicenseCapture } from '@/lib/license-capture-context';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -41,6 +43,7 @@ export default function DealIntakeScreen() {
   const { car } = useDeal();
   const { intake, submitIntake } = useDealIntake();
   const { user } = useAuth();
+  const { lastCapturedLicensePhoto, clearLastCapturedLicensePhoto } = useLicenseCapture();
   const carLabel = car ? `${car.year} ${car.title}` : 'your next car';
 
   // Pre-filled from a previous submission when there is one — this is
@@ -57,7 +60,17 @@ export default function DealIntakeScreen() {
   const [base, setBase] = useState<string | null>(intake ? (intakeBaseIsOther ? 'Other' : intake.base) : null);
   const [otherBase, setOtherBase] = useState(intakeBaseIsOther ? intake!.base : '');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(intake?.paymentMethod ?? 'cash');
-  const [financingLender, setFinancingLender] = useState(intake?.financingLender ?? '');
+  // Multi-select ("or all of the above" — Terry, Sept 2), not a single
+  // choice. Named options come from financingLenderOptions; anything the
+  // customer typed that ISN'T one of those known names is treated as a
+  // custom "Other" entry when pre-filling from a previous submission.
+  const [selectedLenders, setSelectedLenders] = useState<string[]>(
+    intake?.financingLenders?.filter((l) => (financingLenderOptions as readonly string[]).includes(l)) ?? [],
+  );
+  const [otherLenderText, setOtherLenderText] = useState(
+    intake?.financingLenders?.filter((l) => !(financingLenderOptions as readonly string[]).includes(l)).join(', ') ??
+      '',
+  );
   const [financingDownPayment, setFinancingDownPayment] = useState(intake?.financingDownPayment ?? '');
   const [licenseStatus, setLicenseStatus] = useState<LicenseStatus>(intake?.licenseStatus ?? 'not_yet');
   const [licensePhotoFrontUri, setLicensePhotoFrontUri] = useState<string | null>(intake?.licensePhotoFrontUri ?? null);
@@ -68,17 +81,26 @@ export default function DealIntakeScreen() {
   const isOtherBase = base === 'Other';
   const effectiveBase = isOtherBase ? otherBase.trim() : base;
 
-  const captureLicense = async (side: LicenseSide, useCamera: boolean) => {
-    const permission = useCamera
-      ? await ImagePicker.requestCameraPermissionsAsync()
-      : await ImagePicker.requestMediaLibraryPermissionsAsync();
+  // Handoff from capture-license.tsx (Terry, Sept 2: the license photo now
+  // goes through a real camera screen with an alignment rectangle, not
+  // ImagePicker.launchCameraAsync's native camera UI, which can't show a
+  // custom overlay). Same pattern as sell-back.tsx reading lastScannedVin.
+  useEffect(() => {
+    if (lastCapturedLicensePhoto) {
+      if (lastCapturedLicensePhoto.side === 'front') setLicensePhotoFrontUri(lastCapturedLicensePhoto.uri);
+      else setLicensePhotoBackUri(lastCapturedLicensePhoto.uri);
+      clearLastCapturedLicensePhoto();
+    }
+  }, [lastCapturedLicensePhoto, clearLastCapturedLicensePhoto]);
+
+  const pickLicenseFromLibrary = async (side: LicenseSide) => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permission needed', `Allow ${useCamera ? 'camera' : 'photo library'} access to add your license.`);
+      Alert.alert('Permission needed', 'Allow photo library access to add your license.');
       return;
     }
 
-    const launch = useCamera ? ImagePicker.launchCameraAsync : ImagePicker.launchImageLibraryAsync;
-    const result = await launch({ mediaTypes: ['images'], quality: 0.8 });
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
     if (result.canceled || !result.assets[0]) return;
 
     setCapturingSide(side);
@@ -93,10 +115,14 @@ export default function DealIntakeScreen() {
 
   const promptLicenseSource = (side: LicenseSide) => {
     Alert.alert(`Add ${side === 'front' ? 'Front' : 'Back'} of License`, undefined, [
-      { text: 'Take Photo', onPress: () => captureLicense(side, true) },
-      { text: 'Choose from Library', onPress: () => captureLicense(side, false) },
+      { text: 'Take Photo', onPress: () => router.push({ pathname: '/capture-license', params: { side } }) },
+      { text: 'Choose from Library', onPress: () => pickLicenseFromLibrary(side) },
       { text: 'Cancel', style: 'cancel' },
     ]);
+  };
+
+  const toggleLender = (lender: string) => {
+    setSelectedLenders((prev) => (prev.includes(lender) ? prev.filter((l) => l !== lender) : [...prev, lender]));
   };
 
   const handleSubmit = () => {
@@ -110,7 +136,7 @@ export default function DealIntakeScreen() {
       contact: contact.trim(),
       base: effectiveBase,
       paymentMethod,
-      financingLender: financingLender.trim(),
+      financingLenders: [...selectedLenders, ...(otherLenderText.trim() ? [otherLenderText.trim()] : [])],
       financingDownPayment: financingDownPayment.trim(),
       licenseStatus,
       licensePhotoFrontUri,
@@ -209,13 +235,30 @@ export default function DealIntakeScreen() {
 
         {paymentMethod === 'financing' && (
           <>
-            <Field label="Preferred Lender (optional)">
+            <Field label="Send Your Application To (pick any)">
+              <View style={styles.chipRow}>
+                {financingLenderOptions.map((lender) => (
+                  <Pressable
+                    key={lender}
+                    onPress={() => toggleLender(lender)}
+                    style={[styles.chip, selectedLenders.includes(lender) && styles.chipActive]}>
+                    <Text style={[styles.chipLabel, selectedLenders.includes(lender) && styles.chipLabelActive]}>
+                      {lender}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+              {/* No fabricated lender directory here — Terry flagged that a
+                  real "search for your institution" feature needs more
+                  spec before it can be built without inventing data. This
+                  free-text field is the honest stand-in: the customer names
+                  their own institution and the salesperson follows up. */}
               <TextInput
-                value={financingLender}
-                onChangeText={setFinancingLender}
-                placeholder="e.g. USAA, Navy Federal, still deciding"
+                value={otherLenderText}
+                onChangeText={setOtherLenderText}
+                placeholder="Or type your own bank/credit union"
                 placeholderTextColor={Colors.textFaint}
-                style={styles.input}
+                style={[styles.input, { marginTop: 10 }]}
               />
             </Field>
             <Field label="Planned Down Payment (optional)">
@@ -229,6 +272,14 @@ export default function DealIntakeScreen() {
               />
             </Field>
           </>
+        )}
+
+        {paymentMethod === 'cash' && (
+          <Field label="Paying by Wire?">
+            <Pressable style={styles.licenseLinkButton} onPress={() => router.push('/wire-instructions')}>
+              <Text style={styles.licenseLinkButtonLabel}>View Wire Instructions  →</Text>
+            </Pressable>
+          </Field>
         )}
 
         <Field label="USAREUR Driver's License">
