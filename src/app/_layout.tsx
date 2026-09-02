@@ -18,6 +18,7 @@ import { AuthProvider } from '@/lib/auth-context';
 import { DealProvider } from '@/lib/deal-context';
 import { DealIntakeProvider } from '@/lib/deal-intake-context';
 import { DealStepsProvider } from '@/lib/deal-steps-context';
+import { DealDocumentsProvider } from '@/lib/documents-context';
 import { SavedProvider } from '@/lib/saved-context';
 import { VinScanProvider } from '@/lib/vin-scan-context';
 
@@ -75,11 +76,13 @@ export default function RootLayout() {
       <DealProvider>
         <DealIntakeProvider>
           <DealStepsProvider>
-            <SavedProvider>
-              <VinScanProvider>
-                <AppShell fontsLoaded={fontsLoaded} />
-              </VinScanProvider>
-            </SavedProvider>
+            <DealDocumentsProvider>
+              <SavedProvider>
+                <VinScanProvider>
+                  <AppShell fontsLoaded={fontsLoaded} />
+                </VinScanProvider>
+              </SavedProvider>
+            </DealDocumentsProvider>
           </DealStepsProvider>
         </DealIntakeProvider>
       </DealProvider>

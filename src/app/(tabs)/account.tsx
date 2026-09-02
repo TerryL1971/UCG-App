@@ -9,6 +9,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useDeal } from '@/lib/deal-context';
 import { useDealIntake } from '@/lib/deal-intake-context';
 import { useDealSteps } from '@/lib/deal-steps-context';
+import { useDealDocuments } from '@/lib/documents-context';
 import { useSaved } from '@/lib/saved-context';
 import { useVinScan } from '@/lib/vin-scan-context';
 
@@ -17,16 +18,18 @@ export default function AccountScreen() {
   const { clearCar } = useDeal();
   const { clearIntake } = useDealIntake();
   const { resetDealSteps } = useDealSteps();
+  const { resetDocuments } = useDealDocuments();
   const { clearSaved } = useSaved();
   const { clearLastScannedVin } = useVinScan();
 
   // Wipes everything this app holds about you — account, chosen car,
-  // deal-intake submission, My Deal timeline progress, saved cars, any
-  // pending VIN scan — and starts over from onboarding. Meant for testing
-  // (there's no real backend yet, so this IS the complete deletion, not a
-  // partial one), but the same underlying idea (a real, complete,
-  // self-service delete) is what Apple will require once real backend
-  // accounts exist — see docs/backend-and-ai-agent-plan.md.
+  // deal-intake submission, My Deal timeline progress, uploaded
+  // documents, saved cars, any pending VIN scan — and starts over from
+  // onboarding. Meant for testing (there's no real backend yet, so this
+  // IS the complete deletion, not a partial one), but the same
+  // underlying idea (a real, complete, self-service delete) is what
+  // Apple will require once real backend accounts exist — see
+  // docs/backend-and-ai-agent-plan.md.
   const resetTestData = () => {
     Alert.alert('Reset Test Data', 'This clears your account, chosen car, saved cars, and everything you’ve entered. Continue?', [
       { text: 'Cancel', style: 'cancel' },
@@ -37,6 +40,7 @@ export default function AccountScreen() {
           clearIntake();
           clearCar();
           resetDealSteps();
+          resetDocuments();
           clearSaved();
           clearLastScannedVin();
           logOut();

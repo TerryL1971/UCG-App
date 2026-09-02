@@ -8,6 +8,24 @@ real customer would hit it.
 
 ## Shipped Sept 2
 
+- **Fixed: the Documents fix from earlier the same day didn't actually
+  reach My Deal.** Terry tested "Edit My Info" expecting it to also
+  cover the "Documents Uploaded" summary shown on the My Deal screen —
+  reasonable, since that panel lists the same 4 documents. Root cause
+  was architectural, not a missing link: `deal/documents.tsx` (the real,
+  now-editable screen) held its own **local** `useState`, while the My
+  Deal summary panel read `dealDocuments` **directly from mock-data.ts**
+  — two completely separate copies that never agreed. Replacing a
+  document on the real screen was never going to show up in the
+  summary, no matter how "Edit My Info" was wired. Fixed with the same
+  pattern already used for the timeline and intake: new
+  `src/lib/documents-context.tsx` (`useDealDocuments()`) is now the one
+  shared source both screens read from, with `replaceDocument(id, uri)`
+  and a `resetDocuments()` wired into Reset Test Data. "Edit My Info"
+  itself was correct all along — it's for the deal-intake form (name,
+  base, license), which is genuinely a different flow from the 4 KYC
+  documents; the confusion was reasonable given both were broken in
+  similar-looking ways, but they needed two separate fixes.
 - **Fixed the real thing behind "That did not allow me to change any
   documents already loaded."** Terry was describing `deal/documents.tsx`
   specifically: `dealDocuments` defaults every document to "approved"

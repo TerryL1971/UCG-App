@@ -8,7 +8,8 @@ import { DocumentIcon, IdCardIcon, MapPinIcon, ShieldIcon, UploadIcon } from '@/
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { StatusChip } from '@/components/ui/chip';
 import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
-import { dealDocuments, salesperson, type DealDocument } from '@/constants/mock-data';
+import { salesperson, type DealDocument } from '@/constants/mock-data';
+import { useDealDocuments, type DocumentState } from '@/lib/documents-context';
 import { compressPhoto } from '@/lib/image';
 
 const iconFor: Record<DealDocument['icon'], (color: string) => React.ReactNode> = {
@@ -23,15 +24,6 @@ const statusLabel: Record<DealDocument['status'], string> = {
   uploaded: 'Uploaded',
   approved: 'Approved',
 };
-
-/** Local-only — every mock document starts "approved" (see dealDocuments'
- * comment in mock-data.ts), which was a real bug: tapping one only ever
- * offered to "download" it (also not connected), with no way to correct
- * a wrong upload once a document had any status other than "needed."
- * `uri` is the locally-captured replacement, if any — real capture via
- * expo-image-picker, same pattern as Sell It Back's photos and the
- * license scan in deal-intake.tsx, still no real file storage backend. */
-type DocumentState = DealDocument & { uri?: string };
 
 function DocRow({
   doc,
@@ -65,12 +57,13 @@ function DocRow({
 }
 
 export default function DocumentsScreen() {
-  // Local-only simulation — there's no real file storage backend yet, but
-  // every document can now actually be replaced regardless of its current
-  // status, not just ones still "needed." That was the real bug: with
-  // dealDocuments defaulting every document to "approved," there was no
-  // way to fix a wrong upload at all before this.
-  const [documents, setDocuments] = useState<DocumentState[]>(dealDocuments);
+  // Shared with the "Documents Uploaded" summary on My Deal
+  // (deal/index.tsx) via documents-context.tsx — a replacement made here
+  // needs to actually show up there too, not just in this screen's own
+  // state. That mismatch was a real bug: this screen used to hold its
+  // own local copy, so replacing a document here never updated the My
+  // Deal summary, which kept reading the original mock data directly.
+  const { documents, replaceDocument } = useDealDocuments();
   const [replacingId, setReplacingId] = useState<string | null>(null);
 
   const captureFor = async (id: string, useCamera: boolean) => {
@@ -89,11 +82,7 @@ export default function DocumentsScreen() {
     setReplacingId(id);
     try {
       const compressed = await compressPhoto(result.assets[0].uri);
-      // A fresh upload goes back to "uploaded," not "approved" — a real
-      // salesperson/backend would need to actually review the new file,
-      // so keeping it marked "approved" after replacing it would be
-      // dishonest about what's actually happened.
-      setDocuments((docs) => docs.map((d) => (d.id === id ? { ...d, status: 'uploaded', uri: compressed } : d)));
+      replaceDocument(id, compressed);
     } finally {
       setReplacingId(null);
     }

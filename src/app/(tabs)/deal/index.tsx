@@ -13,7 +13,6 @@ import { StatusChip } from '@/components/ui/chip';
 import { TimelineRoad } from '@/components/timeline-road';
 import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
 import {
-  dealDocuments,
   financingTerms,
   salesperson,
   ucgLocations,
@@ -23,6 +22,7 @@ import {
 import { useDeal } from '@/lib/deal-context';
 import { useDealIntake } from '@/lib/deal-intake-context';
 import { useDealSteps } from '@/lib/deal-steps-context';
+import { useDealDocuments } from '@/lib/documents-context';
 
 /** The camera/share action under "Picked Up" — its own component (not
  * inlined in the steps loop) since it needs its own local state for the
@@ -112,6 +112,12 @@ const documentStatusLabel: Record<string, string> = { needed: 'Needed', uploaded
  * step id. "ready" and "pickup" have their own richer content; the rest
  * get a plain verification card. */
 function StepDetailContent({ step, car }: { step: DealStep; car: ReturnType<typeof useDeal>['car'] }) {
+  // Called unconditionally, before any of the early returns below (Rules
+  // of Hooks) — only actually used by the 'documents' branch further
+  // down, but every render needs it available regardless of which
+  // branch this step takes.
+  const { documents } = useDealDocuments();
+
   if (step.id === 'ready') {
     return car ? (
       <View style={styles.readyCard}>
@@ -163,7 +169,7 @@ function StepDetailContent({ step, car }: { step: DealStep; car: ReturnType<type
   if (step.id === 'documents') {
     return (
       <View style={[styles.detailCard, { flexDirection: 'column', alignItems: 'stretch', gap: 10 }]}>
-        {dealDocuments.map((doc) => (
+        {documents.map((doc) => (
           <View key={doc.id} style={styles.docDetailRow}>
             <Text style={styles.docDetailName} numberOfLines={1}>
               {doc.name}
