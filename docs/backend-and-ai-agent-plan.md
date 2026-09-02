@@ -158,11 +158,14 @@ managed platform (Firebase, etc.) would fit the same shape. The point is
   warning, the arrival checklist), the real 1-yr/2-yr PPP warranty
   terms, real base/location names, how financing vs. cash works, what
   Sell It Back needs — rather than letting the model guess at
-  UCG-specific facts, and is explicitly told when to hand off. A
-  **"Talk to a Human"** link (still real WhatsApp, `whatsappChatUrl`)
-  stays on the same screen for anything account-specific or the agent
-  can't answer, consistent with how the rest of this app already treats
-  "hand off to a human" as the answer to complexity, not a last resort.
+  UCG-specific facts. **No "Talk to a Human" link right now** — it
+  briefly existed (real WhatsApp, `whatsappChatUrl`) but was removed
+  Sept 2 on Terry's call, since `salesperson.whatsapp` is still a fake
+  placeholder number and a fallback pointing at nobody is worse than no
+  fallback. The system prompt now tells the agent to say a specialist
+  will follow up directly instead of pointing to a link that doesn't
+  work — re-add the real link once UCG's real WhatsApp Business number
+  exists.
   **What this doesn't yet solve:** it works today because Expo Go talks
   to `npx expo start`'s local dev server directly — a real published
   app needs this route actually hosted somewhere (EAS Hosting or

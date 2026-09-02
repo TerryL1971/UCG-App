@@ -30,6 +30,24 @@ real customer would hit it.
   set up when ready, not Terry's to front. Nothing is blocked by this —
   every other part of the app works independently of the chat being
   funded.
+- **Removed "Talk to a Human" from the salesperson chat screen —
+  Terry's explicit call.** "There is no one to chat with and no number
+  to reach," and that's accurate: `salesperson.whatsapp` is still the
+  fake placeholder number, so the link was pointing at nobody. Removed
+  the button, the greeting's "or say the word and I'll get a real
+  person for you" line, and every reference to it in the chat's error
+  fallbacks and system prompt (`chat+api.ts`) — the agent now says a
+  specialist will follow up directly instead of directing to a
+  nonexistent link. Re-add all of this together once UCG's real
+  WhatsApp Business number exists — don't re-add just the button
+  without also fixing the number, that's the exact mistake this undoes.
+- **Fixed: new chat messages didn't scroll into view.** Reported same
+  day — sending a message gave no visual confirmation it was sent, and
+  new messages ended up hidden behind the input/keyboard. The message
+  `ScrollView` had no way to know to scroll — added a ref and
+  `onContentSizeChange` calling `scrollToEnd({ animated: true })`, the
+  standard fix for this in a chat UI (the list scrolls to the bottom
+  automatically whenever its content grows, not just on a manual swipe).
 
 ## Shipped Sept 1
 

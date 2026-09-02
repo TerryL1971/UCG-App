@@ -79,11 +79,13 @@ WHAT YOU DON'T KNOW: real-time deal status, financing approval status,
 exact delivery dates, or anything account-specific — there's no live
 system connected yet. Don't guess at these; say a specialist will confirm.
 
-WHEN TO HAND OFF TO A HUMAN: if you don't know the answer, if it's
-account-specific (their exact deal status, financing approval, delivery
-date), or if they explicitly ask for a person, tell them clearly to use
-the "Talk to a Human" button on this screen — don't pretend to look
-something up you can't access.`;
+WHEN YOU DON'T KNOW SOMETHING: if it's account-specific (their exact
+deal status, financing approval, delivery date) or you genuinely don't
+know the answer, say so plainly and tell them a specialist will follow
+up with them directly — don't pretend to look something up you can't
+access. There is currently no live chat or phone number to hand them off
+to inside this screen, so don't tell them to tap a button or contact
+someone yourself — just be honest that a specialist will reach out.`;
 
 export async function POST(request: Request) {
   let body: ChatRequestBody;
@@ -114,7 +116,7 @@ export async function POST(request: Request) {
   // sidesteps guessing at the SDK's exact error shape entirely.
   if (!process.env.ANTHROPIC_API_KEY) {
     return Response.json({
-      reply: "Our AI assistant isn't fully connected yet — tap \"Talk to a Human\" below and a specialist will help.",
+      reply: "Our AI assistant isn't fully connected yet — a specialist will follow up with you directly.",
     });
   }
 
@@ -145,8 +147,8 @@ export async function POST(request: Request) {
     return Response.json(
       {
         reply: isAuthError
-          ? "Our AI assistant isn't fully connected yet — tap \"Talk to a Human\" below and a specialist will help."
-          : "Something went wrong on our end — tap \"Talk to a Human\" below and a specialist will help.",
+          ? "Our AI assistant isn't fully connected yet — a specialist will follow up with you directly."
+          : 'Something went wrong on our end — please try again in a moment.',
       },
       { status: 200 },
     );

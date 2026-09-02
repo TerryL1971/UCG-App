@@ -36,7 +36,8 @@ PAYPAL_CLIENT_SECRET=...
 - **`ANTHROPIC_API_KEY`** powers the "Meet Your Specialist" chat
   (`src/app/salesperson.tsx`), read by `src/app/api/chat+api.ts`. Without
   it, the chat still works, but every reply is an honest "isn't fully
-  connected yet, tap Talk to a Human" fallback rather than a real answer.
+  connected yet, a specialist will follow up" fallback rather than a
+  real answer.
 - **`PAYPAL_CLIENT_ID` / `PAYPAL_CLIENT_SECRET`** power the deposit flow
   (`src/app/deposit.tsx`, reached from "Hold This Car — Make a Deposit"
   on the salesperson screen), read by `src/app/api/paypal/create-order+api.ts`
@@ -182,10 +183,14 @@ published app needs real hosting for these routes first — see
   to DealerTeam credentials. The agent's system prompt is built entirely
   from real, verified content gathered this session (the actual USAREUR
   licensing process, the real 1-yr/2-yr warranty terms, real locations)
-  rather than left to guess at UCG-specific facts, and is told exactly
-  when to hand off — a **"Talk to a Human"** link (still real WhatsApp)
-  stays on the same screen for anything account-specific or that it
-  can't answer. Works today against `npx expo start`'s dev server (see
+  rather than left to guess at UCG-specific facts. **No "Talk to a
+  Human" fallback right now** — removed Sept 2 on Terry's call, since
+  `salesperson.whatsapp` is still the fake placeholder number and a
+  button pointing at nobody is worse than no button; the system prompt
+  was updated to have the agent say a specialist will follow up instead
+  of directing to a nonexistent link. Re-add once UCG's real WhatsApp
+  Business number exists. Works today against `npx expo start`'s dev
+  server (see
   "Enabling server-side integrations" above); a real published app needs
   real hosting for this route — this is
   [docs/backend-and-ai-agent-plan.md](./docs/backend-and-ai-agent-plan.md)'s
@@ -330,10 +335,12 @@ published app needs real hosting for these routes first — see
   — this is the piece that needs the Salesforce Dealer Team API. **The
   WhatsApp number attached to that person is a placeholder that reaches
   no one** (`491700000000` — has been fake since this file's first
-  version), which matters more now than it used to: the AI agent's
-  "Talk to a Human" fallback (see below) is real, and a customer tapping
-  it today opens WhatsApp to a dead number. Needs UCG's real WhatsApp
-  Business number before that fallback means anything. DealerTeam
+  version). It briefly became consequential when the AI agent's
+  "Talk to a Human" fallback pointed at it — that fallback was removed
+  Sept 2 for exactly this reason, so nothing in the app links to this
+  number right now, but it still needs UCG's real WhatsApp Business
+  number before that (or anything else using this constant) gets
+  re-added. DealerTeam
   turns out to be a real, Salesforce-native DMS/CRM (confirmed, not
   assumed — see
   [docs/salesforce-dealerteam-integration-plan.md](./docs/salesforce-dealerteam-integration-plan.md)

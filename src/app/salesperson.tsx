@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { SendIcon, StarIcon } from '@/components/icons';
@@ -8,7 +8,7 @@ import { SalespersonAvatarFull } from '@/components/salesperson-avatar';
 import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
-import { salesperson, whatsappChatUrl } from '@/constants/mock-data';
+import { salesperson } from '@/constants/mock-data';
 import { parseJsonResponse } from '@/lib/api-fetch';
 import { useDeal } from '@/lib/deal-context';
 import { useDealIntake } from '@/lib/deal-intake-context';
@@ -23,15 +23,21 @@ interface ChatMessage {
  * text — so this screen's main action is a real in-app chat, not the
  * WhatsApp Call/Text row it used to have. The agent's backend is
  * src/app/api/chat+api.ts (a server route, so the Anthropic API key never
- * ships in the app). "Talk to a Human" stays as a real fallback via
- * WhatsApp — the agent's own system prompt tells it to point customers
- * there for anything account-specific or that it can't answer, matching
- * docs/backend-and-ai-agent-plan.md's Tier 1 design.
+ * ships in the app).
+ *
+ * There's deliberately no "Talk to a Human" fallback right now — removed
+ * Sept 2 on Terry's explicit call: `salesperson.whatsapp` is still the
+ * fake placeholder number (see mock-data.ts), so the button was pointing
+ * at nobody. Re-add it (and update the system prompt in chat+api.ts,
+ * which was written assuming this button existed) once UCG's real
+ * WhatsApp Business number is in — don't restore a link to a number that
+ * doesn't reach anyone.
  */
 export default function SalespersonScreen() {
   const { car } = useDeal();
   const { intake } = useDealIntake();
   const carLabel = car ? `${car.year} ${car.title}` : 'your next car';
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const [messages, setMessages] = useState<ChatMessage[]>(() => [
     {
@@ -39,7 +45,7 @@ export default function SalespersonScreen() {
       content: intake
         ? `Hi! I'm your AI agent here at Used Car Guys. I've got what you sent — ${intake.base}, ${
             intake.paymentMethod === 'cash' ? 'paying cash' : 'financing'
-          } — for the ${carLabel}. Ask me anything about the process, or say the word and I'll get a real person for you.`
+          } — for the ${carLabel}. Ask me anything about the process.`
         : `Hi! I'm your AI agent here at Used Car Guys, ready to help with the ${carLabel}. What can I answer for you?`,
     },
   ]);
@@ -74,7 +80,7 @@ export default function SalespersonScreen() {
       console.error('AI agent chat request failed:', error);
       setMessages((prev) => [
         ...prev,
-        { role: 'assistant', content: 'Something went wrong reaching the AI agent — tap "Talk to a Human" below.' },
+        { role: 'assistant', content: 'Something went wrong reaching the AI agent — try again in a moment.' },
       ]);
     } finally {
       setIsSending(false);
@@ -107,10 +113,12 @@ export default function SalespersonScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={90}>
         <ScrollView
+          ref={scrollViewRef}
           style={styles.messageList}
           contentContainerStyle={styles.messageListContent}
           keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="interactive">
+          keyboardDismissMode="interactive"
+          onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}>
           {messages.map((m, i) => (
             <View
               key={i}
@@ -140,10 +148,6 @@ export default function SalespersonScreen() {
             <SendIcon color="#fff" />
           </Pressable>
         </View>
-
-        <Text style={styles.humanLink} onPress={() => Linking.openURL(whatsappChatUrl(salesperson.whatsapp))}>
-          Talk to a Human →
-        </Text>
       </KeyboardAvoidingView>
 
       <View style={styles.ctaWrap}>
@@ -182,7 +186,7 @@ const styles = StyleSheet.create({
   aiBadge: { backgroundColor: Colors.navy, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
   aiBadgeText: { fontFamily: Fonts.bodyBold, fontSize: 9.5, color: '#fff', letterSpacing: 0.5 },
   title: { fontFamily: Fonts.bodySemibold, fontSize: 12.5, color: Colors.textMuted, marginTop: 2 },
-  chatWrap: { flex: 1, paddingHorizontal: Spacing.xxl },
+  chatWrap: { flex: 1, paddingHorizontal: Spacing.xxl, paddingBottom: 10 },
   messageList: { flex: 1 },
   messageListContent: { paddingVertical: 8, gap: 8 },
   bubble: { maxWidth: '85%', borderRadius: Radius.lg, paddingVertical: 10, paddingHorizontal: 14 },
@@ -217,13 +221,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.red,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  humanLink: {
-    textAlign: 'center',
-    fontFamily: Fonts.bodySemibold,
-    fontSize: 12.5,
-    color: Colors.textMuted,
-    paddingVertical: 10,
   },
   ctaWrap: { paddingHorizontal: Spacing.xxl, paddingTop: 4, paddingBottom: 8, gap: 10 },
   depositButton: { marginBottom: 0 },

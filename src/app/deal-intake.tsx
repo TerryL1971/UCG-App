@@ -111,8 +111,9 @@ export default function DealIntakeScreen() {
     // No WhatsApp handoff here anymore — the "salesperson" you land on next
     // is the AI agent, not a human, so there's nothing to text. The intake
     // itself is what seeds the agent's first message on that screen (see
-    // salesperson.tsx), and "Talk to a Human" (WhatsApp) is still there as
-    // a real fallback if the agent can't help.
+    // salesperson.tsx). No "Talk to a Human" fallback there right now
+    // either — removed Sept 2 since the WhatsApp number it pointed to is
+    // still a placeholder that reaches no one.
     submitIntake(intake);
     router.replace('/salesperson');
   };
