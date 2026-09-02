@@ -6,6 +6,31 @@ below is built yet except where marked **(shipped)**. Treat this as the
 backlog for the deal-intake → My Deal pipeline, roughly in the order a
 real customer would hit it.
 
+## Shipped Sept 2
+
+- **Fixed the chat's auth-error detection — real bug, confirmed via
+  Terry's terminal log.** Testing after the JSON-parse fix, the chat
+  showed the generic "Something went wrong on our end" fallback instead
+  of the accurate "isn't connected yet" one. The actual error (from
+  Terry's log): `Could not resolve authentication method... Expected
+  one of apiKey, authToken, credentials, config, or profile to be set`
+  — thrown by the SDK itself at client construction when literally no
+  credential source exists, which is a different error shape than
+  `Anthropic.AuthenticationError` (a server-side rejection of a bad key)
+  and doesn't even contain the string "ANTHROPIC_API_KEY", so the
+  previous detection missed it. Fixed by checking
+  `process.env.ANTHROPIC_API_KEY` directly before ever constructing the
+  client, instead of pattern-matching a caught error's type/message —
+  more robust than guessing at the SDK's exact error shape.
+- **Real Anthropic API key: decided not to set one up yet, and why —
+  see `docs/backend-and-ai-agent-plan.md`'s "Open questions."** Terry
+  correctly flagged that API billing is a separate account/cost from
+  his existing Claude plan, and that funding it himself doesn't make
+  sense for an app that won't be his. Decision: the real key is UCG's to
+  set up when ready, not Terry's to front. Nothing is blocked by this —
+  every other part of the app works independently of the chat being
+  funded.
+
 ## Shipped Sept 1
 
 - **Fixed: a real "JSON Parse error: Unexpected character: N" Terry hit

@@ -103,6 +103,21 @@ export async function POST(request: Request) {
       }; payment — ${body.context.paymentMethod ?? 'not specified'}.`
     : '';
 
+  // Checked directly, not inferred from a caught error's message/type —
+  // that was tried first and missed a real case: `new Anthropic()` throws
+  // "Could not resolve authentication method..." when NO credential
+  // source exists at all, which isn't an `Anthropic.AuthenticationError`
+  // (that's the server rejecting a bad key) and doesn't even mention
+  // "ANTHROPIC_API_KEY" in its text — so the old string-match fell
+  // through to the more alarming generic fallback instead of the
+  // accurate "isn't connected yet" one. Checking the env var directly
+  // sidesteps guessing at the SDK's exact error shape entirely.
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return Response.json({
+      reply: "Our AI assistant isn't fully connected yet — tap \"Talk to a Human\" below and a specialist will help.",
+    });
+  }
+
   try {
     // Constructed here, inside the try — not at module scope. The SDK
     // throws SYNCHRONOUSLY at construction (not just when a request is
@@ -121,14 +136,12 @@ export async function POST(request: Request) {
     const textBlock = response.content.find((block) => block.type === 'text');
     return Response.json({ reply: textBlock?.text ?? "Sorry, I didn't catch that — could you try again?" });
   } catch (error) {
-    // Most likely cause during testing: no ANTHROPIC_API_KEY set in a local
-    // .env file yet. Fail honestly rather than pretend the agent answered —
-    // matches the rest of this app's "not connected yet" pattern (Document
-    // Upload, etc.) rather than a silent/confusing error.
-    const isAuthError =
-      error instanceof Anthropic.AuthenticationError ||
-      (error instanceof Error && error.message.includes('ANTHROPIC_API_KEY'));
+    // Reaching here means ANTHROPIC_API_KEY IS set but something else
+    // failed (bad key, network issue, rate limit, etc.) — genuinely an
+    // error, not just "not set up yet", so the generic message is the
+    // right one now that the missing-key case is handled above.
     console.error('AI agent request failed:', error);
+    const isAuthError = error instanceof Anthropic.AuthenticationError;
     return Response.json(
       {
         reply: isAuthError

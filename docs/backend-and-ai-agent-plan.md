@@ -245,7 +245,22 @@ all of it meant to make the actual conversation with counsel faster.
   (see "AI agent" above). New question in its place: **who's setting up
   the real Anthropic API key and, eventually, real hosting for
   `chat+api.ts`** — this works against a local dev server today but
-  needs both before a real customer ever uses it.
+  needs both before a real customer ever uses it. **Partially resolved
+  Sept 2:** Terry raised, correctly, that Anthropic API access is a
+  separate account/billing from whatever Claude plan he's already on,
+  and that it doesn't make sense for him personally to fund an account
+  for an app that won't be his — same reasoning as the backend-account
+  question above, just hit concretely first here. Decision: **the real
+  key belongs to UCG, set up when David/Michelle/James are ready to own
+  it, not fronted by Terry.** Nothing is blocked by this — the graceful
+  "not connected yet" fallback (now fixed to trigger correctly, see
+  `chat+api.ts`) means every other part of the app works independently
+  of whether this piece is funded. For scale, if/when UCG does set this
+  up: Anthropic API billing is pay-per-use with no minimum, and a
+  typical short chat exchange costs on the order of a cent or two —
+  testing this feature thoroughly would likely run well under $2 total,
+  and Anthropic Console supports a hard monthly spend cap per key if
+  bounding risk to zero matters.
 - Does the eventual DealerTeam integration (if UCG gets API access) feed
   *into* this new database, or does this database stay the source of
   truth and DealerTeam sync separately? Worth deciding once
