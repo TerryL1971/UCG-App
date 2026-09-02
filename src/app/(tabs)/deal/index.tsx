@@ -373,11 +373,15 @@ export default function TimelineScreen() {
         </Pressable>
       </View>
 
-      {/* Dev/testing only — not a real feature, never shown to a customer
-          in spirit even though there's no build-time gate for it yet.
-          Lets each of the 7 states be checked directly (detail panel +
-          road position) without a real backend to actually advance a
-          deal over days. */}
+      {/* Dev/testing only — lets each of the 7 states be checked directly
+          (detail panel + road position) without a real backend to
+          actually advance a deal over days. Now actually gated (Sept 2,
+          part of the pre-launch pass), not just gated "in spirit": __DEV__
+          is true in Expo Go and dev/simulator builds, false in a real
+          release build (TestFlight, App Store, Play Store, EAS production
+          profile) — so this physically cannot ship to a real customer,
+          not just "isn't supposed to." */}
+      {__DEV__ && (
       <View style={styles.testingRow}>
         <Text style={styles.testingLabel}>TESTING — Jump to Step:</Text>
         <View style={styles.testingChips}>
@@ -391,6 +395,7 @@ export default function TimelineScreen() {
           ))}
         </View>
       </View>
+      )}
 
       <ScrollView ref={outerScrollRef} contentContainerStyle={styles.scrollContent}>
         <View style={styles.detailPanel}>
