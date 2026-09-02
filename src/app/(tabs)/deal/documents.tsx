@@ -1,12 +1,15 @@
+import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { DocumentIcon, DownloadIcon, IdCardIcon, MapPinIcon, PlusIcon, ShieldIcon, UploadIcon } from '@/components/icons';
+import { DocumentIcon, IdCardIcon, MapPinIcon, ShieldIcon, UploadIcon } from '@/components/icons';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { StatusChip } from '@/components/ui/chip';
 import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
 import { dealDocuments, salesperson, type DealDocument } from '@/constants/mock-data';
+import { compressPhoto } from '@/lib/image';
 
 const iconFor: Record<DealDocument['icon'], (color: string) => React.ReactNode> = {
   id: (c) => <IdCardIcon color={c} />,
@@ -21,53 +24,87 @@ const statusLabel: Record<DealDocument['status'], string> = {
   approved: 'Approved',
 };
 
-function DocRow({ doc, onUpload }: { doc: DealDocument; onUpload: () => void }) {
-  const isApproved = doc.status === 'approved';
-  const isUploaded = doc.status === 'uploaded';
+/** Local-only — every mock document starts "approved" (see dealDocuments'
+ * comment in mock-data.ts), which was a real bug: tapping one only ever
+ * offered to "download" it (also not connected), with no way to correct
+ * a wrong upload once a document had any status other than "needed."
+ * `uri` is the locally-captured replacement, if any — real capture via
+ * expo-image-picker, same pattern as Sell It Back's photos and the
+ * license scan in deal-intake.tsx, still no real file storage backend. */
+type DocumentState = DealDocument & { uri?: string };
 
-  const handlePress = () => {
-    if (doc.status === 'needed') {
-      onUpload();
-      return;
-    }
-    // No real file storage backend yet — be upfront about it rather than
-    // silently doing nothing when someone taps download.
-    Alert.alert('Not connected yet', "Downloading isn't wired to real document storage yet.");
-  };
-
+function DocRow({
+  doc,
+  isReplacing,
+  onReplace,
+}: {
+  doc: DocumentState;
+  isReplacing: boolean;
+  onReplace: () => void;
+}) {
   return (
-    <View style={[styles.row, Shadow.card]}>
-      <View style={styles.rowIcon}>{iconFor[doc.icon](Colors.navy)}</View>
+    <Pressable style={[styles.row, Shadow.card]} onPress={onReplace} disabled={isReplacing}>
+      <View style={styles.rowIcon}>
+        {doc.uri ? (
+          <Image source={{ uri: doc.uri }} style={StyleSheet.absoluteFill} contentFit="cover" />
+        ) : (
+          iconFor[doc.icon](Colors.navy)
+        )}
+      </View>
       <View style={{ flex: 1 }}>
         <Text style={styles.rowName}>{doc.name}</Text>
         <View style={{ marginTop: 5 }}>
-          <StatusChip status={doc.status} label={statusLabel[doc.status]} />
+          <StatusChip status={doc.status} label={isReplacing ? 'Saving…' : statusLabel[doc.status]} />
         </View>
       </View>
-      <Pressable
-        onPress={handlePress}
-        style={[
-          styles.action,
-          { backgroundColor: isApproved ? Colors.greenTint : isUploaded ? Colors.navyTint : Colors.red },
-        ]}>
-        {doc.status === 'needed' ? (
-          <UploadIcon color="#fff" />
-        ) : (
-          <DownloadIcon color={isApproved ? Colors.green : Colors.navy} />
-        )}
-      </Pressable>
-    </View>
+      <View style={[styles.action, { backgroundColor: Colors.red }]}>
+        <UploadIcon color="#fff" />
+      </View>
+    </Pressable>
   );
 }
 
 export default function DocumentsScreen() {
-  // Local-only simulation of an upload flipping status — there's no camera
-  // roll or file storage wired up yet, but this at least makes tapping
-  // "Upload" feel like it did something instead of being a dead tap.
-  const [documents, setDocuments] = useState<DealDocument[]>(dealDocuments);
+  // Local-only simulation — there's no real file storage backend yet, but
+  // every document can now actually be replaced regardless of its current
+  // status, not just ones still "needed." That was the real bug: with
+  // dealDocuments defaulting every document to "approved," there was no
+  // way to fix a wrong upload at all before this.
+  const [documents, setDocuments] = useState<DocumentState[]>(dealDocuments);
+  const [replacingId, setReplacingId] = useState<string | null>(null);
 
-  const markUploaded = (id: string) => {
-    setDocuments((docs) => docs.map((d) => (d.id === id ? { ...d, status: 'uploaded' } : d)));
+  const captureFor = async (id: string, useCamera: boolean) => {
+    const permission = useCamera
+      ? await ImagePicker.requestCameraPermissionsAsync()
+      : await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permission needed', `Allow ${useCamera ? 'camera' : 'photo library'} access to upload a document.`);
+      return;
+    }
+
+    const launch = useCamera ? ImagePicker.launchCameraAsync : ImagePicker.launchImageLibraryAsync;
+    const result = await launch({ mediaTypes: ['images'], quality: 0.8 });
+    if (result.canceled || !result.assets[0]) return;
+
+    setReplacingId(id);
+    try {
+      const compressed = await compressPhoto(result.assets[0].uri);
+      // A fresh upload goes back to "uploaded," not "approved" — a real
+      // salesperson/backend would need to actually review the new file,
+      // so keeping it marked "approved" after replacing it would be
+      // dishonest about what's actually happened.
+      setDocuments((docs) => docs.map((d) => (d.id === id ? { ...d, status: 'uploaded', uri: compressed } : d)));
+    } finally {
+      setReplacingId(null);
+    }
+  };
+
+  const promptReplace = (doc: DocumentState) => {
+    Alert.alert(doc.status === 'needed' ? `Upload ${doc.name}` : `Replace ${doc.name}`, undefined, [
+      { text: 'Take Photo', onPress: () => captureFor(doc.id, true) },
+      { text: 'Choose from Library', onPress: () => captureFor(doc.id, false) },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
   };
 
   return (
@@ -78,21 +115,13 @@ export default function DocumentsScreen() {
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.list}>
         {documents.map((doc) => (
-          <DocRow key={doc.id} doc={doc} onUpload={() => markUploaded(doc.id)} />
+          <DocRow key={doc.id} doc={doc} isReplacing={replacingId === doc.id} onReplace={() => promptReplace(doc)} />
         ))}
         <Text style={styles.hint}>
-          Tap to upload — we&apos;ll notify {salesperson.name.split(' ')[0]} the moment it&apos;s ready for
-          review.
+          Tap any document — including an already-approved one — to upload a replacement. We&apos;ll notify{' '}
+          {salesperson.name.split(' ')[0]} the moment it&apos;s ready for review.
         </Text>
       </ScrollView>
-
-      <Pressable
-        style={[styles.fab, Shadow.button]}
-        onPress={() =>
-          Alert.alert('Not connected yet', "Camera/photo upload isn't wired to a real backend yet.")
-        }>
-        <PlusIcon />
-      </Pressable>
     </SafeAreaView>
   );
 }
@@ -100,7 +129,7 @@ export default function DocumentsScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: Colors.bg },
   headerWrap: { backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: Colors.border },
-  list: { padding: Spacing.xl, gap: Spacing.md, paddingBottom: 100 },
+  list: { padding: Spacing.xl, gap: Spacing.md, paddingBottom: 40 },
   row: {
     backgroundColor: '#fff',
     borderRadius: Radius.xl,
@@ -116,6 +145,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.navyTint,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   rowName: { fontFamily: Fonts.bodyBold, fontSize: 14.5, color: Colors.text },
   action: {
@@ -133,16 +163,5 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginTop: 4,
     paddingHorizontal: 10,
-  },
-  fab: {
-    position: 'absolute',
-    right: 20,
-    bottom: 24,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: Colors.red,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });

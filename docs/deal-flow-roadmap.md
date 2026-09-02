@@ -8,6 +8,36 @@ real customer would hit it.
 
 ## Shipped Sept 2
 
+- **Fixed the real thing behind "That did not allow me to change any
+  documents already loaded."** Terry was describing `deal/documents.tsx`
+  specifically: `dealDocuments` defaults every document to "approved"
+  (by design, so the advanced-demo steps show by default — see
+  mock-data.ts), and the old `handlePress` logic only offered an upload
+  flow when a document's status was `"needed"` — anything else just
+  showed "downloading isn't connected yet." Since nothing starts as
+  "needed," there was **no way to replace any document at all**. Fixed:
+  every row is now tappable regardless of status, opens a real
+  Take Photo/Choose from Library capture (same `expo-image-picker` +
+  `compressPhoto` pattern as Sell It Back and the license scan), shows
+  the captured image as the row's thumbnail, and — importantly — sets
+  status back to `"uploaded"`, not `"approved"`, since a real
+  salesperson/backend would need to actually review a freshly replaced
+  file. Removed the separate "+" FAB (it implied adding a new document
+  to the list, which doesn't fit this fixed 4-document model, and is
+  redundant now that every row already supports replacing itself).
+- **"Edit My Info" added to the My Deal page**, not just the specialist
+  screen — Terry's follow-up: customers are more likely to be checking
+  My Deal regularly than revisiting the one-time match screen. Same
+  link, same behavior (`router.push('/deal-intake')`, only shown once
+  something's been submitted), now on both screens.
+- **Caught while adding that: two stale WhatsApp references on My Deal
+  that the "Talk to a Human" removal missed.** The pinned bar's message
+  icon and the "Matched with Salesperson" detail card's Call/Text icons
+  still opened `whatsappChatUrl(salesperson.whatsapp)` — the same fake
+  placeholder number already removed from the specialist screen itself.
+  Both now navigate to the in-app AI chat (`router.push('/salesperson')`)
+  instead; dropped the Call icon entirely (an AI agent has nothing to
+  "call"), kept a single message icon.
 - **Fixed: no way to correct anything after submitting "Start Your
   Deal."** Real bug, not a discoverability gap (though the license photo
   retake — tap an already-filled slot again — is one of those too,

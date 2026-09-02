@@ -7,7 +7,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ArrowLeftIcon, CameraIcon, DownloadIcon, MessageIcon, PhoneIcon, StarIcon } from '@/components/icons';
+import { ArrowLeftIcon, CameraIcon, DownloadIcon, MessageIcon, StarIcon } from '@/components/icons';
 import { SalespersonAvatarMini } from '@/components/salesperson-avatar';
 import { StatusChip } from '@/components/ui/chip';
 import { TimelineRoad } from '@/components/timeline-road';
@@ -18,10 +18,10 @@ import {
   salesperson,
   ucgLocations,
   waitingOnLabel,
-  whatsappChatUrl,
   type DealStep,
 } from '@/constants/mock-data';
 import { useDeal } from '@/lib/deal-context';
+import { useDealIntake } from '@/lib/deal-intake-context';
 import { useDealSteps } from '@/lib/deal-steps-context';
 
 /** The camera/share action under "Picked Up" — its own component (not
@@ -142,10 +142,7 @@ function StepDetailContent({ step, car }: { step: DealStep; car: ReturnType<type
           <Text style={styles.detailTitle}>{salesperson.name}</Text>
           <Text style={styles.detailSubtitle}>{salesperson.title}</Text>
         </View>
-        <Pressable hitSlop={8} onPress={() => Linking.openURL(whatsappChatUrl(salesperson.whatsapp))}>
-          <PhoneIcon size={18} color={Colors.navy} />
-        </Pressable>
-        <Pressable hitSlop={8} onPress={() => Linking.openURL(whatsappChatUrl(salesperson.whatsapp))}>
+        <Pressable hitSlop={8} onPress={() => router.push('/salesperson')}>
           <MessageIcon size={18} color={Colors.red} />
         </Pressable>
       </View>
@@ -230,6 +227,7 @@ function FinanceStat({ label, value }: { label: string; value: string }) {
 
 export default function TimelineScreen() {
   const { car } = useDeal();
+  const { intake } = useDealIntake();
   const { dealSteps, setDealStepIndex } = useDealSteps();
 
   const targetIndex = useMemo(() => {
@@ -296,10 +294,16 @@ export default function TimelineScreen() {
             {car ? `${car.year} ${car.title} · $${car.price.toLocaleString()}` : 'No car selected yet'}
           </Text>
         </View>
-        <Pressable hitSlop={8} onPress={() => Linking.openURL(whatsappChatUrl(salesperson.whatsapp))}>
+        <Pressable hitSlop={8} onPress={() => router.push('/salesperson')}>
           <MessageIcon />
         </Pressable>
       </View>
+
+      {intake && (
+        <Pressable style={styles.editLinkRow} onPress={() => router.push('/deal-intake')} hitSlop={4}>
+          <Text style={styles.editLinkRowText}>Edit My Info</Text>
+        </Pressable>
+      )}
 
       <View style={styles.reviewBar}>
         <Pressable
@@ -396,6 +400,13 @@ const styles = StyleSheet.create({
   },
   pinnedName: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.text },
   pinnedMeta: { fontFamily: Fonts.body, fontSize: 11.5, color: Colors.textMuted, marginTop: 1 },
+  editLinkRow: { alignSelf: 'center', marginTop: 8, paddingVertical: 2, paddingHorizontal: 8 },
+  editLinkRowText: {
+    fontFamily: Fonts.bodySemibold,
+    fontSize: 12,
+    color: Colors.red,
+    textDecorationLine: 'underline',
+  },
   reviewBar: {
     marginHorizontal: Spacing.xl,
     marginTop: Spacing.md,
