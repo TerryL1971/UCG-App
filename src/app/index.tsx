@@ -3,12 +3,16 @@ import { Image } from 'expo-image';
 import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { CarFrontIllustration } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
 
 const logo = require('@/assets/brand/ucg-logo-full.png');
+// Same mark used in the animated splash (animated-splash.tsx) — reused
+// here instead of the old car illustration (Terry, Sept 2: "the car in
+// the background looks bad and needs to go") so the hero ties back to
+// the brand mark rather than a generic geometric car shape.
+const mark = require('@/assets/images/splash-icon.png');
 
 export default function OnboardingScreen() {
   const { user, isLoading } = useAuth();
@@ -30,11 +34,7 @@ export default function OnboardingScreen() {
     <View style={styles.screen}>
       <View style={styles.hero}>
         <View style={styles.starSmall} />
-        <View style={styles.carWrap}>
-          <View style={styles.carShadow} />
-          <CarFrontIllustration size={280} bodyColor="#FBFBFD" />
-          <View style={styles.roofAccent} />
-        </View>
+        <Image source={mark} style={styles.heroMark} contentFit="contain" />
       </View>
 
       <SafeAreaView style={styles.body} edges={['bottom']}>
@@ -81,26 +81,9 @@ const styles = StyleSheet.create({
     borderRadius: 9,
     backgroundColor: '#3A467F',
   },
-  carWrap: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  carShadow: {
-    position: 'absolute',
-    bottom: -6,
-    width: 220,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: '#1B2450',
-    opacity: 0.55,
-  },
-  roofAccent: {
-    position: 'absolute',
-    top: 18,
+  heroMark: {
     width: 150,
-    height: 16,
-    backgroundColor: Colors.red,
-    borderRadius: 4,
+    height: 150,
   },
   body: {
     flex: 1,
