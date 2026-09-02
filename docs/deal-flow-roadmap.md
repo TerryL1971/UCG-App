@@ -48,6 +48,21 @@ real customer would hit it.
   `onContentSizeChange` calling `scrollToEnd({ animated: true })`, the
   standard fix for this in a chat UI (the list scrolls to the bottom
   automatically whenever its content grows, not just on a manual swipe).
+- **Fixed: the keyboard wouldn't dismiss, blocking "View My Timeline" /
+  "Make a Deposit."** Real layout bug, not just a missing dismiss
+  gesture: those buttons (`ctaWrap`) sat *outside* the
+  `KeyboardAvoidingView`, so an open keyboard could cover them with
+  nothing pushing them back into view — tap-to-dismiss not working
+  reliably meant there was no way to reach them at all. Fixed two ways
+  together: (1) moved `ctaWrap` inside the `KeyboardAvoidingView` so the
+  buttons get pushed up above the keyboard along with everything else,
+  and (2) added explicit, always-reachable dismiss points — a "Done ⌄"
+  button right above the CTAs, and the header area also dismisses on
+  tap — rather than relying on `keyboardShouldPersistTaps`/tap-outside
+  behavior alone, which is exactly what wasn't working. Also switched
+  `keyboardDismissMode` from `"interactive"` (requires a synced drag,
+  not very discoverable) to `"on-drag"` (dismisses as soon as a scroll
+  starts, the more standard behavior).
 
 ## Shipped Sept 1
 

@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { SendIcon, StarIcon } from '@/components/icons';
@@ -91,7 +91,7 @@ export default function SalespersonScreen() {
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <ScreenHeader title="Meet Your Specialist" />
 
-      <View style={styles.headerRow}>
+      <Pressable style={styles.headerRow} onPress={Keyboard.dismiss}>
         <View style={styles.avatarWrap}>
           <SalespersonAvatarFull size={56} />
         </View>
@@ -106,7 +106,7 @@ export default function SalespersonScreen() {
             <StarIcon size={12} /> {salesperson.title}
           </Text>
         </View>
-      </View>
+      </Pressable>
 
       <KeyboardAvoidingView
         style={styles.chatWrap}
@@ -117,7 +117,7 @@ export default function SalespersonScreen() {
           style={styles.messageList}
           contentContainerStyle={styles.messageListContent}
           keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="interactive"
+          keyboardDismissMode="on-drag"
           onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}>
           {messages.map((m, i) => (
             <View
@@ -148,17 +148,26 @@ export default function SalespersonScreen() {
             <SendIcon color="#fff" />
           </Pressable>
         </View>
-      </KeyboardAvoidingView>
 
-      <View style={styles.ctaWrap}>
-        <Button
-          label="Hold This Car — Make a Deposit"
-          variant="secondary"
-          style={styles.depositButton}
-          onPress={() => router.push('/deposit')}
-        />
-        <Button label="View My Timeline  →" onPress={() => router.push('/(tabs)/deal')} />
-      </View>
+        {/* An explicit, always-reachable way to close the keyboard —
+            tap-outside-to-dismiss isn't reliable enough on its own to be
+            the only way to get back to the buttons below, which sit
+            outside this KeyboardAvoidingView and could otherwise end up
+            stuck behind an open keyboard with no way to reach them. */}
+        <Pressable style={styles.doneRow} onPress={Keyboard.dismiss} hitSlop={8}>
+          <Text style={styles.doneRowText}>Done ⌄</Text>
+        </Pressable>
+
+        <View style={styles.ctaWrap}>
+          <Button
+            label="Hold This Car — Make a Deposit"
+            variant="secondary"
+            style={styles.depositButton}
+            onPress={() => router.push('/deposit')}
+          />
+          <Button label="View My Timeline  →" onPress={() => router.push('/(tabs)/deal')} />
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -222,6 +231,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  doneRow: { alignSelf: 'center', paddingVertical: 6, paddingHorizontal: 14 },
+  doneRowText: { fontFamily: Fonts.bodySemibold, fontSize: 12.5, color: Colors.textMuted },
   ctaWrap: { paddingHorizontal: Spacing.xxl, paddingTop: 4, paddingBottom: 8, gap: 10 },
   depositButton: { marginBottom: 0 },
 });
