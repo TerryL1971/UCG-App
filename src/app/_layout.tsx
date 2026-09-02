@@ -11,9 +11,10 @@ import {
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { StatusBar } from 'react-native';
 
+import { AnimatedSplash } from '@/components/animated-splash';
 import { AuthProvider } from '@/lib/auth-context';
 import { DealProvider } from '@/lib/deal-context';
 import { DealIntakeProvider } from '@/lib/deal-intake-context';
@@ -34,6 +35,14 @@ SplashScreen.preventAutoHideAsync();
 // its own brief loading check locally instead, so only that one route is
 // affected, not the whole app's render.
 function AppShell({ fontsLoaded }: { fontsLoaded: boolean }) {
+  // The native splash (app.json's expo-splash-screen plugin) is a static
+  // OS-level image — it can't animate, that's a real platform limit, not
+  // a missing setting. This state controls a REAL animated splash
+  // (components/animated-splash.tsx) shown on top of the actual first
+  // screen for one brief moment right after the native splash hides,
+  // then fades away — see that file for why it's built this way.
+  const [showAnimatedSplash, setShowAnimatedSplash] = useState(true);
+
   useEffect(() => {
     if (fontsLoaded) {
       SplashScreen.hideAsync();
@@ -46,7 +55,7 @@ function AppShell({ fontsLoaded }: { fontsLoaded: boolean }) {
 
   return (
     <>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle={showAnimatedSplash ? 'light-content' : 'dark-content'} />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="create-account" options={{ animation: 'slide_from_right' }} />
@@ -63,6 +72,7 @@ function AppShell({ fontsLoaded }: { fontsLoaded: boolean }) {
           options={{ animation: 'slide_from_bottom', presentation: 'fullScreenModal' }}
         />
       </Stack>
+      {showAnimatedSplash && <AnimatedSplash onFinish={() => setShowAnimatedSplash(false)} />}
     </>
   );
 }

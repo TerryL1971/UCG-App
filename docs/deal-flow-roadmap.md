@@ -6,6 +6,23 @@ below is built yet except where marked **(shipped)**. Treat this as the
 backlog for the deal-intake → My Deal pipeline, roughly in the order a
 real customer would hit it.
 
+## Shipped Sept 2, later still
+
+- **Animated opening splash.** Terry asked for the opening splash to
+  have animation and "look better." Real constraint worth recording:
+  the *native* splash (`app.json`'s `expo-splash-screen` plugin) is a
+  static OS-level image — it renders before React is even running, so
+  it can never animate; that's a platform limit, not a missed setting.
+  Built the actual fix: `src/components/animated-splash.tsx`, a real
+  React overlay (`react-native-reanimated`, already a dependency) shown
+  the instant JS takes over — same navy background and mark image as
+  the native splash for a seamless handoff, then the star/swoosh mark
+  scales in with a spring, the "USED CAR GUYS" wordmark fades up under
+  it, holds briefly, and fades out to reveal the real first screen
+  (already mounted underneath the whole time, not delayed behind this).
+  Wired into `_layout.tsx`'s `AppShell` — status bar switches to
+  light content while it's showing. Shows once per cold launch only.
+
 ## Shipped Sept 2
 
 - **Fixed: the Documents fix from earlier the same day didn't actually
