@@ -148,6 +148,51 @@ schema sketch below. Terry needs to create the actual Supabase project
 before any of that can move (see the account-creation walkthrough
 handed to him alongside this).
 
+**Update, same day: Terry created the real project** (org "Lombardi
+Enterprises," project "UCG App," region eu-west-2/London) and proved
+the flow works — a real signup created a real, confirmed user in
+Supabase's Authentication → Users table with a real `Last signed in`
+timestamp. One real bug was found and fixed along the way: `expo
+export --platform web` prerenders every route in a headless Node
+process with no `window`; the Supabase client's constructor eagerly
+tried to recover a session via AsyncStorage's web backend, which
+touches `window.localStorage` unconditionally and crashed the whole
+export the moment real credentials existed. Fixed in `supabase.ts` —
+the client is only constructed when `Platform.OS !== 'web'` or
+`window` genuinely exists, so that one Node-only prerender pass falls
+back to local stand-in behavior like before, with nothing else needing
+to change.
+
+Two more real, non-blocking findings from that same test:
+
+- **Confirmation email redirects to `localhost:3000`.** Supabase's
+  default "Site URL" was never set for this project. Turns out this
+  doesn't actually block anything — confirmation happens server-side
+  the instant the link is clicked, before any redirect is attempted —
+  but it's a broken-looking page a real customer would see. Worth
+  fixing the Site URL to something less broken eventually (the real
+  usedcarguys.net homepage, say), but low priority. The bigger finding:
+  **Expo Go cannot be deep-linked into** via this app's own `ucg://`
+  scheme — it's one shared app for many different Expo projects and
+  doesn't register any single project's custom scheme. A real
+  "tap the email link, land back in the app already signed in"
+  round-trip needs a dev-client or standalone build, neither of which
+  exists yet. Proper deep-link handling (`expo-auth-session`'s
+  `makeRedirectUri`/`QueryParams.getQueryParams`,
+  `supabase.auth.setSession()` — verified against Supabase's official
+  docs, not guessed at) is real, scoped, future work — deliberately
+  not built yet since it can't be tested against Expo Go, this
+  project's actual current test surface.
+- **Email arrives as "Supabase Auth," "powered by Supabase" footer.**
+  Real, valid — Terry wants it fixed, chose Resend as the SMTP
+  provider. **Blocked on DNS**, though: Resend requires verifying a
+  real domain before it'll send to arbitrary recipients, and Terry
+  does not control usedcarguys.net's DNS himself — someone else
+  (David/Michelle/James, or whoever runs the site) does. Next step is
+  Terry looping them in, not something solvable alone. Same shape as
+  the `ANTHROPIC_API_KEY`/backend-account questions — a real dependency
+  on UCG, not just engineering time.
+
 ## What the schema needs (sketch, not final)
 
 - **customers** — replaces the local-only AsyncStorage user; real auth

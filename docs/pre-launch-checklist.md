@@ -68,13 +68,19 @@ The single biggest thing standing between "demo" and "live." Full design
 already written in `backend-and-ai-agent-plan.md` — restating only what
 it changes about launch-readiness:
 
-- **Auth — in progress, Sept 2.** Platform decided: Supabase, as a
-  project under Terry's "European Living" org for now. Code is ready
-  (`auth-context.tsx` uses real Supabase auth the moment
-  `EXPO_PUBLIC_SUPABASE_URL`/`_ANON_KEY` exist, falls back to the old
-  local stand-in until then) — what's still needed is Terry actually
-  creating the Supabase project and adding the two env vars. Blocked on
-  that one step, not on more engineering.
+- **Auth — DONE and proven working, Sept 2.** Supabase project created
+  (org "Lombardi Enterprises," project "UCG App," eu-west-2/London),
+  real credentials added, and a real signup produced a real, confirmed
+  user in Supabase's dashboard. Two small non-blocking loose ends:
+  confirmation emails redirect to a placeholder `localhost:3000` (Site
+  URL was never set — cosmetic, doesn't actually block confirmation,
+  low priority to fix), and the confirmation email is branded
+  "Supabase Auth" (fix chosen: Resend custom SMTP, blocked on DNS
+  access to usedcarguys.net — someone else controls it, Terry needs to
+  loop them in). Also newly known: a real "tap the email link, land
+  back in the app" round-trip needs a dev-client/standalone build —
+  Expo Go can't be deep-linked into. See
+  `backend-and-ai-agent-plan.md`'s "Real auth" section for full detail.
 - **"View Contract"** (`deal/index.tsx`) — honestly shows "isn't wired
   up yet" rather than faking a document. Needs real contract
   storage/e-signature, which needs the backend first.
