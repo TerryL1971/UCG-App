@@ -19,18 +19,55 @@ export default function CreateAccountScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<{ name?: string; email?: string; password?: string }>({});
+  const [formError, setFormError] = useState<string | null>(null);
+  const [confirmEmailSent, setConfirmEmailSent] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const next: typeof errors = {};
     if (!name.trim()) next.name = 'Enter your name.';
     if (!isValidEmail(email)) next.email = 'Enter a valid email address.';
     if (password.length < 6) next.password = 'Use at least 6 characters.';
     setErrors(next);
+    setFormError(null);
     if (Object.keys(next).length > 0) return;
 
-    signUp(name.trim(), email.trim(), password);
-    router.replace('/(tabs)');
+    setIsSubmitting(true);
+    try {
+      // Async either way — a stub in local stand-in mode, a real network
+      // call once real Supabase credentials exist (see auth-context.tsx).
+      const result = await signUp(name.trim(), email.trim(), password);
+      if (result.error) {
+        setFormError(result.error);
+        return;
+      }
+      if (result.needsEmailConfirmation) {
+        // Real Supabase account created, but no session yet — this
+        // project has "Confirm email" on, so there's genuinely nothing
+        // to log in to until that link is clicked. Telling the customer
+        // that beats silently bouncing them to a signed-out home screen.
+        setConfirmEmailSent(true);
+        return;
+      }
+      router.replace('/(tabs)');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  if (confirmEmailSent) {
+    return (
+      <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+        <ScreenHeader title="Create Account" />
+        <View style={[styles.body, { justifyContent: 'center', paddingHorizontal: Spacing.xxl }]}>
+          <Text style={styles.intro}>
+            Almost there — we sent a confirmation link to {email.trim()}. Tap it, then come back and log in.
+          </Text>
+          <Button label="Back to Log In" onPress={() => router.replace('/log-in')} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
@@ -68,8 +105,14 @@ export default function CreateAccountScreen() {
             error={errors.password}
           />
 
+          {formError && <Text style={styles.formError}>{formError}</Text>}
+
           <View style={{ marginTop: 8 }}>
-            <Button label="Create Account" onPress={handleSubmit} />
+            <Button
+              label={isSubmitting ? 'Creating Account…' : 'Create Account'}
+              onPress={handleSubmit}
+              disabled={isSubmitting}
+            />
           </View>
 
           <Text style={styles.footer}>
@@ -104,6 +147,12 @@ const styles = StyleSheet.create({
   },
   footerLink: {
     fontFamily: Fonts.bodyBold,
+    color: Colors.red,
+  },
+  formError: {
+    marginTop: 12,
+    fontFamily: Fonts.bodySemibold,
+    fontSize: 13,
     color: Colors.red,
   },
 });

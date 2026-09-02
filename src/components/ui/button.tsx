@@ -7,18 +7,21 @@ interface ButtonProps {
   onPress?: () => void;
   variant?: 'primary' | 'secondary';
   style?: StyleProp<ViewStyle>;
+  disabled?: boolean;
 }
 
-export function Button({ label, onPress, variant = 'primary', style }: ButtonProps) {
+export function Button({ label, onPress, variant = 'primary', style, disabled }: ButtonProps) {
   const isPrimary = variant === 'primary';
   return (
     <Pressable
       onPress={onPress}
+      disabled={disabled}
       style={({ pressed }) => [
         styles.base,
         isPrimary ? styles.primary : styles.secondary,
         isPrimary && Shadow.button,
         pressed && styles.pressed,
+        disabled && styles.disabled,
         style,
       ]}>
       <Text style={[styles.label, isPrimary ? styles.labelPrimary : styles.labelSecondary]}>{label}</Text>
@@ -44,6 +47,9 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.85,
+  },
+  disabled: {
+    opacity: 0.55,
   },
   label: {
     fontFamily: Fonts.displaySemibold,

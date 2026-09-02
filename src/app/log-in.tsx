@@ -18,16 +18,28 @@ export default function LogInScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [formError, setFormError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const next: typeof errors = {};
     if (!isValidEmail(email)) next.email = 'Enter a valid email address.';
     if (!password) next.password = 'Enter your password.';
     setErrors(next);
+    setFormError(null);
     if (Object.keys(next).length > 0) return;
 
-    logIn(email.trim(), password);
-    router.replace('/(tabs)');
+    setIsSubmitting(true);
+    try {
+      const result = await logIn(email.trim(), password);
+      if (result.error) {
+        setFormError(result.error);
+        return;
+      }
+      router.replace('/(tabs)');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -56,8 +68,10 @@ export default function LogInScreen() {
             error={errors.password}
           />
 
+          {formError && <Text style={styles.formError}>{formError}</Text>}
+
           <View style={{ marginTop: 8 }}>
-            <Button label="Log In" onPress={handleSubmit} />
+            <Button label={isSubmitting ? 'Logging In…' : 'Log In'} onPress={handleSubmit} disabled={isSubmitting} />
           </View>
 
           <Text style={styles.footer}>
@@ -92,6 +106,12 @@ const styles = StyleSheet.create({
   },
   footerLink: {
     fontFamily: Fonts.bodyBold,
+    color: Colors.red,
+  },
+  formError: {
+    marginTop: 12,
+    fontFamily: Fonts.bodySemibold,
+    fontSize: 13,
     color: Colors.red,
   },
 });

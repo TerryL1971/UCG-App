@@ -36,6 +36,15 @@ them.
 - **This checklist itself** — so "what's left before launch" lives in
   one place instead of being scattered across four docs a new reader
   (or future me) would have to reassemble by hand.
+- **Real Supabase auth, code-complete.** Terry picked the backend
+  platform (Supabase) and decided account ownership (his "European
+  Living" org for now, treated as UCG's) — see
+  `backend-and-ai-agent-plan.md`'s "Real auth — SHIPPED" section for
+  what actually shipped: `auth-context.tsx` uses real email/password
+  auth the moment Supabase credentials exist, falls back to the old
+  local stand-in until they do. **Only remaining step is Terry actually
+  creating the Supabase project** — nothing else is blocked on more
+  code.
 
 ## B. Real work, buildable in code, not yet done
 
@@ -59,9 +68,13 @@ The single biggest thing standing between "demo" and "live." Full design
 already written in `backend-and-ai-agent-plan.md` — restating only what
 it changes about launch-readiness:
 
-- **Auth is a local stand-in** (`auth-context.tsx`) — signUp/logIn
-  accept anything, nothing is verified, nothing survives a reinstall.
-  Not fixable without picking and standing up a real backend platform.
+- **Auth — in progress, Sept 2.** Platform decided: Supabase, as a
+  project under Terry's "European Living" org for now. Code is ready
+  (`auth-context.tsx` uses real Supabase auth the moment
+  `EXPO_PUBLIC_SUPABASE_URL`/`_ANON_KEY` exist, falls back to the old
+  local stand-in until then) — what's still needed is Terry actually
+  creating the Supabase project and adding the two env vars. Blocked on
+  that one step, not on more engineering.
 - **"View Contract"** (`deal/index.tsx`) — honestly shows "isn't wired
   up yet" rather than faking a document. Needs real contract
   storage/e-signature, which needs the backend first.
@@ -111,10 +124,8 @@ it changes about launch-readiness:
   specified. The 7-step timeline is a real simplification of whatever
   UCG's actual process is between Contract Signed and Car Ready —
   needs Terry to enumerate what's missing.
-- **Who owns the backend platform account** — Terry personally, or a
-  UCG business account? Matters for billing and what happens if Terry
-  stops being the one running this (same shape as the API key
-  question above, already resolved that way for Anthropic).
+- ~~Who owns the backend platform account~~ **Resolved Sept 2** —
+  Supabase, Terry's org for now, treated as UCG's. See bucket C above.
 - **EU-spec Purchase Order / Cost Estimate documents** — not yet
   scoped beyond "a cost estimate," per `deal-flow-roadmap.md`.
 - **Deposit currency** — USD only right now; does a EUR option matter

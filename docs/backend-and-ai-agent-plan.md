@@ -111,6 +111,43 @@ This is a recommendation, not a foregone conclusion — a different
 managed platform (Firebase, etc.) would fit the same shape. The point is
 *managed*, not *self-hosted*, given who's maintaining this.
 
+**Decided Sept 2: Supabase**, per Terry directly (offered Firebase as
+the alternative, chose the recommendation). Account ownership above.
+
+## Real auth — SHIPPED (Sept 2), first real slice of this plan
+
+Scoped deliberately narrow: **just auth**, not deals/documents/
+salespeople yet — those still need real schema design and RLS policies
+before it's honest to call them "done," and this pass hadn't landed
+Supabase project credentials to test against yet either. Auth was the
+right first cut because it's self-contained (doesn't entangle with the
+still-local `dealSteps`/`DealIntake`/documents mock data) and because
+"a real account" is the concrete meaning of "not a demo" for a
+customer.
+
+What changed: `src/lib/supabase.ts` — a client that's `null` until
+`EXPO_PUBLIC_SUPABASE_URL`/`EXPO_PUBLIC_SUPABASE_ANON_KEY` exist (see
+`.env.example`), same "fake it until real credentials exist" shape as
+`chat+api.ts`/`paypal-server.ts`. `auth-context.tsx` now branches on
+`isSupabaseConfigured`: real Supabase email/password auth
+(`signUp`/`signInWithPassword`/`onAuthStateChange`, session persisted
+via the same AsyncStorage already in use) when it's configured, and
+**the exact same local stand-in behavior as before** when it isn't —
+so nothing changes for Terry testing in Expo Go until real project
+credentials are actually added. `signUp`/`logIn` became async and can
+now return a real error message (wrong password, email already
+registered, etc.) — `create-account.tsx`/`log-in.tsx` show it inline
+and handle Supabase's "confirm your email" flow (a new account with no
+session yet shows "check your email" instead of silently bouncing to a
+signed-out home screen).
+
+**Not done yet, deliberately:** no SQL migrations, no `deals`/
+`documents`/`salespeople` tables, no RLS policies — those come once
+real project credentials exist to actually test against, per the
+schema sketch below. Terry needs to create the actual Supabase project
+before any of that can move (see the account-creation walkthrough
+handed to him alongside this).
+
 ## What the schema needs (sketch, not final)
 
 - **customers** — replaces the local-only AsyncStorage user; real auth
@@ -239,9 +276,14 @@ all of it meant to make the actual conversation with counsel faster.
 
 ## Open questions
 
-- Who owns the backend platform account — a personal account of Terry's,
-  or a UCG business account? Matters for billing, access control, and
-  what happens if Terry stops being the one running this.
+- ~~Who owns the backend platform account~~ **Resolved Sept 2: Supabase,
+  as a project under Terry's existing "European Living" org for now** —
+  treated as UCG's in practice (same shape as the Anthropic key
+  decision below), transferred to a real UCG business account once
+  they're ready to own it. Terry: "I will probably be the one running
+  and maintaining this app since they have no clue how to do it." See
+  "Real auth — SHIPPED (Sept 2)" below for what's actually built on top
+  of this so far.
 - GDPR/data-handling posture (above) — needs a real answer, likely
   outside a coding session, before real customer data is stored.
 - ~~Tier 1 AI agent: build now or hold?~~ Resolved Sept 1 — built now
