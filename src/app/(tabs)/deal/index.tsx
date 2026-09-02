@@ -3,7 +3,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import * as Sharing from 'expo-sharing';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -230,7 +230,7 @@ function FinanceStat({ label, value }: { label: string; value: string }) {
 
 export default function TimelineScreen() {
   const { car } = useDeal();
-  const { dealSteps } = useDealSteps();
+  const { dealSteps, setDealStepIndex } = useDealSteps();
 
   const targetIndex = useMemo(() => {
     let idx = 0;
@@ -242,6 +242,7 @@ export default function TimelineScreen() {
 
   const [viewedIndex, setViewedIndex] = useState(targetIndex);
   const viewedStep = dealSteps[viewedIndex];
+  const outerScrollRef = useRef<ScrollView>(null);
 
   // dealSteps can change out from under this screen — "Reset Test Data"
   // resets it from the Account tab, and Expo Router keeps tab screens
@@ -249,6 +250,18 @@ export default function TimelineScreen() {
   useEffect(() => {
     setViewedIndex(targetIndex);
   }, [dealSteps, targetIndex]);
+
+  // Whenever the deal actually advances a step (not just when reviewing
+  // history via the back/forward arrows — that's a deliberate look-back,
+  // scrolling them away from what they tapped to see would be wrong),
+  // scroll back to the top. The detail panel showing the new current
+  // step is the first thing in that scroll view, so this is what
+  // actually gets the customer to "see the next step without having to
+  // scroll down" — cheaper and far less fragile than trying to make the
+  // SVG road itself shrink/collapse as segments complete.
+  useEffect(() => {
+    outerScrollRef.current?.scrollTo({ y: 0, animated: true });
+  }, [targetIndex]);
 
   const goBack = () => setViewedIndex((i) => Math.max(0, i - 1));
   const goForward = () => setViewedIndex((i) => Math.min(targetIndex, i + 1));
@@ -319,7 +332,26 @@ export default function TimelineScreen() {
         </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      {/* Dev/testing only — not a real feature, never shown to a customer
+          in spirit even though there's no build-time gate for it yet.
+          Lets each of the 7 states be checked directly (detail panel +
+          road position) without a real backend to actually advance a
+          deal over days. */}
+      <View style={styles.testingRow}>
+        <Text style={styles.testingLabel}>TESTING — Jump to Step:</Text>
+        <View style={styles.testingChips}>
+          {dealSteps.map((step, i) => (
+            <Pressable
+              key={step.id}
+              onPress={() => setDealStepIndex(i)}
+              style={[styles.testingChip, i === targetIndex && styles.testingChipActive]}>
+              <Text style={[styles.testingChipText, i === targetIndex && styles.testingChipTextActive]}>{i + 1}</Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+
+      <ScrollView ref={outerScrollRef} contentContainerStyle={styles.scrollContent}>
         <View style={styles.detailPanel}>
           <Text style={styles.detailPanelTitle}>{viewedStep.title}</Text>
           {viewedStep.detail ? <Text style={styles.detailPanelMeta}>{viewedStep.detail}</Text> : null}
@@ -392,6 +424,36 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.redTint,
   },
   waitingChipText: { fontFamily: Fonts.bodyBold, fontSize: 11.5, color: Colors.red },
+  testingRow: {
+    marginHorizontal: Spacing.xl,
+    marginTop: Spacing.md,
+    padding: 8,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: '#C9CDD9',
+  },
+  testingLabel: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: 9.5,
+    color: Colors.textFaint,
+    letterSpacing: 0.4,
+    marginBottom: 6,
+  },
+  testingChips: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
+  testingChip: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  testingChipActive: { backgroundColor: Colors.navy, borderColor: Colors.navy },
+  testingChipText: { fontFamily: Fonts.bodySemibold, fontSize: 11.5, color: Colors.textMuted },
+  testingChipTextActive: { color: '#fff' },
   scrollContent: { paddingVertical: Spacing.xl },
   roadScrollHorizontal: { paddingHorizontal: Spacing.xl },
   detailPanel: {

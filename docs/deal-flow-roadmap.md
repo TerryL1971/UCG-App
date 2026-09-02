@@ -8,6 +8,33 @@ real customer would hit it.
 
 ## Shipped Sept 2
 
+- **My Deal: a real testing tool + auto-scroll, not the SVG road
+  redesign.** Terry needs to test each of the 7 steps directly, and
+  wants the customer to land on "what's next" without manually
+  scrolling once a step completes. Two additions, deliberately *not* the
+  higher-risk option (making the SVG road itself shrink/collapse as
+  segments complete — the road is a single fixed-size canvas with
+  waypoints computed from all steps up front, not independently
+  collapsible React Native views, and this component already has a
+  history of "didn't come out correctly"):
+  - `useDealSteps()` gained `setDealStepIndex(i)` — jumps straight to
+    any of the 7 states (mock titles/waitingOn, real status math), not
+    just reset-to-fresh. A dashed-border "TESTING — Jump to Step" row of
+    7 chips on the My Deal screen itself uses it — clearly marked as a
+    dev aid, not a real feature a customer would ever see.
+  - The outer `ScrollView` (detail panel + road) now scrolls back to the
+    top whenever the deal actually advances a step (`targetIndex`
+    changes) — not when just reviewing history via the back/forward
+    arrows, which stays exactly as before. The detail panel showing the
+    new current step is the first thing in that scroll view, so
+    scrolling to top *is* "see the next step without scrolling down" —
+    solves what Terry asked for without touching the fragile SVG canvas
+    at all. The existing per-segment fade (from the paused work) is
+    still there underneath, unchanged.
+  - **Not done:** literally shrinking/collapsing the road's occupied
+    space as it completes. If auto-scroll-to-top doesn't feel like
+    enough once tested, that's the next real option — bigger, separate
+    piece of work, not attempted here.
 - **Fixed: "Done" didn't actually dismiss the keyboard.** The previous
   fix (moving the CTA buttons inside `KeyboardAvoidingView`) worked —
   screenshotted confirmation the buttons stay reachable with the
