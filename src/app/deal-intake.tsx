@@ -189,11 +189,15 @@ export default function DealIntakeScreen() {
           />
         </Field>
 
-        <Field label="Phone or WhatsApp Number">
+        {/* WhatsApp specifically, not just "a phone number" — Terry, Sept
+            2: it's UCG's preferred channel whenever a real call/text is
+            needed, so the number collected here should be the one that
+            actually reaches the customer on WhatsApp. */}
+        <Field label="WhatsApp Number">
           <TextInput
             value={contact}
             onChangeText={setContact}
-            placeholder="e.g. +1 555 123 4567"
+            placeholder="e.g. +1 555 123 4567 (WhatsApp)"
             placeholderTextColor={Colors.textFaint}
             keyboardType="phone-pad"
             style={styles.input}

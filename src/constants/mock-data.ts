@@ -334,6 +334,11 @@ export const USAREUR_STUDY_GUIDE_URL = 'https://home.army.mil/stuttgart/my-garri
  */
 export interface DealIntake {
   fullName: string;
+  /** A WhatsApp number specifically (Terry, Sept 2) — UCG's preferred
+   * channel for a real call/text, not just "any phone number." Field
+   * name kept generic (`contact`, not `whatsapp`) since this is a
+   * customer-supplied value, distinct from the app-wide real
+   * `salesperson.whatsapp` constant it has nothing to do with. */
   contact: string;
   base: string;
   paymentMethod: PaymentMethod;

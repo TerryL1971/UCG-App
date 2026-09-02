@@ -1,4 +1,5 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import type { DealIntake } from '@/constants/mock-data';
 
@@ -6,9 +7,12 @@ import type { DealIntake } from '@/constants/mock-data';
  * Holds what the customer entered on the deal-intake screen (payment
  * method, base, license status, etc.) once they submit it — a stand-in for
  * the record a salesperson would actually be building in Dealer Team
- * (Salesforce) at this point. Same in-memory-only pattern as deal-context:
- * this should become a real, server-side deal record once accounts + the
- * Dealer Team API exist, not local state that resets on app restart.
+ * (Salesforce) at this point. This should still become a real, server-side
+ * deal record once the Dealer Team API exists — but "resets on app
+ * restart" was a real, reported problem in the meantime (Terry, Sept 2:
+ * "my phone number disappears... I have to reenter it every time"), so
+ * this now persists to AsyncStorage the same way auth-context.tsx already
+ * does, rather than staying in-memory-only until the real backend lands.
  */
 interface DealIntakeContextValue {
   intake: DealIntake | null;
@@ -19,14 +23,38 @@ interface DealIntakeContextValue {
   clearIntake: () => void;
 }
 
+const STORAGE_KEY = 'ucg.dealIntake';
+
 const DealIntakeContext = createContext<DealIntakeContextValue | null>(null);
 
 export function DealIntakeProvider({ children }: { children: ReactNode }) {
-  const [intake, setIntake] = useState<DealIntake | null>(null);
+  const [intake, setIntakeState] = useState<DealIntake | null>(null);
+
+  useEffect(() => {
+    AsyncStorage.getItem(STORAGE_KEY)
+      .then((raw) => {
+        if (raw) setIntakeState(JSON.parse(raw));
+      })
+      .catch(() => {
+        // Corrupt or inaccessible storage — fall back to no saved intake
+        // rather than crash on startup.
+      });
+  }, []);
+
+  const persist = (next: DealIntake | null) => {
+    setIntakeState(next);
+    if (next) {
+      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next)).catch(() => {});
+    } else {
+      AsyncStorage.removeItem(STORAGE_KEY).catch(() => {});
+    }
+  };
+
   const value = useMemo(
-    () => ({ intake, submitIntake: setIntake, clearIntake: () => setIntake(null) }),
+    () => ({ intake, submitIntake: persist, clearIntake: () => persist(null) }),
     [intake],
   );
+
   return <DealIntakeContext.Provider value={value}>{children}</DealIntakeContext.Provider>;
 }
 

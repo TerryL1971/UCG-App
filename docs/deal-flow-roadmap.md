@@ -8,6 +8,32 @@ real customer would hit it.
 
 ## Shipped Sept 2, later still
 
+- **Deal-intake now survives an app restart, and the contact field is
+  explicitly WhatsApp.** Terry: "when I logged back into the app, my
+  phone number disappears... I have to reenter it every time." Real
+  cause: `deal-intake-context.tsx` was in-memory only (`useState`, no
+  persistence) — documented as a known, deliberate gap ("should become
+  a real server-side deal record... not local state that resets on app
+  restart"), but a real usability problem in the meantime. Fixed: it
+  now persists to AsyncStorage the same way `auth-context.tsx` already
+  does — the whole intake (name, WhatsApp number, base, payment
+  method, license, notes) survives a restart, not just the one field
+  Terry noticed. Also relabeled "Phone or WhatsApp Number" →
+  **"WhatsApp Number"** per Terry's second point: it's UCG's preferred
+  channel for any real call/text, so the field should say what it
+  actually is, not stay generic. **Not changed, related, and worth
+  knowing:** `deal-context.tsx` (the chosen car) is still in-memory
+  only, same original reasoning — a restart still loses the selected
+  car even though the intake form now remembers its own fields. Same
+  fix shape would apply if that also turns out to be a problem;
+  deliberately not done preemptively since Terry didn't flag it and
+  caching a whole `InventoryDetail` object (photos included) has real
+  staleness tradeoffs a simple contact string doesn't.
+- **Flagged by Terry, not yet actionable:** "when I get the API for
+  Dealer Team, there will be much more needed to be entered" — expect
+  the deal-intake form to grow once real DealerTeam field requirements
+  are known. Nothing to build yet; noting so the persistence fix above
+  isn't mistaken for "the form is done."
 - **Animated opening splash.** Terry asked for the opening splash to
   have animation and "look better." Real constraint worth recording:
   the *native* splash (`app.json`'s `expo-splash-screen` plugin) is a
