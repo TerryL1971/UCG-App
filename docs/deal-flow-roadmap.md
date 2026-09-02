@@ -8,6 +8,29 @@ real customer would hit it.
 
 ## Shipped Sept 2
 
+- **Fixed: no way to correct anything after submitting "Start Your
+  Deal."** Real bug, not a discoverability gap (though the license photo
+  retake — tap an already-filled slot again — is one of those too,
+  worth revisiting for a clearer "retake" affordance later). Once
+  submitted, `deal-intake.tsx` used `router.replace('/salesperson')`,
+  which doesn't keep the intake screen in navigation history — there was
+  no way back to it at all, so name, base, payment method, and license
+  photos were permanently locked in, and there'd be no way to fix a
+  wrong upload the way there is on Sell It Back's photo grid (Replace/
+  Remove). Fixed:
+  - `deal-intake.tsx` now pre-fills every field from the already-
+    submitted `intake` (context) when one exists, instead of always
+    starting blank — the header reads "Edit Your Info" and the submit
+    button "Save Changes" in that case, "Start Your Deal" / "Submit for
+    a Salesperson" otherwise.
+  - A new **"Edit My Info"** link on the salesperson screen (only shown
+    once something's been submitted) does a fresh `router.push` back to
+    the intake form — a real forward navigation, not "back," so it
+    works regardless of what's left in history.
+  - License photo retake already worked (tapping a filled slot
+    re-triggers the capture flow, correctly overwriting it) — just
+    wasn't obvious from the UI. Not changed this pass; worth a clearer
+    "Retake" label/icon later if it still isn't discovered in testing.
 - **My Deal: a real testing tool + auto-scroll, not the SVG road
   redesign.** Terry needs to test each of the 7 steps directly, and
   wants the customer to land on "what's next" without manually

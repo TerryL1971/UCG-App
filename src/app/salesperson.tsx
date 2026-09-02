@@ -118,6 +118,11 @@ export default function SalespersonScreen() {
             <StarIcon size={12} /> {salesperson.title}
           </Text>
         </View>
+        {intake && (
+          <Pressable hitSlop={8} onPress={() => router.push('/deal-intake')} style={styles.editLink}>
+            <Text style={styles.editLinkText}>Edit My Info</Text>
+          </Pressable>
+        )}
       </Pressable>
 
       <KeyboardAvoidingView
@@ -209,6 +214,13 @@ const styles = StyleSheet.create({
   },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   name: { fontFamily: Fonts.display, fontSize: 19, color: Colors.text },
+  editLink: { paddingVertical: 4, paddingHorizontal: 6 },
+  editLinkText: {
+    fontFamily: Fonts.bodySemibold,
+    fontSize: 12.5,
+    color: Colors.red,
+    textDecorationLine: 'underline',
+  },
   aiBadge: { backgroundColor: Colors.navy, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
   aiBadgeText: { fontFamily: Fonts.bodyBold, fontSize: 9.5, color: '#fff', letterSpacing: 0.5 },
   title: { fontFamily: Fonts.bodySemibold, fontSize: 12.5, color: Colors.textMuted, marginTop: 2 },

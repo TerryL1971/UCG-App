@@ -39,22 +39,31 @@ type LicenseSide = 'front' | 'back';
  */
 export default function DealIntakeScreen() {
   const { car } = useDeal();
-  const { submitIntake } = useDealIntake();
+  const { intake, submitIntake } = useDealIntake();
   const { user } = useAuth();
   const carLabel = car ? `${car.year} ${car.title}` : 'your next car';
 
-  const [fullName, setFullName] = useState(user?.name ?? '');
-  const [contact, setContact] = useState('');
-  const [base, setBase] = useState<string | null>(null);
-  const [otherBase, setOtherBase] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
-  const [financingLender, setFinancingLender] = useState('');
-  const [financingDownPayment, setFinancingDownPayment] = useState('');
-  const [licenseStatus, setLicenseStatus] = useState<LicenseStatus>('not_yet');
-  const [licensePhotoFrontUri, setLicensePhotoFrontUri] = useState<string | null>(null);
-  const [licensePhotoBackUri, setLicensePhotoBackUri] = useState<string | null>(null);
+  // Pre-filled from a previous submission when there is one — this is
+  // what actually makes "Edit My Info" (salesperson.tsx) useful. Without
+  // this, going back to make a correction would just show a blank form
+  // again instead of what was actually submitted, since router.replace()
+  // to /salesperson (see handleSubmit below) doesn't keep this screen in
+  // history to return to on its own; re-navigating here creates a fresh
+  // instance, so the previous answers have to come from context, not
+  // from whatever local state this component happened to have before.
+  const [fullName, setFullName] = useState(intake?.fullName ?? user?.name ?? '');
+  const [contact, setContact] = useState(intake?.contact ?? '');
+  const intakeBaseIsOther = !!intake && !usareurBases.includes(intake.base);
+  const [base, setBase] = useState<string | null>(intake ? (intakeBaseIsOther ? 'Other' : intake.base) : null);
+  const [otherBase, setOtherBase] = useState(intakeBaseIsOther ? intake!.base : '');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(intake?.paymentMethod ?? 'cash');
+  const [financingLender, setFinancingLender] = useState(intake?.financingLender ?? '');
+  const [financingDownPayment, setFinancingDownPayment] = useState(intake?.financingDownPayment ?? '');
+  const [licenseStatus, setLicenseStatus] = useState<LicenseStatus>(intake?.licenseStatus ?? 'not_yet');
+  const [licensePhotoFrontUri, setLicensePhotoFrontUri] = useState<string | null>(intake?.licensePhotoFrontUri ?? null);
+  const [licensePhotoBackUri, setLicensePhotoBackUri] = useState<string | null>(intake?.licensePhotoBackUri ?? null);
   const [capturingSide, setCapturingSide] = useState<LicenseSide | null>(null);
-  const [notes, setNotes] = useState('');
+  const [notes, setNotes] = useState(intake?.notes ?? '');
 
   const isOtherBase = base === 'Other';
   const effectiveBase = isOtherBase ? otherBase.trim() : base;
@@ -120,7 +129,7 @@ export default function DealIntakeScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
-      <ScreenHeader title="Start Your Deal" subtitle={carLabel} />
+      <ScreenHeader title={intake ? 'Edit Your Info' : 'Start Your Deal'} subtitle={carLabel} />
 
       {car && car.images.length > 0 && (
         <View>
@@ -301,7 +310,7 @@ export default function DealIntakeScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <Button label="Submit for a Salesperson  →" onPress={handleSubmit} />
+        <Button label={intake ? 'Save Changes  →' : 'Submit for a Salesperson  →'} onPress={handleSubmit} />
         <Text style={styles.footerHint}>Opens WhatsApp with everything above filled in for you.</Text>
       </View>
     </SafeAreaView>
