@@ -8,6 +8,24 @@ real customer would hit it.
 
 ## Shipped Sept 2
 
+- **Fixed: "Done" didn't actually dismiss the keyboard.** The previous
+  fix (moving the CTA buttons inside `KeyboardAvoidingView`) worked —
+  screenshotted confirmation the buttons stay reachable with the
+  keyboard up — but the dismiss button itself didn't close it.
+  `Keyboard.dismiss()` alone is known to be unreliable: it asks the OS
+  to hide the keyboard without necessarily releasing the `TextInput`'s
+  own focus, and if focus never actually leaves the input, iOS can just
+  show it again. Fixed by giving the input a ref and explicitly calling
+  `.blur()` on it (`dismissKeyboard()` in `salesperson.tsx`), with
+  `Keyboard.dismiss()` kept as a fallback — both the "Done" row and
+  tapping the header now use this.
+- **Added sender attribution to chat bubbles.** Terry's read: a reply
+  didn't clearly read as coming from "Marcus" — assistant bubbles were
+  plain white text with no name attached, indistinguishable from generic
+  app text. Added a small "Marcus" label above each assistant bubble
+  (`salesperson.name.split(' ')[0]`, same pattern used elsewhere in the
+  app) so a reply is unambiguously attributed to him, not just floating
+  text.
 - **Fixed the chat's auth-error detection — real bug, confirmed via
   Terry's terminal log.** Testing after the JSON-parse fix, the chat
   showed the generic "Something went wrong on our end" fallback instead

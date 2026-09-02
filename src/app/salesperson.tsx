@@ -38,6 +38,18 @@ export default function SalespersonScreen() {
   const { intake } = useDealIntake();
   const carLabel = car ? `${car.year} ${car.title}` : 'your next car';
   const scrollViewRef = useRef<ScrollView>(null);
+  const inputRef = useRef<TextInput>(null);
+
+  // Keyboard.dismiss() alone is unreliable here — it asks the OS to hide
+  // the keyboard without necessarily releasing the TextInput's own focus,
+  // and if focus never actually leaves the input, iOS can just show the
+  // keyboard again. Explicitly blurring the input first is what actually
+  // gets rid of it reliably; Keyboard.dismiss() is kept as a fallback for
+  // any focus this doesn't already cover.
+  const dismissKeyboard = () => {
+    inputRef.current?.blur();
+    Keyboard.dismiss();
+  };
 
   const [messages, setMessages] = useState<ChatMessage[]>(() => [
     {
@@ -91,7 +103,7 @@ export default function SalespersonScreen() {
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <ScreenHeader title="Meet Your Specialist" />
 
-      <Pressable style={styles.headerRow} onPress={Keyboard.dismiss}>
+      <Pressable style={styles.headerRow} onPress={dismissKeyboard}>
         <View style={styles.avatarWrap}>
           <SalespersonAvatarFull size={56} />
         </View>
@@ -120,21 +132,26 @@ export default function SalespersonScreen() {
           keyboardDismissMode="on-drag"
           onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}>
           {messages.map((m, i) => (
-            <View
-              key={i}
-              style={[styles.bubble, m.role === 'user' ? styles.bubbleUser : styles.bubbleAssistant]}>
-              <Text style={[styles.bubbleText, m.role === 'user' && styles.bubbleTextUser]}>{m.content}</Text>
+            <View key={i} style={m.role === 'user' ? styles.bubbleWrapUser : styles.bubbleWrapAssistant}>
+              {m.role === 'assistant' && <Text style={styles.senderLabel}>{salesperson.name.split(' ')[0]}</Text>}
+              <View style={[styles.bubble, m.role === 'user' ? styles.bubbleUser : styles.bubbleAssistant]}>
+                <Text style={[styles.bubbleText, m.role === 'user' && styles.bubbleTextUser]}>{m.content}</Text>
+              </View>
             </View>
           ))}
           {isSending && (
-            <View style={[styles.bubble, styles.bubbleAssistant]}>
-              <ActivityIndicator color={Colors.navy} size="small" />
+            <View style={styles.bubbleWrapAssistant}>
+              <Text style={styles.senderLabel}>{salesperson.name.split(' ')[0]}</Text>
+              <View style={[styles.bubble, styles.bubbleAssistant]}>
+                <ActivityIndicator color={Colors.navy} size="small" />
+              </View>
             </View>
           )}
         </ScrollView>
 
         <View style={styles.inputRow}>
           <TextInput
+            ref={inputRef}
             value={input}
             onChangeText={setInput}
             placeholder="Ask about financing, licensing, warranty…"
@@ -154,7 +171,7 @@ export default function SalespersonScreen() {
             the only way to get back to the buttons below, which sit
             outside this KeyboardAvoidingView and could otherwise end up
             stuck behind an open keyboard with no way to reach them. */}
-        <Pressable style={styles.doneRow} onPress={Keyboard.dismiss} hitSlop={8}>
+        <Pressable style={styles.doneRow} onPress={dismissKeyboard} hitSlop={8}>
           <Text style={styles.doneRowText}>Done ⌄</Text>
         </Pressable>
 
@@ -198,9 +215,12 @@ const styles = StyleSheet.create({
   chatWrap: { flex: 1, paddingHorizontal: Spacing.xxl, paddingBottom: 10 },
   messageList: { flex: 1 },
   messageListContent: { paddingVertical: 8, gap: 8 },
-  bubble: { maxWidth: '85%', borderRadius: Radius.lg, paddingVertical: 10, paddingHorizontal: 14 },
-  bubbleAssistant: { backgroundColor: '#fff', alignSelf: 'flex-start', borderWidth: 1, borderColor: Colors.border },
-  bubbleUser: { backgroundColor: Colors.navy, alignSelf: 'flex-end' },
+  bubbleWrapAssistant: { alignSelf: 'flex-start', maxWidth: '85%' },
+  bubbleWrapUser: { alignSelf: 'flex-end', maxWidth: '85%' },
+  senderLabel: { fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.textMuted, marginBottom: 3, marginLeft: 4 },
+  bubble: { borderRadius: Radius.lg, paddingVertical: 10, paddingHorizontal: 14 },
+  bubbleAssistant: { backgroundColor: '#fff', borderWidth: 1, borderColor: Colors.border },
+  bubbleUser: { backgroundColor: Colors.navy },
   bubbleText: { fontFamily: Fonts.body, fontSize: 14, color: Colors.text, lineHeight: 20 },
   bubbleTextUser: { color: '#fff' },
   inputRow: {
