@@ -38,21 +38,37 @@ sale/purchase screenshots. `GAP` steps get narrated or skipped.
    Proof of Residence, multi-page capture `WORKS` · "team notified" `MOCK`.
 7. **UCG's paperwork** — US-spec / registered → **Purchase Order** `GAP` ·
    EU-spec DEN → **Cost Estimate** for the "Super" VAT form, stamped at the
-   UCG location `GAP` · Bill of Sale / Warranty Cert / Hand-Over Doc `GAP`
-   (DealerTeam Forms tab) · customer download→print→sign→scan→upload `MOCK`
-   (app has scan/upload; the documents are the gap) · Contract Signed `MOCK`.
-8. **Done in Germany, by a person** — customs/import forms `GAP` · **TÜV,
-   UCG pays** `GAP` · safety inspection (required to register a used/
-   Germany-bought car) `GAP` · "Super" VAT form stamped `GAP`.
+   UCG location `GAP` · **Bill of Sale — official Kaufvertrag or Rechnung**
+   (German tax-law compliant; handwritten not accepted for a dealer sale),
+   Warranty Cert, Hand-Over Doc `GAP` (DealerTeam Forms tab) · customer
+   download→print→sign→scan→upload `MOCK` · Contract Signed `MOCK`.
+8. **Done in Germany, by a person** — **US Customs Form 550-175A**
+   (buy) / **550-175B cleared through Zollamt** (sell-back) `GAP` · **TÜV /
+   safety inspection, UCG pays** `GAP` (required to register any used or
+   Germany-bought car) · VAT form stamped `GAP` · for EU-spec: the German
+   title book (Fahrzeugbrief) + registration (Fahrzeugschein) + official
+   **deregistration MFR** on letterhead, or the USAREUR-AF Transfer Title
+   `GAP`.
 9. **The VRO packet** — UCG assembles a **cover letter + scenario checklist**
-   (used EU-spec / used US-spec, dealer purchase) with every doc in order
-   `GAP`. Needs: APO address · USAREUR license · eVB insurance confirmation
-   · passed safety inspection. Customer carries it to the VRO → registration,
-   USAREUR plates, environmental sticker `GAP`. Checklists are
-   scenario-specific PDFs on the garrison site
-   (home.army.mil/stuttgart/my-garrison/all-services/vehicle-registration —
-   Stuttgart VRO: Bldg 2930, Panzer Kaserne). **Terry is providing the
-   current VRO guidelines to fold in here.**
+   with every document in order `GAP`. Real requirements now transcribed in
+   **[docs/vro-checklists.md](./vro-checklists.md)** (Stuttgart: Used
+   US-Spec / Used Euro-Spec from a dealer; Selling to a dealership). Split:
+   - **UCG provides** — Bill of Sale (Kaufvertrag/Rechnung), VAT form +
+     stamp, customs form, TÜV/safety inspection, German title +
+     deregistration MFR or USAREUR-AF Transfer Title, lien release, the
+     cover letter.
+   - **Customer brings** — Orders (PCS / 1172), DoD ID, USAREUR license,
+     SOFA card (contractor), **Proof of Insurance for Germany** (eVB / ICC
+     / Deckungskarte — arranged with their insurer; **policyholder is a
+     listed owner and must be present at the VRO**), $45 × up to 2 years,
+     POV limit waiver (AE 190-1AG) if applicable, German-bank lienholder
+     authorization if financed via a German bank.
+   - **Sponsor must be present**; Title 10 → Orders for every transaction;
+     can't register anything if existing registrations aren't compliant.
+   Customer carries the packet to the VRO → registration, USAREUR plates,
+   environmental sticker. Stuttgart VRO: Bldg 2930, Panzer Kaserne.
+   Ramstein/KMC and other garrisons have their own checklists — confirm
+   per location.
 10. **Delivery** — Car Ready → Picked Up (photo, Google review) `MOCK` ·
     Service Center `WORKS` · Sell It Back `MOCK` (no valuation engine) ·
     Refer a Friend `GAP`.
