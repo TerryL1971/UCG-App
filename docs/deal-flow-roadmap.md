@@ -20,13 +20,15 @@ real customer would hit it.
   must be present, USAA/Mirascon 24h, Title 10 orders every time. Entry
   point: a card on the Documents tab. **Not built:** the actual VRO cover
   letter as a generated document; per-base office details beyond Stuttgart.
-- **American Auto Nation (`/insurance`) — pushed deliberately.** Terry: it
-  was the UCG owner's late brother's company, UCG inherited it, keeping it
-  alive matters to the family. New screen: the "first month's premium
-  reimbursed" offer (from the flyer), a short **family story** (PLACEHOLDER
-  wording in `src/constants/american-auto-nation.ts` — Terry to confirm
-  exact text and whether to name the founder), the USAREUR-driver framing,
-  and a "Request a Quote" WhatsApp handoff to UCG carrying the car + base
+- **American Auto Nation (`/insurance`) — pushed deliberately.** UCG's own
+  insurance (started by John, brother to owners David & James, who passed a
+  few years ago). New screen: the "first month's premium reimbursed" offer
+  (from the flyer), the USAREUR-driver framing, and a "Request a Quote"
+  WhatsApp handoff to UCG carrying the car + base
+  - **A founder's-story section was built and then pulled same day** —
+    Terry: "the sentiment is super nice… scrap it for now. Keep it in
+    memory if the [owners] want to see it." Drafted copy is in the project
+    memory (`american-auto-nation.md`); not in the code.
   (there's no AAN quoting API — matches the flyer's "through your sales
   person"). Entry points: salesperson-screen CTA ("Insurance — First Month
   Paid"), a nudge on the warranty **decline** recap, and the "Proof of

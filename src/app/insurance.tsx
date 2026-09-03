@@ -51,11 +51,6 @@ export default function InsuranceScreen() {
           ))}
         </View>
 
-        <View style={styles.storyCard}>
-          <Text style={styles.storyHeading}>{AAN.story.heading}</Text>
-          <Text style={styles.storyBody}>{AAN.story.body}</Text>
-        </View>
-
         <Text style={styles.whyText}>
           You&apos;ll need a German insurance card to register the car anyway &mdash; the policyholder is listed as
           an owner and has to be at the registration office in person, so it&apos;s worth sorting early.
@@ -104,22 +99,6 @@ const styles = StyleSheet.create({
   points: { gap: 8 },
   pointRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   pointText: { fontFamily: Fonts.bodySemibold, fontSize: 13.5, color: Colors.textMuted },
-
-  storyCard: {
-    backgroundColor: Colors.redTint,
-    borderRadius: Radius.lg,
-    padding: 14,
-    borderLeftWidth: 3,
-    borderLeftColor: Colors.red,
-  },
-  storyHeading: {
-    fontFamily: Fonts.bodyBold,
-    fontSize: 12,
-    letterSpacing: 0.3,
-    textTransform: 'uppercase',
-    color: Colors.red,
-  },
-  storyBody: { fontFamily: Fonts.body, fontSize: 13.5, color: Colors.text, lineHeight: 20, marginTop: 6 },
 
   whyText: { fontFamily: Fonts.body, fontSize: 12.5, color: Colors.textMuted, lineHeight: 18 },
 
