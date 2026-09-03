@@ -4,11 +4,12 @@
  * late brother, and keeping it alive matters a great deal to the family
  * (Terry, 2026-09-04).
  *
- * Offer and taglines are from UCG's own flyers. The founder's story: three
- * brothers — John, David, James. John started American Auto Nation and
+ * Offer and taglines are from UCG's own flyers. The founder's story:
+ * brothers John, David and James. John started American Auto Nation and
  * passed away a few years ago (Terry, 2026-09-04 — exact timing unknown,
- * so no date is stated); David and James (UCG's owners) carry it on. Terry
- * should still eyeball the exact wording — it's the family's story.
+ * so no date is stated). UCG's owners are David, James, and David's wife
+ * Michelle, and they carry AAN on. Terry should still eyeball the exact
+ * wording — it's the family's story.
  *
  * There's no AAN quoting API — "Request a quote" is a WhatsApp handoff to
  * UCG carrying the car + customer context, matching what the flyer says
@@ -32,6 +33,6 @@ export const americanAutoNation = {
   /** Terry to eyeball the exact wording — it's the family's story. */
   story: {
     heading: 'Kept in the family',
-    body: 'American Auto Nation was started by John — brother to Used Car Guys’ owners, David and James. When John passed, they kept his company going. It’s part of UCG now, and carrying it on means a great deal to the family.',
+    body: 'American Auto Nation was John’s. When he passed, his brothers David and James, and David’s wife Michelle — the family behind Used Car Guys — kept it going. Carrying on what John built means a great deal to them.',
   },
 } as const;
