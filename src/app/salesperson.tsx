@@ -220,6 +220,12 @@ export default function SalespersonScreen() {
             style={styles.depositButton}
             onPress={() => router.push('/warranty')}
           />
+          <Button
+            label="Insurance — First Month Paid"
+            variant="secondary"
+            style={styles.depositButton}
+            onPress={() => router.push('/insurance')}
+          />
           <Button label="View My Timeline  →" onPress={() => router.push('/(tabs)/deal')} />
         </View>
       </KeyboardAvoidingView>

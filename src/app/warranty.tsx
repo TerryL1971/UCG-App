@@ -74,6 +74,17 @@ export default function WarrantyScreen() {
           {choice.decision === 'declined' && choice.declineNote ? (
             <Text style={styles.recapNote}>&ldquo;{choice.declineNote}&rdquo;</Text>
           ) : null}
+
+          {choice.decision === 'declined' ? (
+            <Pressable style={styles.aanNudge} onPress={() => router.push('/insurance')}>
+              <Text style={styles.aanNudgeTitle}>Have you sorted insurance?</Text>
+              <Text style={styles.aanNudgeText}>
+                You&apos;ll need a German policy to register the car. American Auto Nation is UCG&apos;s own &mdash;
+                and your first month is reimbursed.  →
+              </Text>
+            </Pressable>
+          ) : null}
+
           <Button label="Change My Answer" variant="secondary" style={styles.recapBtn} onPress={clearChoice} />
           <Button label="Back to My Deal" style={styles.recapBtn} onPress={() => router.replace('/(tabs)/deal')} />
         </View>
@@ -295,4 +306,15 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   recapBtn: { marginTop: 12 },
+  aanNudge: {
+    marginTop: 16,
+    alignSelf: 'stretch',
+    backgroundColor: Colors.redTint,
+    borderRadius: Radius.lg,
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.red,
+    padding: 13,
+  },
+  aanNudgeTitle: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.red },
+  aanNudgeText: { fontFamily: Fonts.body, fontSize: 12.5, color: Colors.text, lineHeight: 18, marginTop: 4 },
 });

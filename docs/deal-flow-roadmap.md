@@ -6,6 +6,33 @@ below is built yet except where marked **(shipped)**. Treat this as the
 backlog for the deal-intake → My Deal pipeline, roughly in the order a
 real customer would hit it.
 
+## Shipped Sept 4
+
+- **VRO Checklist screen (`/vro-checklist`).** What the customer needs at
+  the Vehicle Registration Office — split into "UCG handles these" vs "you
+  bring these", with a US-spec / EU-spec toggle (defaults from the stock
+  number: `DEN` → EU-spec). Regulatory content transcribed from the real
+  USAG Stuttgart PDFs Terry sent (`src/constants/vro-checklists.ts`,
+  `docs/vro-checklists.md`) — one baseline covers the substance everywhere
+  (all VROs run on AE 190-1); the screen is explicit that other bases have
+  their own quirks the salesperson confirms, and only Stuttgart's office
+  card is filled in. Warnings box: sponsor must be present, policyholder
+  must be present, USAA/Mirascon 24h, Title 10 orders every time. Entry
+  point: a card on the Documents tab. **Not built:** the actual VRO cover
+  letter as a generated document; per-base office details beyond Stuttgart.
+- **American Auto Nation (`/insurance`) — pushed deliberately.** Terry: it
+  was the UCG owner's late brother's company, UCG inherited it, keeping it
+  alive matters to the family. New screen: the "first month's premium
+  reimbursed" offer (from the flyer), a short **family story** (PLACEHOLDER
+  wording in `src/constants/american-auto-nation.ts` — Terry to confirm
+  exact text and whether to name the founder), the USAREUR-driver framing,
+  and a "Request a Quote" WhatsApp handoff to UCG carrying the car + base
+  (there's no AAN quoting API — matches the flyer's "through your sales
+  person"). Entry points: salesperson-screen CTA ("Insurance — First Month
+  Paid"), a nudge on the warranty **decline** recap, and the "Proof of
+  Insurance" line in the VRO checklist. Uses the `SUPPORT_WHATSAPP`
+  placeholder number.
+
 ## Shipped Sept 3
 
 - **AI vs. human salesperson — decoupled, per Terry's model (Sept 3).**

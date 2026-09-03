@@ -1,5 +1,6 @@
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -151,6 +152,15 @@ export default function DocumentsScreen() {
           Add as many pages as a document needs — insurance and orders often run more than one page. Your UCG
           team is notified the moment a document&apos;s ready for review.
         </Text>
+
+        <Pressable style={styles.vroCard} onPress={() => router.push('/vro-checklist')}>
+          <MapPinIcon size={18} color={Colors.navy} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.vroTitle}>Your VRO packet</Text>
+            <Text style={styles.vroSub}>What you&apos;ll need to register the car, get plates, and get the sticker</Text>
+          </View>
+          <Text style={styles.vroChevron}>›</Text>
+        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );
@@ -160,6 +170,20 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: Colors.bg },
   headerWrap: { backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: Colors.border },
   list: { padding: Spacing.xl, gap: Spacing.md, paddingBottom: 40 },
+  vroCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#fff',
+    borderRadius: Radius.lg,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    padding: 14,
+    marginTop: 4,
+  },
+  vroTitle: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.text },
+  vroSub: { fontFamily: Fonts.body, fontSize: 11.5, color: Colors.textMuted, marginTop: 1, lineHeight: 15 },
+  vroChevron: { fontFamily: Fonts.bodyBold, fontSize: 20, color: Colors.textFaint },
   card: {
     backgroundColor: '#fff',
     borderRadius: Radius.xl,

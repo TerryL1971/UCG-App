@@ -31,9 +31,10 @@ sale/purchase screenshots. `GAP` steps get narrated or skipped.
    customer wires → **admin verifies funds (PIF)** `GAP`. Financing: UCG
    finance app link `WORKS` → bank approves → **bank wires UCG** `GAP` →
    **admin verifies funds** `GAP`. Payment status the customer sees `MOCK`.
-5. **Add-ons** (accept/decline each) — 2-Year PPP $999 `WORKS` · American
-   Auto Nation insurance `GAP` (planned, after a warranty decline) · Winter
-   Tire Program `GAP` (flyer pending) · PPF `GAP` (flyer pending).
+5. **Add-ons** (accept/decline each) — 2-Year PPP $999 `WORKS` · **American
+   Auto Nation insurance** `WORKS` (`/insurance` — offer + family story +
+   WhatsApp quote handoff; pushed per the owners) · Winter Tire Program
+   `GAP` (flyer pending) · PPF `GAP` (flyer pending).
 6. **Your documents (KYC)** — License / Proof of Insurance / Orders /
    Proof of Residence, multi-page capture `WORKS` · "team notified" `MOCK`.
 7. **UCG's paperwork** — US-spec / registered → **Purchase Order** `GAP` ·
@@ -49,8 +50,10 @@ sale/purchase screenshots. `GAP` steps get narrated or skipped.
    title book (Fahrzeugbrief) + registration (Fahrzeugschein) + official
    **deregistration MFR** on letterhead, or the USAREUR-AF Transfer Title
    `GAP`.
-9. **The VRO packet** — UCG assembles a **cover letter + scenario checklist**
-   with every document in order `GAP`. Real requirements now transcribed in
+9. **The VRO packet** — the **`/vro-checklist` screen** now shows the
+   customer exactly what they need `WORKS` (US/EU-spec toggle, UCG-provides
+   vs you-bring, the warnings). UCG still assembles the actual **cover
+   letter** as a document `GAP`. Requirements transcribed in
    **[docs/vro-checklists.md](./vro-checklists.md)** (Stuttgart: Used
    US-Spec / Used Euro-Spec from a dealer; Selling to a dealership). Split:
    - **UCG provides** — Bill of Sale (Kaufvertrag/Rechnung), VAT form +
