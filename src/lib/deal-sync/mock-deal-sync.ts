@@ -54,6 +54,11 @@ const SIGNAL_COMPLETES: Record<DealSignal['type'], (step: DealStep) => boolean> 
 
 export class MockDealSync implements DealSyncBackend {
   private steps: DealStep[] = demoStartSteps;
+  // Whether management has assigned a human salesperson yet. True on the
+  // demo-start state (a further-along deal); a fresh deal starts false and
+  // flips on the `deposit-paid` signal — matching "a salesperson is
+  // assigned by management once the customer has placed a deposit".
+  private assigned = true;
   private listeners = new Set<() => void>();
   private timer: ReturnType<typeof setTimeout> | null = null;
   // Memoized so useSyncExternalStore doesn't see a fresh object on every
@@ -66,7 +71,7 @@ export class MockDealSync implements DealSyncBackend {
       this.cachedState = {
         steps: this.steps,
         financingTerms: financingApproved ? demoFinancingTerms : null,
-        salesperson,
+        salesperson: this.assigned ? salesperson : null,
       };
     }
     return this.cachedState;
@@ -80,24 +85,32 @@ export class MockDealSync implements DealSyncBackend {
   }
 
   send(signal: DealSignal): void {
+    // A confirmed deposit is what gets a real salesperson assigned.
+    if (signal.type === 'deposit-paid') this.assigned = true;
+
     const step = this.steps[currentIndex(this.steps)];
     if (step && step.waitingOn === 'you' && SIGNAL_COMPLETES[signal.type]?.(step)) {
       this.advance();
+    } else if (signal.type === 'deposit-paid') {
+      this.emit(); // assignment changed even if no step advanced
     }
   }
 
   reset(): void {
     this.clearTimer();
     this.steps = freshDealSteps;
+    this.assigned = false; // fresh deal — no salesperson until a deposit
     this.emit();
     this.scheduleAutoAdvance();
   }
 
   jumpToStep(index: number): void {
     // Manual override — stop pretending the back office is working so the
-    // tester's chosen step doesn't move out from under them.
+    // tester's chosen step doesn't move out from under them. Steps past
+    // "matched" imply a deposit happened, so a salesperson is assigned.
     this.clearTimer();
     this.steps = stepsAtIndex(index);
+    this.assigned = index >= 1;
     this.emit();
   }
 

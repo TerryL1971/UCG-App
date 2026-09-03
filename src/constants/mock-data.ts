@@ -23,23 +23,52 @@ export interface Salesperson {
   whatsapp: string;
 }
 
-// FAKE NUMBER — has been since this file's very first version, long before
-// the AI agent's "Talk to a Human" fallback made it something a customer
-// might actually tap expecting a real person. 491700000000 doesn't reach
-// anyone. Needs UCG's real WhatsApp Business number (and to decide whose
-// number this actually is, now that "Marcus" himself may not exist as a
-// specific real person once assignment is real — see the open question in
-// docs/deal-flow-roadmap.md) before this goes anywhere near a real
-// customer. Every WhatsApp touchpoint in the app reads from this one
-// constant, so fixing it here fixes all of them at once.
+/**
+ * The AI assistant in the chat. NOT a person, NOT a salesperson — it's the
+ * guide that walks the customer through buying or selling, start to finish
+ * (Terry, Sept 3: "The AI is the salesperson helping the customer through
+ * the process"). A real human is assigned separately, by management, once
+ * a deposit is in — see `DealServerState.salesperson` in src/lib/deal-sync.
+ */
+export interface Assistant {
+  name: string;
+  title: string;
+}
+
+export const ucgAssistant: Assistant = {
+  name: 'UCG Assistant',
+  title: 'Used Car Guys · AI Guide',
+};
+
+/**
+ * The real, human salesperson management assigns to handle logistics once
+ * a deposit is placed. One hardcoded example person today — `MockDealSync`
+ * hands this back only *after* the `deposit-paid` signal (before that,
+ * `DealServerState.salesperson` is null and the customer is with the AI
+ * assistant). The name/photo become real when a DealerTeam integration
+ * returns the actually-assigned "Salesperson 1" — see
+ * docs/salesforce-dealerteam-integration-plan.md.
+ */
 export const salesperson: Salesperson = {
-  id: 'marcus-whitfield',
-  name: 'Marcus Whitfield',
-  title: 'Used Car Guys Specialist',
+  id: 'assigned-specialist',
+  name: 'Your UCG Specialist',
+  title: 'Delivery & Logistics',
   topRated: true,
   phone: 'tel:+491700000000',
   whatsapp: '491700000000',
 };
+
+/**
+ * The "I'm stuck and can't move forward" escape hatch from the AI chat —
+ * a last resort, not a primary path (Terry, Sept 3: "worst case
+ * scenario"). Should be the WhatsApp number wired into UCG's Trengo inbox
+ * so a real agent picks up. PLACEHOLDER: Terry doesn't have the Trengo
+ * number yet — this reuses the real support number he already provided
+ * for wire transfers (see `wireInstructions.supportWhatsapp` below,
+ * 491604440011) as the least-wrong stand-in. Confirm it's Trengo-connected
+ * before launch, or swap it.
+ */
+export const SUPPORT_WHATSAPP = '491604440011';
 
 /**
  * wa.me is WhatsApp's official "click to chat" link format — reliable and
@@ -125,7 +154,7 @@ export interface DealStep {
 // a step's own status, not hardcoded to a step id) actually show up by
 // default instead of requiring someone to hand-edit this file to see them.
 export const dealSteps: DealStep[] = [
-  { id: 'matched', title: 'Matched with Salesperson', status: 'done', detail: 'Completed · Aug 12', waitingOn: 'ucg' },
+  { id: 'matched', title: 'Started with UCG', status: 'done', detail: 'Completed · Aug 12', waitingOn: 'ucg' },
   { id: 'application', title: 'Application Submitted', status: 'done', detail: 'Completed · Aug 14', waitingOn: 'you' },
   { id: 'documents', title: 'Documents Uploaded', status: 'done', detail: 'Completed · Aug 16', waitingOn: 'you' },
   { id: 'financing', title: 'Financing Approved', status: 'done', detail: 'Completed · Aug 19', waitingOn: 'bank' },
@@ -141,7 +170,7 @@ export const dealSteps: DealStep[] = [
 // without hand-editing this file), while a reset gives testers what they
 // actually expect: steps 1-7 back to a real starting point.
 export const freshDealSteps: DealStep[] = [
-  { id: 'matched', title: 'Matched with Salesperson', status: 'current', waitingOn: 'ucg' },
+  { id: 'matched', title: 'Started with UCG', status: 'current', waitingOn: 'ucg' },
   { id: 'application', title: 'Application Submitted', status: 'upcoming', waitingOn: 'you' },
   { id: 'documents', title: 'Documents Uploaded', status: 'upcoming', waitingOn: 'you' },
   { id: 'financing', title: 'Financing Approved', status: 'upcoming', waitingOn: 'bank' },

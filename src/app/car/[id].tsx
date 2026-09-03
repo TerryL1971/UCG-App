@@ -17,7 +17,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 export default function CarDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { chooseCar } = useDeal();
-  const { clearIntake } = useDealIntake();
+  const { demoteIntakeToDraft } = useDealIntake();
   const { isSaved, toggleSaved } = useSaved();
   const [car, setCar] = useState<InventoryDetail | null>(null);
   const [error, setError] = useState(false);
@@ -105,11 +105,13 @@ export default function CarDetailScreen() {
         <Button
           label="Choose This Car  →"
           onPress={() => {
-            // A previous car's deal-intake shouldn't linger and look
-            // "submitted" for a car that's no longer the one being
-            // pursued — starting fresh on a new car means an actual
-            // fresh start, not stale data from a prior test run.
-            clearIntake();
+            // A previous car's intake shouldn't still read as "submitted"
+            // for a different car — but the customer's own details (name,
+            // WhatsApp, base, APO, license) are about them, not the car,
+            // and kept vanishing on people. Demote: keep the answers as a
+            // draft that pre-fills the fresh form, drop only the
+            // "submitted" status.
+            demoteIntakeToDraft();
             chooseCar(car);
             router.push('/deal-intake');
           }}

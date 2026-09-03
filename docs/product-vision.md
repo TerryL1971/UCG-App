@@ -89,7 +89,9 @@ buying anything — same app, different door.)*
 |---|---|---|
 | Inventory list + sorting | **Partial** — live scrape of usedcarguys.net (`ucg-inventory.ts`), no real API | WordPress REST API (`wordpress-inventory-api-spec.md`) |
 | Car detail page | **Partial** — scraped, same fragility | same |
-| AI chat bot | **Built** — real Claude-backed route | Funded `ANTHROPIC_API_KEY` (UCG's, not Terry's); real hosting |
+| AI chat bot ("UCG Assistant") — runs the whole flow | **Built** — real Claude-backed route; decoupled from any named person (2026-09-03) | Funded Claude API key (Terry now, UCG later); real hosting; consider Haiku 4.5 for cost |
+| Real salesperson assigned after deposit (management) | **Built (mock)** (2026-09-03) — `DealServerState.salesperson` null until `deposit-paid`, then assigned | Real names from DealerTeam; management assignment tool |
+| "Stuck" escape hatch → real human on WhatsApp/Trengo | **Built** (2026-09-03) — link in chat, placeholder number | UCG's real Trengo-connected WhatsApp number |
 | Buy / 5-day hold | Hold **built** | — |
 | $300 deposit | **Built** — real PayPal Sandbox | Live PayPal Business creds; webhooks; hosting |
 | Deal intake (name, base, license, payment) | **Built + persists** | Grows once real DealerTeam field list is known |

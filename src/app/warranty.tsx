@@ -144,7 +144,7 @@ export default function WarrantyScreen() {
           <View style={styles.actions}>
             {eligibility !== 'ineligible' && (
               <Button
-                label={eligibility === 'unknown' ? 'I’m Interested in the 2-Year Plan' : 'Add the 2-Year Plan — $999'}
+                label={eligibility === 'unknown' ? 'Yes, I’m Interested' : 'Add the 2-Year Plan — $999'}
                 onPress={accept}
               />
             )}

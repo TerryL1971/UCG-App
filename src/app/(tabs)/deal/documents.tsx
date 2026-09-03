@@ -8,7 +8,7 @@ import { DocumentIcon, IdCardIcon, MapPinIcon, PlusIcon, ShieldIcon } from '@/co
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { StatusChip } from '@/components/ui/chip';
 import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
-import { salesperson, type DealDocument } from '@/constants/mock-data';
+import { type DealDocument } from '@/constants/mock-data';
 import { useDealDocuments, type DocumentState } from '@/lib/documents-context';
 import { compressPhoto } from '@/lib/image';
 
@@ -148,8 +148,8 @@ export default function DocumentsScreen() {
           />
         ))}
         <Text style={styles.hint}>
-          Add as many pages as a document needs — insurance and orders often run more than one page. We&apos;ll
-          notify {salesperson.name.split(' ')[0]} the moment a document&apos;s ready for review.
+          Add as many pages as a document needs — insurance and orders often run more than one page. Your UCG
+          team is notified the moment a document&apos;s ready for review.
         </Text>
       </ScrollView>
     </SafeAreaView>

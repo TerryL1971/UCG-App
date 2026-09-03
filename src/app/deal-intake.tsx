@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert, Dimensions, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -11,7 +11,6 @@ import { ScreenHeader } from '@/components/ui/screen-header';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import {
   financingLenderOptions,
-  salesperson,
   usareurBases,
   USAREUR_OFFICIAL_JKO_URL,
   USAREUR_STUDY_GUIDE_URL,
@@ -49,58 +48,120 @@ type LicenseSide = 'front' | 'back';
  */
 export default function DealIntakeScreen() {
   const { car } = useDeal();
-  const { intake, submitIntake } = useDealIntake();
+  const { intake, draft, saveDraft, submitIntake } = useDealIntake();
   const { send: sendDealSignal } = useDealSync();
   const { user } = useAuth();
   const { lastCapturedLicensePhoto, clearLastCapturedLicensePhoto } = useLicenseCapture();
   const carLabel = car ? `${car.year} ${car.title}` : 'your next car';
 
-  // Pre-filled from a previous submission when there is one — this is
-  // what actually makes "Edit My Info" (salesperson.tsx) useful. Without
-  // this, going back to make a correction would just show a blank form
-  // again instead of what was actually submitted, since router.replace()
-  // to /salesperson (see handleSubmit below) doesn't keep this screen in
-  // history to return to on its own; re-navigating here creates a fresh
-  // instance, so the previous answers have to come from context, not
-  // from whatever local state this component happened to have before.
-  const [fullName, setFullName] = useState(intake?.fullName ?? user?.name ?? '');
-  const [contact, setContact] = useState(intake?.contact ?? '');
-  const intakeBaseIsOther = !!intake && !usareurBases.includes(intake.base);
-  const [base, setBase] = useState<string | null>(intake ? (intakeBaseIsOther ? 'Other' : intake.base) : null);
-  const [otherBase, setOtherBase] = useState(intakeBaseIsOther ? intake!.base : '');
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(intake?.paymentMethod ?? 'cash');
+  // Pre-fill order: a submitted intake wins, then the running draft
+  // (field values saved continuously so navigating away mid-fill, or
+  // switching cars, doesn't wipe the customer's own details — see
+  // deal-intake-context.tsx). Both load from AsyncStorage in the provider
+  // before the customer ever reaches this screen, so these initializers
+  // see real values on a fresh mount.
+  const prefill: Partial<DealIntake> | null = intake ?? draft ?? null;
+  const prefillBase = prefill?.base;
+  const prefillBaseIsOther = !!prefillBase && !usareurBases.includes(prefillBase);
+
+  const [fullName, setFullName] = useState(prefill?.fullName ?? user?.name ?? '');
+  const [contact, setContact] = useState(prefill?.contact ?? '');
+  const [base, setBase] = useState<string | null>(
+    prefillBase ? (prefillBaseIsOther ? 'Other' : prefillBase) : null,
+  );
+  const [otherBase, setOtherBase] = useState(prefillBaseIsOther ? prefillBase! : '');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(prefill?.paymentMethod ?? 'cash');
   // Multi-select ("or all of the above" — Terry, Sept 2), not a single
   // choice. Named options come from financingLenderOptions; anything the
   // customer typed that ISN'T one of those known names is treated as a
-  // custom "Other" entry when pre-filling from a previous submission.
+  // custom "Other" entry when pre-filling.
   const [selectedLenders, setSelectedLenders] = useState<string[]>(
-    intake?.financingLenders?.filter((l) => (financingLenderOptions as readonly string[]).includes(l)) ?? [],
+    prefill?.financingLenders?.filter((l) => (financingLenderOptions as readonly string[]).includes(l)) ?? [],
   );
   const [otherLenderText, setOtherLenderText] = useState(
-    intake?.financingLenders?.filter((l) => !(financingLenderOptions as readonly string[]).includes(l)).join(', ') ??
+    prefill?.financingLenders?.filter((l) => !(financingLenderOptions as readonly string[]).includes(l)).join(', ') ??
       '',
   );
-  const [financingDownPayment, setFinancingDownPayment] = useState(intake?.financingDownPayment ?? '');
-  const [licenseStatus, setLicenseStatus] = useState<LicenseStatus>(intake?.licenseStatus ?? 'not_yet');
-  const [licensePhotoFrontUri, setLicensePhotoFrontUri] = useState<string | null>(intake?.licensePhotoFrontUri ?? null);
-  const [licensePhotoBackUri, setLicensePhotoBackUri] = useState<string | null>(intake?.licensePhotoBackUri ?? null);
+  const [financingDownPayment, setFinancingDownPayment] = useState(prefill?.financingDownPayment ?? '');
+  const [licenseStatus, setLicenseStatus] = useState<LicenseStatus>(prefill?.licenseStatus ?? 'not_yet');
+  const [licensePhotoFrontUri, setLicensePhotoFrontUri] = useState<string | null>(
+    prefill?.licensePhotoFrontUri ?? null,
+  );
+  const [licensePhotoBackUri, setLicensePhotoBackUri] = useState<string | null>(prefill?.licensePhotoBackUri ?? null);
   const [capturingSide, setCapturingSide] = useState<LicenseSide | null>(null);
 
   // APO/FPO address — the piece the VRO needs for registration/plates that
   // nothing else here captures. Often not assigned until in-processing, so
   // this defaults to "not assigned yet" and the customer comes back to fill
-  // it. Pre-fills from a prior submission the same way every other field does.
-  const [apoStatus, setApoStatus] = useState<ApoAddressStatus>(intake?.apoAddressStatus ?? 'not_yet');
-  const [apoRecipient, setApoRecipient] = useState(intake?.apoAddress?.recipient ?? '');
-  const [apoUnitBox, setApoUnitBox] = useState(intake?.apoAddress?.unitBox ?? '');
-  const [apoOffice, setApoOffice] = useState<ApoOffice>(intake?.apoAddress?.office ?? 'APO');
-  const [apoRegion, setApoRegion] = useState<ApoRegion>(intake?.apoAddress?.region ?? 'AE');
-  const [apoZip, setApoZip] = useState(intake?.apoAddress?.zip ?? '');
+  // it. Pre-fills the same way every other field does.
+  const [apoStatus, setApoStatus] = useState<ApoAddressStatus>(prefill?.apoAddressStatus ?? 'not_yet');
+  const [apoRecipient, setApoRecipient] = useState(prefill?.apoAddress?.recipient ?? '');
+  const [apoUnitBox, setApoUnitBox] = useState(prefill?.apoAddress?.unitBox ?? '');
+  const [apoOffice, setApoOffice] = useState<ApoOffice>(prefill?.apoAddress?.office ?? 'APO');
+  const [apoRegion, setApoRegion] = useState<ApoRegion>(prefill?.apoAddress?.region ?? 'AE');
+  const [apoZip, setApoZip] = useState(prefill?.apoAddress?.zip ?? '');
 
-  const [notes, setNotes] = useState(intake?.notes ?? '');
+  const [notes, setNotes] = useState(prefill?.notes ?? '');
 
   const isOtherBase = base === 'Other';
   const effectiveBase = isOtherBase ? otherBase.trim() : base;
+
+  // Assemble the current form state into a DealIntake. Used both by submit
+  // and by the draft-autosave effect below, so the two never drift.
+  const buildIntake = useCallback((): DealIntake => {
+    const apoAddress: ApoAddress | null =
+      apoStatus === 'have' && (apoUnitBox.trim() || apoZip.trim())
+        ? {
+            recipient: apoRecipient.trim() || fullName.trim(),
+            unitBox: apoUnitBox.trim(),
+            office: apoOffice,
+            region: apoRegion,
+            zip: apoZip.trim(),
+          }
+        : null;
+    return {
+      fullName: fullName.trim(),
+      contact: contact.trim(),
+      base: isOtherBase ? otherBase.trim() : base ?? '',
+      paymentMethod,
+      financingLenders: [...selectedLenders, ...(otherLenderText.trim() ? [otherLenderText.trim()] : [])],
+      financingDownPayment: financingDownPayment.trim(),
+      licenseStatus,
+      licensePhotoFrontUri,
+      licensePhotoBackUri,
+      apoAddressStatus: apoAddress ? 'have' : 'not_yet',
+      apoAddress,
+      notes: notes.trim(),
+    };
+  }, [
+    fullName,
+    contact,
+    isOtherBase,
+    otherBase,
+    base,
+    paymentMethod,
+    selectedLenders,
+    otherLenderText,
+    financingDownPayment,
+    licenseStatus,
+    licensePhotoFrontUri,
+    licensePhotoBackUri,
+    apoStatus,
+    apoRecipient,
+    apoUnitBox,
+    apoOffice,
+    apoRegion,
+    apoZip,
+    notes,
+  ]);
+
+  // Save the form as a draft on every change, so leaving this screen
+  // without submitting doesn't lose anything. Once there's a submitted
+  // intake, that's the source of truth — don't shadow it with a draft.
+  useEffect(() => {
+    if (intake) return;
+    saveDraft(buildIntake());
+  }, [intake, saveDraft, buildIntake]);
 
   // Handoff from capture-license.tsx (Terry, Sept 2: the license photo now
   // goes through a real camera screen with an alignment rectangle, not
@@ -152,41 +213,13 @@ export default function DealIntakeScreen() {
       return;
     }
 
-    // Only build an address object if they actually said they have it AND
-    // gave us something usable — otherwise it stays null and the status
-    // field carries "not assigned yet" on its own.
-    const apoAddress: ApoAddress | null =
-      apoStatus === 'have' && (apoUnitBox.trim() || apoZip.trim())
-        ? {
-            recipient: apoRecipient.trim() || fullName.trim(),
-            unitBox: apoUnitBox.trim(),
-            office: apoOffice,
-            region: apoRegion,
-            zip: apoZip.trim(),
-          }
-        : null;
-
-    const intake: DealIntake = {
-      fullName: fullName.trim(),
-      contact: contact.trim(),
-      base: effectiveBase,
-      paymentMethod,
-      financingLenders: [...selectedLenders, ...(otherLenderText.trim() ? [otherLenderText.trim()] : [])],
-      financingDownPayment: financingDownPayment.trim(),
-      licenseStatus,
-      licensePhotoFrontUri,
-      licensePhotoBackUri,
-      apoAddressStatus: apoAddress ? 'have' : 'not_yet',
-      apoAddress,
-      notes: notes.trim(),
-    };
     // No WhatsApp handoff here anymore — the "salesperson" you land on next
     // is the AI agent, not a human, so there's nothing to text. The intake
     // itself is what seeds the agent's first message on that screen (see
     // salesperson.tsx). No "Talk to a Human" fallback there right now
     // either — removed Sept 2 since the WhatsApp number it pointed to is
     // still a placeholder that reaches no one.
-    submitIntake(intake);
+    submitIntake(buildIntake());
     // Tell the deal-sync backend a customer action happened — in the mock
     // this nudges the timeline off "Matched"/"Application"; with a real
     // DealerTeam integration it'd create/update the Sales Up record.
@@ -456,14 +489,13 @@ export default function DealIntakeScreen() {
                 />
               </View>
               <Text style={styles.licenseHint}>
-                Saved in the app for {salesperson.name.split(' ')[0]} to view &mdash; WhatsApp can&apos;t attach it
-                automatically yet, so mention it and he&apos;ll pull it up.
+                Saved in the app for your UCG team to review &mdash; one less thing to bring in later.
               </Text>
             </View>
           )}
         </Field>
 
-        <Field label="Anything Else Marcus Should Know? (optional)">
+        <Field label="Anything Else We Should Know? (optional)">
           <TextInput
             value={notes}
             onChangeText={setNotes}

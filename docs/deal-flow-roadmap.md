@@ -8,6 +8,82 @@ real customer would hit it.
 
 ## Shipped Sept 3
 
+- **AI vs. human salesperson — decoupled, per Terry's model (Sept 3).**
+  Terry: "The AI is the salesperson helping the customer through the
+  process… Once customer has placed a deposit or paid for the car, a
+  salesperson should be assigned by management to handle the logistics."
+  So there are now two distinct entities:
+  - **`ucgAssistant`** (`mock-data.ts`) — the AI. The chat screen is now
+    "UCG Assistant" (title, header name, "AI" badge, bubble labels,
+    greeting), not "Marcus Whitfield". It's an AI, doesn't claim to be a
+    person. `chat+api.ts` system prompt rewritten to match.
+  - **`salesperson`** (`mock-data.ts`) — repurposed as the *assigned
+    human* ("Your UCG Specialist / Delivery & Logistics" placeholder).
+    `DealServerState.salesperson` is now `Salesperson | null`;
+    `MockDealSync` returns it only after the `deposit-paid` signal (or
+    when the demo-start / jump-to-step ≥2 implies a deposit). Before that
+    it's `null`.
+  - My Deal pinned bar: "UCG Assistant is helping you" → "Your UCG
+    Specialist has your deal" once assigned. "Matched with Salesperson"
+    step renamed **"Started with UCG"**; its card shows the AI +
+    "a specialist is assigned once your deposit is in" until assignment.
+  - "Anything Else Marcus Should Know?" → "…We Should Know?"; license /
+    documents hints no longer name a person.
+  - **New escape hatch:** a subtle "Stuck and can't move forward? Message
+    a UCG specialist →" link at the bottom of the chat opens WhatsApp to
+    `SUPPORT_WHATSAPP`. **This is a PLACEHOLDER** (reuses the real
+    wire-support number 491604440011) — Terry doesn't have UCG's
+    Trengo-connected WhatsApp number yet but will get it. Confirm it's
+    Trengo-connected before launch.
+  - **Not done:** the chat avatar is still the illustrated human face
+    (`SalespersonAvatarFull/Mini`) for both the AI and the assigned
+    human — an AI shouldn't wear a human face; needs a bot/assistant
+    glyph. Cosmetic, flagged.
+- **Claude billing reality (Terry asked about routing through claude.ai):**
+  there is **no** way to run the app's chat off a claude.ai subscription
+  (free or Pro) or to have a customer "sign in with their Claude account"
+  — that product has no third-party API. The only path is a **Claude API**
+  account (console.anthropic.com, pay-per-use, no free tier). It's cheap:
+  the chat currently uses `claude-opus-5` (~$0.11 per customer
+  conversation); **Claude Haiku 4.5** would be ~$0.02 and is plenty for
+  guided Q&A — a switch worth making, not yet made (needs Terry's OK, per
+  the claude-api skill's "don't downgrade for cost without the user
+  asking" rule). Terry fronts the account for now; UCG takes it over later
+  (one env var).
+
+- **Button padding + My Deal left-flush fix.** (1) `Button` (`ui/button.tsx`)
+  used a rigid `height: 54` with no internal padding or `lineHeight` — on a
+  device the condensed display font sat low/uneven inside the box. Now
+  `minHeight` + `paddingVertical`/`paddingHorizontal` + explicit
+  `lineHeight: 22` + `includeFontPadding: false` + `numberOfLines={2}`;
+  two over-long labels shortened. (2) My Deal's `detailPanel` had
+  `width: '100%'` **and** `marginHorizontal` — on web the margin has
+  nowhere to go, so "Picked Up" and its buttons rendered flush against the
+  left edge while everything else on the screen was inset. Switched to
+  `paddingHorizontal` (box stays full-width so `maxWidth` + `alignSelf`
+  still center it on a tablet). Verified via web screenshots.
+
+- **Deal-intake info stopped vanishing — for real this time.** Terry, a
+  third time: "my phone and base selection disappeared again when I chose
+  a different car or just go back." Two separate causes:
+  1. **"Choose This Car" called `clearIntake()`** — which wiped name,
+     WhatsApp, base, APO, and license along with the "submitted" status.
+     Those details are about the *customer*, not the car. Fixed: it now
+     calls `demoteIntakeToDraft()` — keeps every answer as a draft that
+     pre-fills the fresh form, drops only the "submitted for this car"
+     status.
+  2. **Un-submitted edits were never persisted** — the form only saved on
+     Submit, so filling half of it and navigating back lost everything.
+     Fixed: `deal-intake-context.tsx` now has a `draft` layer saved
+     continuously (`saveDraft` on every field change, its own AsyncStorage
+     key), and `deal-intake.tsx` pre-fills from `intake ?? draft`. A
+     `buildIntake()` helper is shared by submit and autosave so they never
+     drift. Known tradeoff, not yet device-tested: autosave writes on
+     every keystroke and churns the deal-intake context value — fine on a
+     real device for a small blob, revisit with a debounce if it lags.
+  - `clearIntake()` still exists and still wipes both layers — Reset Test
+    Data (Account tab) uses it.
+
 - **Service Center hub — open to non-customers.** New `/service` screen
   (`src/app/service.tsx`) + `src/constants/service-center.ts` with real
   content from usedcarguys.net/service-center/ (fetched Sept 3): oil

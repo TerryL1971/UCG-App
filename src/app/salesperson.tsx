@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';
-import { ActivityIndicator, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Keyboard, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { SendIcon, StarIcon } from '@/components/icons';
@@ -8,7 +8,7 @@ import { SalespersonAvatarFull } from '@/components/salesperson-avatar';
 import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
-import { salesperson } from '@/constants/mock-data';
+import { SUPPORT_WHATSAPP, ucgAssistant, whatsappChatUrl } from '@/constants/mock-data';
 import { parseJsonResponse } from '@/lib/api-fetch';
 import { useDeal } from '@/lib/deal-context';
 import { useDealIntake } from '@/lib/deal-intake-context';
@@ -20,19 +20,18 @@ interface ChatMessage {
 }
 
 /**
- * "Meet Your Specialist" now means an AI agent, not a human you call or
- * text — so this screen's main action is a real in-app chat, not the
- * WhatsApp Call/Text row it used to have. The agent's backend is
+ * The AI assistant chat — the "UCG Assistant" guides the customer through
+ * buying or selling, start to finish (Terry, Sept 3). It is NOT a person
+ * and NOT the assigned salesperson; a real human takes over logistics
+ * after a deposit (that person shows up on My Deal, not here). Backend is
  * src/app/api/chat+api.ts (a server route, so the Anthropic API key never
  * ships in the app).
  *
- * There's deliberately no "Talk to a Human" fallback right now — removed
- * Sept 2 on Terry's explicit call: `salesperson.whatsapp` is still the
- * fake placeholder number (see mock-data.ts), so the button was pointing
- * at nobody. Re-add it (and update the system prompt in chat+api.ts,
- * which was written assuming this button existed) once UCG's real
- * WhatsApp Business number is in — don't restore a link to a number that
- * doesn't reach anyone.
+ * The "can't move forward?" link at the bottom is the last-resort escape
+ * hatch to a real UCG agent over WhatsApp — meant for a genuinely stuck
+ * customer, not a primary path. It points at `SUPPORT_WHATSAPP`
+ * (mock-data.ts), which is still a stand-in until Terry provides the
+ * Trengo-connected number.
  */
 export default function SalespersonScreen() {
   const { car } = useDeal();
@@ -57,10 +56,10 @@ export default function SalespersonScreen() {
     {
       role: 'assistant',
       content: intake
-        ? `Hi! I'm your AI agent here at Used Car Guys. I've got what you sent — ${intake.base}, ${
+        ? `Hi! I'm the UCG Assistant. I've got what you sent — ${intake.base}, ${
             intake.paymentMethod === 'cash' ? 'paying cash' : 'financing'
-          } — for the ${carLabel}. Ask me anything about the process.`
-        : `Hi! I'm your AI agent here at Used Car Guys, ready to help with the ${carLabel}. What can I answer for you?`,
+          } — for the ${carLabel}. I'll walk you through the whole process — ask me anything.`
+        : `Hi! I'm the UCG Assistant, here to walk you through ${carLabel} start to finish. What can I answer for you?`,
     },
   ]);
   const [input, setInput] = useState('');
@@ -109,7 +108,7 @@ export default function SalespersonScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      <ScreenHeader title="Meet Your Specialist" />
+      <ScreenHeader title="UCG Assistant" />
 
       <Pressable style={styles.headerRow} onPress={dismissKeyboard}>
         <View style={styles.avatarWrap}>
@@ -117,13 +116,13 @@ export default function SalespersonScreen() {
         </View>
         <View style={{ flex: 1 }}>
           <View style={styles.nameRow}>
-            <Text style={styles.name}>{salesperson.name}</Text>
+            <Text style={styles.name}>{ucgAssistant.name}</Text>
             <View style={styles.aiBadge}>
-              <Text style={styles.aiBadgeText}>AI AGENT</Text>
+              <Text style={styles.aiBadgeText}>AI</Text>
             </View>
           </View>
           <Text style={styles.title}>
-            <StarIcon size={12} /> {salesperson.title}
+            <StarIcon size={12} /> {ucgAssistant.title}
           </Text>
         </View>
         {intake && (
@@ -146,7 +145,7 @@ export default function SalespersonScreen() {
           onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}>
           {messages.map((m, i) => (
             <View key={i} style={m.role === 'user' ? styles.bubbleWrapUser : styles.bubbleWrapAssistant}>
-              {m.role === 'assistant' && <Text style={styles.senderLabel}>{salesperson.name.split(' ')[0]}</Text>}
+              {m.role === 'assistant' && <Text style={styles.senderLabel}>{ucgAssistant.name}</Text>}
               <View style={[styles.bubble, m.role === 'user' ? styles.bubbleUser : styles.bubbleAssistant]}>
                 <Text style={[styles.bubbleText, m.role === 'user' && styles.bubbleTextUser]}>{m.content}</Text>
               </View>
@@ -154,7 +153,7 @@ export default function SalespersonScreen() {
           ))}
           {isSending && (
             <View style={styles.bubbleWrapAssistant}>
-              <Text style={styles.senderLabel}>{salesperson.name.split(' ')[0]}</Text>
+              <Text style={styles.senderLabel}>{ucgAssistant.name}</Text>
               <View style={[styles.bubble, styles.bubbleAssistant]}>
                 <ActivityIndicator color={Colors.navy} size="small" />
               </View>
@@ -188,6 +187,20 @@ export default function SalespersonScreen() {
           <Text style={styles.doneRowText}>Done ⌄</Text>
         </Pressable>
 
+        <Pressable
+          style={styles.stuckRow}
+          hitSlop={6}
+          onPress={() =>
+            Linking.openURL(
+              whatsappChatUrl(
+                SUPPORT_WHATSAPP,
+                `Hi UCG — I'm stuck in the app on ${carLabel} and need a hand.`,
+              ),
+            ).catch(() => {})
+          }>
+          <Text style={styles.stuckText}>Stuck and can&apos;t move forward? Message a UCG specialist  →</Text>
+        </Pressable>
+
         <View style={styles.ctaWrap}>
           <Button
             label="Hold This Car — Make a Deposit"
@@ -201,7 +214,7 @@ export default function SalespersonScreen() {
                 ? warrantyChoice.decision === 'accepted'
                   ? 'Premium Protection — Added ✓'
                   : 'Premium Protection — Declined'
-                : 'Protect Your Car — Premium Protection'
+                : 'Premium Protection Plan'
             }
             variant="secondary"
             style={styles.depositButton}
@@ -285,6 +298,13 @@ const styles = StyleSheet.create({
   },
   doneRow: { alignSelf: 'center', paddingVertical: 6, paddingHorizontal: 14 },
   doneRowText: { fontFamily: Fonts.bodySemibold, fontSize: 12.5, color: Colors.textMuted },
+  stuckRow: { alignSelf: 'center', paddingVertical: 4, paddingHorizontal: 14 },
+  stuckText: {
+    fontFamily: Fonts.bodySemibold,
+    fontSize: 11.5,
+    color: Colors.textMuted,
+    textDecorationLine: 'underline',
+  },
   ctaWrap: { paddingHorizontal: Spacing.xxl, paddingTop: 4, paddingBottom: 8, gap: 10 },
   depositButton: { marginBottom: 0 },
 });

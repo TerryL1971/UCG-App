@@ -16,11 +16,12 @@ export interface DealServerState {
   /** null until a financed deal actually reaches an approved-financing
    * state. A cash deal stays null forever. */
   financingTerms: FinancingTerms | null;
-  /** Who's handling the deal. One hardcoded person today — assignment is
-   * a genuinely open question (docs/deal-flow-roadmap.md) — but it lives
-   * here because "which salesperson" is a back-office decision, not a
-   * device-local one. */
-  salesperson: Salesperson;
+  /** The real human salesperson management assigns to handle logistics —
+   * `null` until a deposit is placed (before that the customer is with the
+   * AI assistant). "Which salesperson" is a back-office decision, so it
+   * lives here; a DealerTeam integration would return the actually-assigned
+   * person. */
+  salesperson: Salesperson | null;
 }
 
 /**

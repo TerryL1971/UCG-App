@@ -15,7 +15,7 @@ import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
 import {
   FINANCE_APPLICATION_URL,
   formatApoAddress,
-  salesperson,
+  ucgAssistant,
   ucgLocations,
   waitingOnLabel,
   type DealStep,
@@ -147,12 +147,15 @@ function StepDetailContent({ step, car }: { step: DealStep; car: ReturnType<type
   }
 
   if (step.id === 'matched') {
+    const assigned = dealState.salesperson;
     return (
       <View style={styles.detailCard}>
         <SalespersonAvatarMini size={30} />
         <View style={{ flex: 1 }}>
-          <Text style={styles.detailTitle}>{salesperson.name}</Text>
-          <Text style={styles.detailSubtitle}>{salesperson.title}</Text>
+          <Text style={styles.detailTitle}>{assigned ? assigned.name : ucgAssistant.name}</Text>
+          <Text style={styles.detailSubtitle}>
+            {assigned ? assigned.title : 'A UCG specialist is assigned once your deposit is in.'}
+          </Text>
         </View>
         <Pressable hitSlop={8} onPress={() => router.push('/salesperson')}>
           <MessageIcon size={18} color={Colors.red} />
@@ -348,7 +351,11 @@ export default function TimelineScreen() {
       <View style={[styles.pinnedBar, Shadow.card]}>
         <SalespersonAvatarMini size={34} />
         <View style={{ flex: 1 }}>
-          <Text style={styles.pinnedName}>{salesperson.name.split(' ')[0]} is helping you</Text>
+          <Text style={styles.pinnedName}>
+            {dealState.salesperson
+              ? `${dealState.salesperson.name} has your deal`
+              : 'UCG Assistant is helping you'}
+          </Text>
           <Text style={styles.pinnedMeta}>
             {car ? `${car.year} ${car.title} · $${car.price.toLocaleString()}` : 'No car selected yet'}
           </Text>
@@ -532,9 +539,15 @@ const styles = StyleSheet.create({
   scrollContent: { paddingVertical: Spacing.xl },
   roadScrollHorizontal: { paddingHorizontal: Spacing.xl },
   detailPanel: {
-    marginHorizontal: Spacing.xl,
+    // Horizontal inset via padding, not margin: a full-width box with
+    // `width: '100%'` + `marginHorizontal` renders flush-left on web
+    // (the margin has nowhere to go), which left "Picked Up" and its
+    // buttons jammed against the edge. Padding insets the content while
+    // the box stays full-width so maxWidth + alignSelf still center it
+    // on a tablet.
+    paddingHorizontal: Spacing.xl,
     marginBottom: Spacing.xl,
-    maxWidth: 420,
+    maxWidth: 420 + Spacing.xl * 2,
     alignSelf: 'center',
     width: '100%',
   },
