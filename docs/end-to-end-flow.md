@@ -27,14 +27,16 @@ sale/purchase screenshots. `GAP` steps get narrated or skipped.
    in DealerTeam `GAP` (UCG admin, manual) · salesperson assigned by
    management after deposit `MOCK` (`DealServerState.salesperson`, null
    until `deposit-paid`).
-4. **Pay for the car** — cash: wire instructions + printable PDF `WORKS` →
+4. **Add-ons** (accept/decline each — these set the final price, so they
+   come before payment) — 2-Year PPP $999 `WORKS` · **American Auto Nation
+   insurance** `WORKS` (`/insurance` — offer + WhatsApp quote handoff;
+   pushed per the owners) · Winter Tire Program `GAP` (flyer pending) ·
+   PPF `GAP` (flyer pending).
+5. **Pay for the car** — the amount is the car plus any add-ons above,
+   minus the deposit. Cash: wire instructions + printable PDF `WORKS` →
    customer wires → **admin verifies funds (PIF)** `GAP`. Financing: UCG
    finance app link `WORKS` → bank approves → **bank wires UCG** `GAP` →
    **admin verifies funds** `GAP`. Payment status the customer sees `MOCK`.
-5. **Add-ons** (accept/decline each) — 2-Year PPP $999 `WORKS` · **American
-   Auto Nation insurance** `WORKS` (`/insurance` — offer + family story +
-   WhatsApp quote handoff; pushed per the owners) · Winter Tire Program
-   `GAP` (flyer pending) · PPF `GAP` (flyer pending).
 6. **Your documents (KYC)** — License / Proof of Insurance / Orders /
    Proof of Residence, multi-page capture `WORKS` · "team notified" `MOCK`.
 7. **UCG's paperwork** — US-spec / registered → **Purchase Order** `GAP` ·
