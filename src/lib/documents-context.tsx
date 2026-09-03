@@ -17,8 +17,8 @@ export type DocumentState = DealDocument & { uris: string[] };
  * pieces of state (one local to each screen), so replacing a document on
  * the real screen never showed up in the My Deal summary, which kept
  * reading the original, never-updated mock data directly. Same fix shape
- * as deal-steps-context.tsx and deal-intake-context.tsx: one context,
- * every consumer reads the same thing.
+ * as deal-intake-context.tsx and the deal-sync module: one source, every
+ * consumer reads the same thing.
  */
 interface DealDocumentsContextValue {
   documents: DocumentState[];

@@ -6,6 +6,84 @@ below is built yet except where marked **(shipped)**. Treat this as the
 backlog for the deal-intake → My Deal pipeline, roughly in the order a
 real customer would hit it.
 
+## Shipped Sept 3
+
+- **Service Center hub — open to non-customers.** New `/service` screen
+  (`src/app/service.tsx`) + `src/constants/service-center.ts` with real
+  content from usedcarguys.net/service-center/ (fetched Sept 3): oil
+  changes, scheduled maintenance, brakes, windshield, accident repair, UCG
+  warranty work, wheels & tires. Every action hands off to UCG's own
+  hosted forms — appointment request (`/book/`), tire quote
+  (`/service-center/tires-and-wheels/`), warranty assistance (`/warranty/`)
+  — plus direct call / WhatsApp (wa.me/491737656926, the number the page
+  links) / email / the Ramstein Superstore address. No in-app scheduling,
+  no Microsoft Bookings (unlike Pre-Buy Inspection). Reachable without a
+  deal or an account: a "Service" pill in the Browse navbar and a row on
+  the Account tab. Copy leads with "you don't need to have bought your car
+  from UCG." New `WrenchIcon`. The page prints a second WhatsApp number
+  (+49 1522 8806145) with no explanation of how it differs from the linked
+  one — only the linked one is used, not guessed at.
+- **2-Year Premium Protection Plan — real accept/decline.** New `/warranty`
+  screen (`src/app/warranty.tsx`) + `src/lib/warranty-context.tsx`
+  (`WarrantyChoice`, AsyncStorage-persisted, wired into Reset Test Data).
+  Real terms for both tiers transcribed exactly into `mock-data.ts`
+  (`oneYearWarranty`, `premiumProtectionPlan`) from the flyers — coverage,
+  $0 vs. 40k-mile deductible, €10,000 vs €3,300 max claim, rental +
+  courtesy-car access, unlimited mileage, towing. Eligibility check
+  (`pppEligibility()`): "newer than 2019 AND under 70,000 miles" — returns
+  `unknown` when the scraped listing has no mileage, and the screen then
+  says "your salesperson will check" instead of guessing. Accept records
+  the choice (does NOT charge $999 — the salesperson adds it). Decline is
+  an explicit reason picker (`warrantyDeclineReasons`) + free-text note,
+  because UCG wants the "why" (it's what decides the American Auto Nation
+  handoff — still not built). Entry points: the deposit success screen
+  ("Next: Protect Your Car") and a button on the salesperson screen that
+  reflects the current choice. Choice is passed to the AI agent context.
+  **Not built:** the American Auto Nation insurance-quote handoff that a
+  decline is supposed to lead into; wiring the choice into a My Deal
+  timeline step; the winter-tire / PPF add-ons (still waiting on flyers).
+- **`deal-sync` module — the seam between the app and DealerTeam.** Answers
+  the recurring "should we clone DealerTeam?" question: no. The app now
+  talks to one interface, `DealSyncBackend` (`src/lib/deal-sync/`), with
+  two implementations — `MockDealSync` (default; in-memory state machine
+  that also auto-advances "waiting on UCG/bank" steps on a 45s timer to
+  simulate the back office) and `SalesforceDealSync` (stub, selected only
+  by `EXPO_PUBLIC_DEAL_SYNC=salesforce`). `createDealSync()` in `factory.ts`
+  is the single swap point — going live against DealerTeam is a change to
+  that one function. Replaced `deal-steps-context.tsx` entirely:
+  `useDealSync().state.steps` is what `dealSteps` was, `jumpToStep`
+  replaces `setDealStepIndex` (still dev-gated on My Deal), `reset`
+  replaces `resetDealSteps` (Account → Reset Test Data). `financingTerms`
+  moved off a bare mock-data import onto `state.financingTerms` (nullable
+  now — the financing panel shows a "terms appear once approved"
+  placeholder for a cash/early deal). New `send(signal)` path: submitting
+  deal intake fires `intake-submitted`, a confirmed deposit fires
+  `deposit-paid` — customer actions the mock uses to advance the timeline
+  and a real integration would turn into Salesforce writes. `salesperson`
+  is in `DealServerState` for the future but still read from the mock-data
+  const app-wide (assignment is still the open question below). Full notes
+  in `src/lib/deal-sync/README.md`. tsc + lint clean; not yet device-tested.
+- **APO / FPO address added to deal intake.** The piece the Vehicle
+  Registration Office (VRO) needs to register the car, issue plates, and
+  issue the environmental sticker that nothing else in the intake captured
+  (see `docs/product-vision.md`). New `ApoAddress` type on `DealIntake`
+  (`mock-data.ts`) — recipient, unit/PSC/CMR + box (one free-text line),
+  APO/FPO/DPO, region AE/AA/AP, ZIP — plus `apoAddressStatus: 'have' |
+  'not_yet'`. The intake form (`deal-intake.tsx`) has an "I Have It / Not
+  Assigned Yet" toggle: "not yet" is a first-class state, not a validation
+  failure, because the box is usually assigned at in-processing. Surfaced
+  on the My Deal timeline's Documents step (`deal/index.tsx`,
+  `formatApoAddress()`), and passed to the AI agent (`chat+api.ts` context
+  + system prompt) so it can nudge a customer to add it once they have it.
+  Also fixed a stale line while in there: the intake footer still said
+  "Opens WhatsApp with everything above filled in for you" — untrue since
+  the WhatsApp handoff was removed Sept 2.
+- **Not built (follow-ups):** sponsor name/rank/unit, gaining installation,
+  and report date — the VRO wants these too, but "Orders" (a document)
+  already carries most of it, so deferred until the VRO packet is scoped
+  properly. Full VRO-packet assembly (the app producing the printable set
+  a customer walks in with) is its own feature.
+
 ## Shipped Sept 2, later still
 
 - **Deal-intake now survives an app restart, and the contact field is

@@ -25,6 +25,10 @@ interface ChatRequestBody {
     carLabel?: string;
     base?: string;
     paymentMethod?: string;
+    /** 'have' or 'not_yet' — whether the customer's APO/FPO address is on file. */
+    apoAddressStatus?: string;
+    /** 'accepted' | 'declined' | undefined — the 2-Year PPP decision. */
+    warranty?: string;
   };
 }
 
@@ -62,6 +66,13 @@ parts once a car's over 40,000 miles), unlimited mileage, priority access
 to UCG's courtesy car fleet, and a €10,000 max claim (vs €3,300 on the
 1-year). 2-year eligibility: car must be newer than 2019 and under 70,000
 miles.
+
+APO/FPO address: the customer's military mailing address in Germany. It's
+frequently not assigned until they in-process at their unit. It's the piece
+the Vehicle Registration Office (VRO) needs to register the car, issue
+plates, and issue the environmental sticker — so if it's not on file yet,
+gently remind them to add it in "Edit My Info" once they have it. Almost
+always "APO AE" for Germany.
 
 Buying process: choose a car → submit interest → financing (cash or loan,
 lender/down payment noted) → deposit holds the car 5 days → contract →
@@ -102,7 +113,9 @@ export async function POST(request: Request) {
   const contextLine = body.context
     ? `\n\nThis customer's submission: car — ${body.context.carLabel ?? 'not specified'}; base — ${
         body.context.base ?? 'not specified'
-      }; payment — ${body.context.paymentMethod ?? 'not specified'}.`
+      }; payment — ${body.context.paymentMethod ?? 'not specified'}; APO/FPO address on file — ${
+        body.context.apoAddressStatus === 'have' ? 'yes' : 'not yet'
+      }; 2-year Premium Protection Plan — ${body.context.warranty ?? 'not decided yet'}.`
     : '';
 
   // Checked directly, not inferred from a caught error's message/type —

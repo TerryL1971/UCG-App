@@ -14,7 +14,7 @@ import { TimelineRoad } from '@/components/timeline-road';
 import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
 import {
   FINANCE_APPLICATION_URL,
-  financingTerms,
+  formatApoAddress,
   salesperson,
   ucgLocations,
   waitingOnLabel,
@@ -22,7 +22,7 @@ import {
 } from '@/constants/mock-data';
 import { useDeal } from '@/lib/deal-context';
 import { useDealIntake } from '@/lib/deal-intake-context';
-import { useDealSteps } from '@/lib/deal-steps-context';
+import { useDealSync } from '@/lib/deal-sync';
 import { useDealDocuments } from '@/lib/documents-context';
 
 /** The camera/share action under "Picked Up" — its own component (not
@@ -121,6 +121,8 @@ function StepDetailContent({ step, car }: { step: DealStep; car: ReturnType<type
   // Same rule — only the 'application' branch actually reads this (to
   // decide financing vs. cash copy), but it has to be called every render.
   const { intake } = useDealIntake();
+  // Only the 'financing' branch reads this, but Rules of Hooks — every render.
+  const { state: dealState } = useDealSync();
 
   if (step.id === 'ready') {
     return car ? (
@@ -208,6 +210,14 @@ function StepDetailContent({ step, car }: { step: DealStep; car: ReturnType<type
             <StatusChip status={doc.status} label={documentStatusLabel[doc.status]} />
           </View>
         ))}
+        {intake && (
+          <Text style={styles.detailPlainText}>
+            APO / FPO:{' '}
+            {intake.apoAddress
+              ? formatApoAddress(intake.apoAddress)
+              : 'not added yet — needed for registration, plates, and the environmental sticker'}
+          </Text>
+        )}
         <Pressable style={styles.detailLinkRow} onPress={() => router.push('/(tabs)/deal/documents')}>
           <DownloadIcon size={14} color={Colors.navy} />
           <Text style={styles.detailLink}>Open full Documents tab</Text>
@@ -217,15 +227,26 @@ function StepDetailContent({ step, car }: { step: DealStep; car: ReturnType<type
   }
 
   if (step.id === 'financing') {
+    const terms = dealState.financingTerms;
+    if (!terms) {
+      return (
+        <View style={styles.detailCard}>
+          <Text style={styles.detailPlainText}>
+            Your financing terms show up here once the bank approves the loan. Your salesperson handles that step
+            directly.
+          </Text>
+        </View>
+      );
+    }
     return (
       <View style={[styles.detailCard, { flexDirection: 'column', alignItems: 'stretch', gap: 8 }]}>
         <View style={styles.financeGrid}>
-          <FinanceStat label="Amount Financed" value={`$${financingTerms.amountFinanced.toLocaleString()}`} />
-          <FinanceStat label="APR" value={`${financingTerms.apr}%`} />
-          <FinanceStat label="Term" value={`${financingTerms.termMonths} mo`} />
-          <FinanceStat label="Monthly" value={`$${financingTerms.monthlyPayment}`} />
+          <FinanceStat label="Amount Financed" value={`$${terms.amountFinanced.toLocaleString()}`} />
+          <FinanceStat label="APR" value={`${terms.apr}%`} />
+          <FinanceStat label="Term" value={`${terms.termMonths} mo`} />
+          <FinanceStat label="Monthly" value={`$${terms.monthlyPayment}`} />
         </View>
-        <Text style={styles.detailSubtitle}>Financed through {financingTerms.lender}. Once approved, the loan is sent to the bank outside of this app — your salesperson handles that step directly.</Text>
+        <Text style={styles.detailSubtitle}>Financed through {terms.lender}. Once approved, the loan is sent to the bank outside of this app — your salesperson handles that step directly.</Text>
       </View>
     );
   }
@@ -265,7 +286,8 @@ function FinanceStat({ label, value }: { label: string; value: string }) {
 export default function TimelineScreen() {
   const { car } = useDeal();
   const { intake } = useDealIntake();
-  const { dealSteps, setDealStepIndex } = useDealSteps();
+  const { state: dealState, jumpToStep } = useDealSync();
+  const dealSteps = dealState.steps;
 
   const targetIndex = useMemo(() => {
     let idx = 0;
@@ -388,7 +410,7 @@ export default function TimelineScreen() {
           {dealSteps.map((step, i) => (
             <Pressable
               key={step.id}
-              onPress={() => setDealStepIndex(i)}
+              onPress={() => jumpToStep(i)}
               style={[styles.testingChip, i === targetIndex && styles.testingChipActive]}>
               <Text style={[styles.testingChipText, i === targetIndex && styles.testingChipTextActive]}>{i + 1}</Text>
             </Pressable>

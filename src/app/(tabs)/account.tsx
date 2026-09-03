@@ -1,26 +1,28 @@
 import { router } from 'expo-router';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { UserIcon } from '@/components/icons';
+import { UserIcon, WrenchIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
-import { Colors, Fonts, Spacing } from '@/constants/theme';
+import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
 import { useDeal } from '@/lib/deal-context';
 import { useDealIntake } from '@/lib/deal-intake-context';
-import { useDealSteps } from '@/lib/deal-steps-context';
+import { useDealSync } from '@/lib/deal-sync';
 import { useDealDocuments } from '@/lib/documents-context';
 import { useSaved } from '@/lib/saved-context';
 import { useVinScan } from '@/lib/vin-scan-context';
+import { useWarranty } from '@/lib/warranty-context';
 
 export default function AccountScreen() {
   const { user, logOut } = useAuth();
   const { clearCar } = useDeal();
   const { clearIntake } = useDealIntake();
-  const { resetDealSteps } = useDealSteps();
+  const { reset: resetDealSync } = useDealSync();
   const { resetDocuments } = useDealDocuments();
   const { clearSaved } = useSaved();
   const { clearLastScannedVin } = useVinScan();
+  const { clearChoice: clearWarrantyChoice } = useWarranty();
 
   // Wipes everything this app holds about you — account, chosen car,
   // deal-intake submission, My Deal timeline progress, uploaded
@@ -39,8 +41,9 @@ export default function AccountScreen() {
         onPress: () => {
           clearIntake();
           clearCar();
-          resetDealSteps();
+          resetDealSync();
           resetDocuments();
+          clearWarrantyChoice();
           clearSaved();
           clearLastScannedVin();
           logOut();
@@ -79,6 +82,15 @@ export default function AccountScreen() {
           <Button label="Log In" variant="secondary" onPress={() => router.push('/log-in')} />
         </View>
       )}
+
+      <Pressable style={styles.linkRow} onPress={() => router.push('/service')}>
+        <WrenchIcon size={18} color={Colors.navy} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.linkRowTitle}>Service Center</Text>
+          <Text style={styles.linkRowSub}>Oil changes, repairs, tires — no purchase required</Text>
+        </View>
+        <Text style={styles.linkRowChevron}>›</Text>
+      </Pressable>
 
       <View style={styles.spacer} />
 
@@ -131,6 +143,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.xl,
     gap: 10,
   },
+  linkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginHorizontal: Spacing.xl,
+    marginTop: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    backgroundColor: '#fff',
+    borderRadius: Radius.lg,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+  },
+  linkRowTitle: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.text },
+  linkRowSub: { fontFamily: Fonts.body, fontSize: 11.5, color: Colors.textMuted, marginTop: 1 },
+  linkRowChevron: { fontFamily: Fonts.bodyBold, fontSize: 20, color: Colors.textFaint },
   spacer: { flex: 1 },
   footer: {
     paddingHorizontal: Spacing.xl,

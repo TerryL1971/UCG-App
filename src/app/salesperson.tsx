@@ -12,6 +12,7 @@ import { salesperson } from '@/constants/mock-data';
 import { parseJsonResponse } from '@/lib/api-fetch';
 import { useDeal } from '@/lib/deal-context';
 import { useDealIntake } from '@/lib/deal-intake-context';
+import { useWarranty } from '@/lib/warranty-context';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -36,6 +37,7 @@ interface ChatMessage {
 export default function SalespersonScreen() {
   const { car } = useDeal();
   const { intake } = useDealIntake();
+  const { choice: warrantyChoice } = useWarranty();
   const carLabel = car ? `${car.year} ${car.title}` : 'your next car';
   const scrollViewRef = useRef<ScrollView>(null);
   const inputRef = useRef<TextInput>(null);
@@ -79,7 +81,13 @@ export default function SalespersonScreen() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: nextMessages,
-          context: { carLabel, base: intake?.base, paymentMethod: intake?.paymentMethod },
+          context: {
+            carLabel,
+            base: intake?.base,
+            paymentMethod: intake?.paymentMethod,
+            apoAddressStatus: intake?.apoAddressStatus,
+            warranty: warrantyChoice?.decision,
+          },
         }),
       });
       const data = await parseJsonResponse<{ reply: string }>(res);
@@ -186,6 +194,18 @@ export default function SalespersonScreen() {
             variant="secondary"
             style={styles.depositButton}
             onPress={() => router.push('/deposit')}
+          />
+          <Button
+            label={
+              warrantyChoice
+                ? warrantyChoice.decision === 'accepted'
+                  ? 'Premium Protection — Added ✓'
+                  : 'Premium Protection — Declined'
+                : 'Protect Your Car — Premium Protection'
+            }
+            variant="secondary"
+            style={styles.depositButton}
+            onPress={() => router.push('/warranty')}
           />
           <Button label="View My Timeline  →" onPress={() => router.push('/(tabs)/deal')} />
         </View>

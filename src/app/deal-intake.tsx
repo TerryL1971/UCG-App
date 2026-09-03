@@ -15,6 +15,10 @@ import {
   usareurBases,
   USAREUR_OFFICIAL_JKO_URL,
   USAREUR_STUDY_GUIDE_URL,
+  type ApoAddress,
+  type ApoAddressStatus,
+  type ApoOffice,
+  type ApoRegion,
   type DealIntake,
   type LicenseStatus,
   type PaymentMethod,
@@ -22,10 +26,14 @@ import {
 import { useAuth } from '@/lib/auth-context';
 import { useDeal } from '@/lib/deal-context';
 import { useDealIntake } from '@/lib/deal-intake-context';
+import { useDealSync } from '@/lib/deal-sync';
 import { compressPhoto } from '@/lib/image';
 import { useLicenseCapture } from '@/lib/license-capture-context';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+const APO_OFFICES: ApoOffice[] = ['APO', 'FPO', 'DPO'];
+const APO_REGIONS: ApoRegion[] = ['AE', 'AA', 'AP'];
 
 type LicenseSide = 'front' | 'back';
 
@@ -42,6 +50,7 @@ type LicenseSide = 'front' | 'back';
 export default function DealIntakeScreen() {
   const { car } = useDeal();
   const { intake, submitIntake } = useDealIntake();
+  const { send: sendDealSignal } = useDealSync();
   const { user } = useAuth();
   const { lastCapturedLicensePhoto, clearLastCapturedLicensePhoto } = useLicenseCapture();
   const carLabel = car ? `${car.year} ${car.title}` : 'your next car';
@@ -76,6 +85,18 @@ export default function DealIntakeScreen() {
   const [licensePhotoFrontUri, setLicensePhotoFrontUri] = useState<string | null>(intake?.licensePhotoFrontUri ?? null);
   const [licensePhotoBackUri, setLicensePhotoBackUri] = useState<string | null>(intake?.licensePhotoBackUri ?? null);
   const [capturingSide, setCapturingSide] = useState<LicenseSide | null>(null);
+
+  // APO/FPO address — the piece the VRO needs for registration/plates that
+  // nothing else here captures. Often not assigned until in-processing, so
+  // this defaults to "not assigned yet" and the customer comes back to fill
+  // it. Pre-fills from a prior submission the same way every other field does.
+  const [apoStatus, setApoStatus] = useState<ApoAddressStatus>(intake?.apoAddressStatus ?? 'not_yet');
+  const [apoRecipient, setApoRecipient] = useState(intake?.apoAddress?.recipient ?? '');
+  const [apoUnitBox, setApoUnitBox] = useState(intake?.apoAddress?.unitBox ?? '');
+  const [apoOffice, setApoOffice] = useState<ApoOffice>(intake?.apoAddress?.office ?? 'APO');
+  const [apoRegion, setApoRegion] = useState<ApoRegion>(intake?.apoAddress?.region ?? 'AE');
+  const [apoZip, setApoZip] = useState(intake?.apoAddress?.zip ?? '');
+
   const [notes, setNotes] = useState(intake?.notes ?? '');
 
   const isOtherBase = base === 'Other';
@@ -131,6 +152,20 @@ export default function DealIntakeScreen() {
       return;
     }
 
+    // Only build an address object if they actually said they have it AND
+    // gave us something usable — otherwise it stays null and the status
+    // field carries "not assigned yet" on its own.
+    const apoAddress: ApoAddress | null =
+      apoStatus === 'have' && (apoUnitBox.trim() || apoZip.trim())
+        ? {
+            recipient: apoRecipient.trim() || fullName.trim(),
+            unitBox: apoUnitBox.trim(),
+            office: apoOffice,
+            region: apoRegion,
+            zip: apoZip.trim(),
+          }
+        : null;
+
     const intake: DealIntake = {
       fullName: fullName.trim(),
       contact: contact.trim(),
@@ -141,6 +176,8 @@ export default function DealIntakeScreen() {
       licenseStatus,
       licensePhotoFrontUri,
       licensePhotoBackUri,
+      apoAddressStatus: apoAddress ? 'have' : 'not_yet',
+      apoAddress,
       notes: notes.trim(),
     };
     // No WhatsApp handoff here anymore — the "salesperson" you land on next
@@ -150,6 +187,10 @@ export default function DealIntakeScreen() {
     // either — removed Sept 2 since the WhatsApp number it pointed to is
     // still a placeholder that reaches no one.
     submitIntake(intake);
+    // Tell the deal-sync backend a customer action happened — in the mock
+    // this nudges the timeline off "Matched"/"Application"; with a real
+    // DealerTeam integration it'd create/update the Sales Up record.
+    sendDealSignal({ type: 'intake-submitted' });
     router.replace('/salesperson');
   };
 
@@ -174,9 +215,9 @@ export default function DealIntakeScreen() {
 
       <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent}>
         <Text style={styles.intro}>
-          A quick heads-up for your salesperson &mdash; cash or financed, which base you&apos;re headed to, and
-          where you stand on a license &mdash; so they can start putting your deal together instead of starting
-          from scratch.
+          A quick heads-up for your salesperson &mdash; cash or financed, which base you&apos;re headed to, your
+          APO address, and where you stand on a license &mdash; so they can start putting your deal together
+          instead of starting from scratch.
         </Text>
 
         <Field label="Your Name">
@@ -223,6 +264,77 @@ export default function DealIntakeScreen() {
               placeholderTextColor={Colors.textFaint}
               style={[styles.input, { marginTop: 10 }]}
             />
+          )}
+        </Field>
+
+        <Field label="Your APO / FPO Address in Germany">
+          <View style={styles.segRow}>
+            <SegOption label="I Have It" active={apoStatus === 'have'} onPress={() => setApoStatus('have')} />
+            <SegOption
+              label="Not Assigned Yet"
+              active={apoStatus === 'not_yet'}
+              onPress={() => setApoStatus('not_yet')}
+            />
+          </View>
+
+          {apoStatus === 'have' ? (
+            <View style={{ marginTop: 10, gap: 10 }}>
+              <TextInput
+                value={apoRecipient}
+                onChangeText={setApoRecipient}
+                placeholder={`Name on the mail (default: ${fullName.trim() || 'you'})`}
+                placeholderTextColor={Colors.textFaint}
+                style={styles.input}
+              />
+              <TextInput
+                value={apoUnitBox}
+                onChangeText={setApoUnitBox}
+                placeholder="Unit / PSC / CMR + Box, e.g. CMR 405 Box 1234"
+                placeholderTextColor={Colors.textFaint}
+                style={styles.input}
+              />
+              <View style={styles.chipRow}>
+                {APO_OFFICES.map((o) => (
+                  <Pressable
+                    key={o}
+                    onPress={() => setApoOffice(o)}
+                    style={[styles.chip, apoOffice === o && styles.chipActive]}>
+                    <Text style={[styles.chipLabel, apoOffice === o && styles.chipLabelActive]}>{o}</Text>
+                  </Pressable>
+                ))}
+              </View>
+              <View style={styles.chipRow}>
+                {APO_REGIONS.map((r) => (
+                  <Pressable
+                    key={r}
+                    onPress={() => setApoRegion(r)}
+                    style={[styles.chip, apoRegion === r && styles.chipActive]}>
+                    <Text style={[styles.chipLabel, apoRegion === r && styles.chipLabelActive]}>{r}</Text>
+                  </Pressable>
+                ))}
+              </View>
+              <TextInput
+                value={apoZip}
+                onChangeText={setApoZip}
+                placeholder="ZIP, e.g. 09056"
+                placeholderTextColor={Colors.textFaint}
+                keyboardType="number-pad"
+                style={styles.input}
+              />
+              <Text style={styles.licenseHint}>
+                Germany is almost always <Text style={styles.licenseHintBold}>APO AE</Text>. This is the address the
+                Vehicle Registration Office needs to register the car, issue your plates, and issue the environmental
+                sticker.
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.licenseCard}>
+              <Text style={styles.licenseCardText}>
+                No problem &mdash; your APO box is usually assigned when you in-process at your unit. Come back and add
+                it here once you have it. It&apos;s the one piece the Vehicle Registration Office needs before they can
+                register the car and issue plates, so the sooner it&apos;s in, the sooner your paperwork is ready.
+              </Text>
+            </View>
           )}
         </Field>
 
@@ -366,7 +478,7 @@ export default function DealIntakeScreen() {
 
       <View style={styles.footer}>
         <Button label={intake ? 'Save Changes  →' : 'Submit for a Salesperson  →'} onPress={handleSubmit} />
-        <Text style={styles.footerHint}>Opens WhatsApp with everything above filled in for you.</Text>
+        <Text style={styles.footerHint}>Your salesperson sees all of this the moment they pick up your deal.</Text>
       </View>
     </SafeAreaView>
   );

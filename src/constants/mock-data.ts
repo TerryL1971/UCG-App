@@ -248,9 +248,134 @@ export const wireInstructions = {
   },
 };
 
+/**
+ * The warranty upsell — real terms from UCG's own flyers ("1 year vs 2
+ * year PPP.pdf", "PPP Flyer - 2 year.pdf", "EPP Flyer 1 year"), preserved
+ * exactly, not paraphrased: these are the actual coverage terms a customer
+ * sees. See docs/deal-flow-roadmap.md's "Warranty upsell" section.
+ *
+ * Price is a real number ($999) but nothing here charges it — accepting
+ * the plan records the customer's choice for their salesperson to act on
+ * (docs say the bank/back-office handles the actual add), same "honest
+ * stand-in, no fake transaction" approach as the rest of the app.
+ */
+export interface WarrantyTier {
+  name: string;
+  /** Short price line as it appears to the customer. */
+  price: string;
+  coverage: string;
+  deductible: string;
+  rentalCar: string;
+  maxClaim: string;
+  /** Bullet highlights unique to / emphasised for this tier. */
+  highlights: string[];
+}
+
+export const oneYearWarranty: WarrantyTier = {
+  name: '1-Year Comprehensive Warranty',
+  price: 'Included in the advertised price',
+  coverage: 'Comprehensive — only what is on the warranty list is covered. If it is not listed, it is not covered.',
+  deductible: 'On cars over 40,000 miles, a deductible applies to parts. Labour is 100% covered either way.',
+  rentalCar: '€60 per day, after the first 4 days',
+  maxClaim: '€3,300 over the coverage period',
+  highlights: [
+    'Engine, transmission, axle/transfer case, steering, brakes',
+    'Fuel, electrical, cooling, exhaust and safety systems',
+    'Comfort electric — power windows, sunroof, central locking',
+    'Rental / towing reimbursement up to €60/day (4 days max)',
+  ],
+};
+
+export const premiumProtectionPlan: WarrantyTier = {
+  name: '2-Year Premium Protection Plan',
+  price: '$999 — roughly $16–18/mo on a standard loan (53–60¢/day)',
+  coverage:
+    'Bumper to bumper — everything in the 1-year plan plus all electronic and mechanical components, excluding wear-and-tear items and fluids.',
+  deductible: '$0 deductible on parts AND labour',
+  rentalCar: '€60 per day after 4 days, plus priority access to UCG’s small fleet of courtesy cars',
+  maxClaim: '€10,000 over the coverage period',
+  highlights: [
+    'Two years of overseas coverage',
+    'Unlimited mileage',
+    '$0 deductible, parts and labour',
+    'Towing included',
+    'Priority access to UCG courtesy cars',
+  ],
+};
+
+/** 2-year PPP eligibility, straight off the flyer: "the desired vehicle
+ * must be newer than 2019 and current odometer reading must be less than
+ * 70,000 miles." */
+export const PPP_MIN_YEAR = 2019; // "newer than 2019" → year must be > this
+export const PPP_MAX_MILES = 70_000;
+
+export type PppEligibility = 'eligible' | 'ineligible' | 'unknown';
+
+/** `unknown` when we don't have the mileage (some scraped listings omit
+ * it) — the screen then tells the customer to confirm with their
+ * salesperson rather than guessing either way. */
+export function pppEligibility(car: { year?: number; mileage?: number } | null): PppEligibility {
+  if (!car || typeof car.year !== 'number') return 'unknown';
+  if (car.year <= PPP_MIN_YEAR) return 'ineligible';
+  if (typeof car.mileage !== 'number') return 'unknown';
+  return car.mileage < PPP_MAX_MILES ? 'eligible' : 'ineligible';
+}
+
+/** Reasons offered when a customer declines the 2-year plan — UCG wants
+ * the "why" captured (docs/deal-flow-roadmap.md): it's what the
+ * salesperson sees, and it's what decides whether the American Auto
+ * Nation insurance handoff makes sense for this customer. "Other" stays
+ * free-text. */
+export const warrantyDeclineReasons = [
+  'The price',
+  'I already have coverage elsewhere',
+  "I don't want extended coverage",
+  'Not sure yet — want to talk it over first',
+] as const;
+
 export type PaymentMethod = 'cash' | 'financing';
 
 export type LicenseStatus = 'have' | 'not_yet';
+
+export type ApoOffice = 'APO' | 'FPO' | 'DPO';
+
+/** AE = Europe/Africa/Middle East/Canada, AA = Americas, AP = Pacific.
+ * Almost always AE for this customer base (Germany), but the other two
+ * are real and someone routing mail through a different theater could
+ * legitimately need them. */
+export type ApoRegion = 'AE' | 'AA' | 'AP';
+
+export type ApoAddressStatus = 'have' | 'not_yet';
+
+/** One-line APO/FPO address for display and handoff, e.g.
+ * "Jane Doe, CMR 405 Box 1234, APO AE 09056". */
+export function formatApoAddress(a: ApoAddress): string {
+  return [a.recipient, a.unitBox, `${a.office} ${a.region} ${a.zip}`.trim()].filter(Boolean).join(', ');
+}
+
+/**
+ * The APO/FPO mailing address a customer will have once they're in
+ * Germany. This is the piece the Vehicle Registration Office (VRO) needs
+ * to register the car, issue plates, and issue the environmental sticker
+ * that nothing else in the deal-intake flow captures — see
+ * docs/product-vision.md. It's frequently NOT assigned until the service
+ * member in-processes at their gaining unit, which is why the intake form
+ * pairs this with an explicit "not assigned yet" state
+ * (`DealIntake.apoAddressStatus`) rather than a required field.
+ */
+export interface ApoAddress {
+  /** Name as it appears on the mail — defaults to the buyer, but a family
+   * member's mail may route under the sponsor's name. */
+  recipient: string;
+  /** The military routing line as one string: "PSC 1234 Box 567",
+   * "CMR 405 Box 1234", or "Unit 2050 Box 4190". Kept free-text because
+   * the prefix (PSC / CMR / Unit) varies by installation and branch and
+   * isn't worth constraining into a picker. */
+  unitBox: string;
+  office: ApoOffice;
+  region: ApoRegion;
+  zip: string;
+}
 
 /** Major US military communities in Germany a customer might be headed
  * to — not exhaustive, and a list like this goes stale (units move,
@@ -353,5 +478,10 @@ export interface DealIntake {
    * side carries data the front doesn't). */
   licensePhotoFrontUri: string | null;
   licensePhotoBackUri: string | null;
+  /** 'not_yet' when the APO/FPO address hasn't been assigned yet (common
+   * before in-processing) — `apoAddress` is null in that case and the
+   * customer is expected to come back and add it. */
+  apoAddressStatus: ApoAddressStatus;
+  apoAddress: ApoAddress | null;
   notes: string;
 }

@@ -1,10 +1,11 @@
 import { Image } from 'expo-image';
+import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CarCard } from '@/components/car-card';
-import { SearchIcon } from '@/components/icons';
+import { SearchIcon, WrenchIcon } from '@/components/icons';
 import { FilterChip } from '@/components/ui/chip';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { fetchInventoryList, type InventoryListItem } from '@/lib/ucg-inventory';
@@ -50,6 +51,10 @@ export default function BrowseScreen() {
           <Image source={icon} style={styles.icon} contentFit="contain" />
           <Text style={styles.title}>Browse Inventory</Text>
         </View>
+        <Pressable style={styles.serviceButton} onPress={() => router.push('/service')} hitSlop={8}>
+          <WrenchIcon size={16} color={Colors.navy} />
+          <Text style={styles.serviceButtonText}>Service</Text>
+        </Pressable>
       </View>
 
       <View style={styles.searchWrap}>
@@ -115,6 +120,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
   },
+  serviceButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: Radius.pill,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+  },
+  serviceButtonText: { fontFamily: Fonts.bodySemibold, fontSize: 12.5, color: Colors.navy },
   icon: {
     width: 26,
     height: 22,

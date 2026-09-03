@@ -18,9 +18,10 @@ import { AnimatedSplash } from '@/components/animated-splash';
 import { AuthProvider } from '@/lib/auth-context';
 import { DealProvider } from '@/lib/deal-context';
 import { DealIntakeProvider } from '@/lib/deal-intake-context';
-import { DealStepsProvider } from '@/lib/deal-steps-context';
+import { DealSyncProvider } from '@/lib/deal-sync';
 import { DealDocumentsProvider } from '@/lib/documents-context';
 import { LicenseCaptureProvider } from '@/lib/license-capture-context';
+import { WarrantyProvider } from '@/lib/warranty-context';
 import { SavedProvider } from '@/lib/saved-context';
 import { VinScanProvider } from '@/lib/vin-scan-context';
 
@@ -65,6 +66,8 @@ function AppShell({ fontsLoaded }: { fontsLoaded: boolean }) {
         <Stack.Screen name="deal-intake" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="salesperson" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="deposit" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="warranty" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="service" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="wire-instructions" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="scan-vin" options={{ animation: 'slide_from_bottom', presentation: 'fullScreenModal' }} />
         <Stack.Screen
@@ -91,17 +94,19 @@ export default function RootLayout() {
     <AuthProvider>
       <DealProvider>
         <DealIntakeProvider>
-          <DealStepsProvider>
+          <DealSyncProvider>
             <DealDocumentsProvider>
-              <SavedProvider>
-                <VinScanProvider>
-                  <LicenseCaptureProvider>
-                    <AppShell fontsLoaded={fontsLoaded} />
-                  </LicenseCaptureProvider>
-                </VinScanProvider>
-              </SavedProvider>
+              <WarrantyProvider>
+                <SavedProvider>
+                  <VinScanProvider>
+                    <LicenseCaptureProvider>
+                      <AppShell fontsLoaded={fontsLoaded} />
+                    </LicenseCaptureProvider>
+                  </VinScanProvider>
+                </SavedProvider>
+              </WarrantyProvider>
             </DealDocumentsProvider>
-          </DealStepsProvider>
+          </DealSyncProvider>
         </DealIntakeProvider>
       </DealProvider>
     </AuthProvider>

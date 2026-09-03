@@ -11,6 +11,7 @@ import { ScreenHeader } from '@/components/ui/screen-header';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { parseJsonResponse } from '@/lib/api-fetch';
 import { useDeal } from '@/lib/deal-context';
+import { useDealSync } from '@/lib/deal-sync';
 
 /**
  * Real decision, confirmed by Terry (Sept 1): a flat $300.00 USD, not a
@@ -26,6 +27,7 @@ type DepositStatus = 'idle' | 'opening' | 'capturing' | 'success' | 'cancelled' 
 
 export default function DepositScreen() {
   const { car } = useDeal();
+  const { send: sendDealSignal } = useDealSync();
   const carLabel = car ? `${car.year} ${car.title}` : 'your car';
   const [status, setStatus] = useState<DepositStatus>('idle');
   const [errorMessage, setErrorMessage] = useState('');
@@ -74,6 +76,9 @@ export default function DepositScreen() {
       }
 
       setStatus('success');
+      // The deposit is the customer action that completes "Matched" and
+      // reserves the car — report it to the deal-sync backend.
+      sendDealSignal({ type: 'deposit-paid' });
     } catch (error) {
       setStatus('error');
       setErrorMessage(error instanceof Error ? error.message : 'Something went wrong');
@@ -93,7 +98,17 @@ export default function DepositScreen() {
               Your deposit is confirmed. The {carLabel} is on hold for 5 days while your specialist puts the rest
               of your deal together.
             </Text>
-            <Button label="Back to My Deal" onPress={() => router.replace('/(tabs)/deal')} style={styles.button} />
+            <Button
+              label="Next: Protect Your Car  →"
+              onPress={() => router.replace('/warranty')}
+              style={styles.button}
+            />
+            <Button
+              label="Back to My Deal"
+              variant="secondary"
+              onPress={() => router.replace('/(tabs)/deal')}
+              style={styles.buttonStacked}
+            />
           </>
         ) : (
           <>
@@ -168,4 +183,5 @@ const styles = StyleSheet.create({
     marginTop: 18,
   },
   button: { width: '100%', marginTop: 26 },
+  buttonStacked: { width: '100%', marginTop: 10 },
 });

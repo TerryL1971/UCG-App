@@ -169,6 +169,17 @@ export function ClockIcon({ size = 20, color = '#273368', strokeWidth = 2 }: Ico
   );
 }
 
+export function WrenchIcon({ size = 20, color = '#273368', strokeWidth = 2 }: IconProps) {
+  return (
+    <Svg {...base(size)}>
+      <Path
+        d="M14.5 6a3.5 3.5 0 0 0 4.6 4.6l-2.1 2.1-6.6 6.6a2 2 0 0 1-2.8-2.8l6.6-6.6L14.5 6z"
+        {...strokeProps(color, strokeWidth)}
+      />
+    </Svg>
+  );
+}
+
 export function MapPinIcon({ size = 20, color = '#273368', strokeWidth = 2 }: IconProps) {
   return (
     <Svg {...base(size)}>
