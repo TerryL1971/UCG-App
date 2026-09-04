@@ -282,6 +282,9 @@ function OfferStatusView({
               directly.
             </Text>
           )}
+          <Pressable style={styles.clearLinkRow} onPress={() => router.push('/vro-checklist?mode=sell')}>
+            <Text style={styles.clearLink}>What to bring to clear the car at the VRO  →</Text>
+          </Pressable>
         </>
       )}
 
@@ -455,6 +458,14 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   statusButton: { width: '100%' },
+  clearLinkRow: { marginTop: 16, paddingVertical: 4 },
+  clearLink: {
+    fontFamily: Fonts.bodySemibold,
+    fontSize: 13,
+    color: Colors.navy,
+    textDecorationLine: 'underline',
+    textAlign: 'center',
+  },
   statusStartOver: {
     marginTop: 22,
     fontFamily: Fonts.bodySemibold,

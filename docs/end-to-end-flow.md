@@ -89,7 +89,9 @@ sale/purchase screenshots. `GAP` steps get narrated or skipped.
    KMC and other garrisons have their own checklists and quirks — confirm
    per location.
 10. **Delivery** — Car Ready → Picked Up (photo, Google review) `MOCK` ·
-    Service Center `WORKS` · Sell It Back `MOCK` (no valuation engine) ·
+    Service Center `WORKS` · Sell It Back `MOCK` (no valuation engine; but
+    the "Offer Accepted" state now links to a **"Clearing Your Car" VRO
+    checklist** `WORKS` — form 550-175B, from `docs/vro-checklists.md`) ·
     Refer a Friend `GAP`.
 
 ## Always a human — even after launch

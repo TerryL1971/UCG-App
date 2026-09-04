@@ -35,6 +35,15 @@ real customer would hit it.
     generation, the Customs/Zollamt/VAT-Office steps as a customer-facing
     checklist) is still `GAP`.
 
+- **Sell-back VRO checklist.** The `/vro-checklist` screen now takes
+  `?mode=sell` and shows the "Clearing Your Car" version — form
+  **550-175B**, UCG-provides (Bill of Sale, 550-175B via Zollamt,
+  USAREUR-AF deregistration) vs you-bring (DoD ID, SOFA card, license
+  plates, lien release), plus the co-owner / lost-plates / sponsor notes.
+  Transcribed from the "Selling to a Local National or Dealership" PDF
+  (`docs/vro-checklists.md`, `sellBackChecklist` in
+  `src/constants/vro-checklists.ts`). Entry: a link on the Sell It Back
+  screen's "Offer Accepted" state.
 - **VRO Checklist screen (`/vro-checklist`).** What the customer needs at
   the Vehicle Registration Office — split into "UCG handles these" vs "you
   bring these", with a US-spec / EU-spec toggle (defaults from the stock

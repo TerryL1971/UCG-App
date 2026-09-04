@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,6 +8,7 @@ import { ScreenHeader } from '@/components/ui/screen-header';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import {
   guessVehicleSpec,
+  sellBackChecklist,
   vroBaseline,
   vroOfficeForBase,
   type VehicleSpec,
@@ -18,12 +19,16 @@ import { useDealIntake } from '@/lib/deal-intake-context';
 
 /**
  * What the customer needs at the Vehicle Registration Office — split into
- * what UCG produces and what they bring themselves, based on the car
- * (US-spec vs EU-spec) and their base. The regulatory content is the
- * USAG Stuttgart baseline (docs/vro-checklists.md); the screen is explicit
- * that other bases have their own quirks the salesperson confirms.
+ * what UCG produces and what they bring themselves. Two modes:
+ *  - default: registering a car they're buying (US-spec / EU-spec toggle)
+ *  - ?mode=sell: clearing a car they're selling to UCG (form 550-175B)
+ * The regulatory content is the USAG Stuttgart baseline
+ * (docs/vro-checklists.md); the screen is explicit that other bases have
+ * their own quirks the salesperson confirms.
  */
 export default function VroChecklistScreen() {
+  const { mode } = useLocalSearchParams<{ mode?: string }>();
+  const selling = mode === 'sell';
   const { car } = useDeal();
   const { intake } = useDealIntake();
   const carLabel = car ? `${car.year} ${car.title}` : 'your car';
@@ -31,43 +36,52 @@ export default function VroChecklistScreen() {
   const office = vroOfficeForBase(base);
 
   const [spec, setSpec] = useState<VehicleSpec>(guessVehicleSpec(car?.stockNumber));
-  const checklist = vroBaseline[spec];
+  const buyChecklist = vroBaseline[spec];
+
+  const ucgProvides = selling ? sellBackChecklist.ucgProvides : buyChecklist.ucgProvides;
+  const youBring = selling ? sellBackChecklist.youBring : buyChecklist.youBring;
+  const notes = selling ? sellBackChecklist.notes : buyChecklist.warnings;
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
-      <ScreenHeader title="Your VRO Packet" subtitle={carLabel} />
+      <ScreenHeader title={selling ? 'Clearing Your Car' : 'Your VRO Packet'} subtitle={carLabel} />
 
       <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent}>
         <Text style={styles.intro}>
-          Everything you need to register the car, get USAREUR plates, and get the environmental sticker. UCG puts
-          the packet together &mdash; you bring your own documents and go in.
+          {selling
+            ? 'What you need at the VRO to clear the car out of the USAREUR system when you sell it to UCG. UCG handles the customs side — you bring your own documents.'
+            : 'Everything you need to register the car, get USAREUR plates, and get the environmental sticker. UCG puts the packet together — you bring your own documents and go in.'}
         </Text>
 
-        <View style={styles.segRow}>
-          <SegOption label="US-spec car" active={spec === 'us'} onPress={() => setSpec('us')} />
-          <SegOption label="EU-spec car" active={spec === 'eu'} onPress={() => setSpec('eu')} />
-        </View>
-        <Text style={styles.segHint}>
-          {car?.stockNumber?.toUpperCase().startsWith('DEN')
-            ? 'Your stock number starts with DEN, so this is most likely an EU-spec car. Your salesperson will confirm.'
-            : 'Not sure which? Your salesperson knows for certain.'}
-        </Text>
+        {!selling && (
+          <>
+            <View style={styles.segRow}>
+              <SegOption label="US-spec car" active={spec === 'us'} onPress={() => setSpec('us')} />
+              <SegOption label="EU-spec car" active={spec === 'eu'} onPress={() => setSpec('eu')} />
+            </View>
+            <Text style={styles.segHint}>
+              {car?.stockNumber?.toUpperCase().startsWith('DEN')
+                ? 'Your stock number starts with DEN, so this is most likely an EU-spec car. Your salesperson will confirm.'
+                : 'Not sure which? Your salesperson knows for certain.'}
+            </Text>
+          </>
+        )}
 
         <Section title="UCG handles these" accent={Colors.green}>
-          {checklist.ucgProvides.map((item) => (
+          {ucgProvides.map((item) => (
             <ChecklistRow key={item.label} item={item} done />
           ))}
         </Section>
 
         <Section title="You bring these" accent={Colors.navy}>
-          {checklist.youBring.map((item) => (
+          {youBring.map((item) => (
             <ChecklistRow key={item.label} item={item} />
           ))}
         </Section>
 
         <View style={styles.warnCard}>
           <Text style={styles.warnTitle}>Worth knowing before you go</Text>
-          {checklist.warnings.map((w) => (
+          {notes.map((w) => (
             <View key={w} style={styles.warnRow}>
               <Text style={styles.warnDot}>•</Text>
               <Text style={styles.warnText}>{w}</Text>
@@ -100,7 +114,8 @@ export default function VroChecklistScreen() {
         </View>
 
         <Text style={styles.footNote}>
-          This list follows the USAREUR regulation every VRO uses, worded as the Stuttgart office has it.
+          This list follows the USAREUR regulation every VRO uses (
+          {selling ? 'form 550-175B' : 'AE 190-1'}), worded as the Stuttgart office has it.
           {base && base !== 'Stuttgart' ? ` The ${base} VRO may phrase a few things differently — your salesperson confirms the exact list for your base.` : ''}
         </Text>
       </ScrollView>

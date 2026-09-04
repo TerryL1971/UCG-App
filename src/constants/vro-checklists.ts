@@ -112,6 +112,45 @@ export const vroBaseline: Record<VehicleSpec, VroChecklist> = {
   },
 };
 
+/**
+ * Selling a car TO UCG (or any dealership) — the VRO "clearing" side. A
+ * different form (550-175**B**, not A) but a similar shape. Transcribed
+ * from the USAG Stuttgart "Selling to a Local National or Dealership" PDF.
+ */
+export interface SellBackChecklist {
+  ucgProvides: VroItem[];
+  youBring: VroItem[];
+  notes: string[];
+}
+
+export const sellBackChecklist: SellBackChecklist = {
+  ucgProvides: [
+    { label: 'Bill of Sale' },
+    {
+      label: 'Customs Form 550-175B',
+      detail: 'UCG completes it and clears it through the German Zollamt.',
+    },
+    {
+      label: 'USAREUR-AF deregistration',
+      detail: 'The car has to be taken off the USAREUR-AF system before it clears — handled as part of the buy-back.',
+    },
+  ],
+  youBring: [
+    { label: 'Valid DoD ID card' },
+    { label: 'SOFA card', detail: 'Contractors and their accompanied dependents only.' },
+    { label: 'License plates', detail: 'Both plates come off the car.' },
+    {
+      label: 'Lien release or permission to sell',
+      detail: 'If you still owe money on the car — a release from your lender.',
+    },
+  ],
+  notes: [
+    'If a co-owner is on the registration, both of you sign the bill of sale — or provide a special POA to the seller, or a notarized bill of sale listing who’s buying.',
+    'Lost or stolen plates need an MP report (AE Form 190-1AU) and a $45 fee.',
+    'The sponsor is responsible for disposing of the car properly before departing (AER 190-1).',
+  ],
+};
+
 export interface VroOffice {
   /** Loosely matched against the base the customer entered at intake. */
   base: string;
