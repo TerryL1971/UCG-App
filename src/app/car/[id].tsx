@@ -73,10 +73,24 @@ export default function CarDetailScreen() {
   // vehicle in Germany, not the person. Driver's License, Orders, and
   // Proof of Residence stay untouched — those are about the customer, same
   // reasoning `demoteIntakeToDraft` already applies to the rest of intake.
-  const proceedWithThisCar = (isDifferentCar: boolean) => {
+  //
+  // `needsReset` also has to be true the very FIRST time anyone chooses a
+  // car (`currentCar` is null), not just on an actual switch — deal-sync's
+  // mock starts every session pre-advanced to "Picked Up" as a demo
+  // convenience (mock-data.ts's `dealSteps`), a leftover state that was
+  // never tied to any real car. Terry, 2026-09-05: choosing a fresh car
+  // and landing on step 7 with zero paperwork done for it is exactly the
+  // bug this whole reset was supposed to prevent — skipping the reset just
+  // because there was no *previous* car to invalidate missed that case.
+  // `needsConfirm` stays narrower (an actual previously-different car) —
+  // a first-ever pick has nothing to warn about losing.
+  const needsReset = !currentCar || currentCar.slug !== car.slug;
+  const needsConfirm = !!currentCar && currentCar.slug !== car.slug;
+
+  const proceedWithThisCar = (shouldReset: boolean) => {
     demoteIntakeToDraft();
     chooseCar(car);
-    if (isDifferentCar) {
+    if (shouldReset) {
       clearWarrantyChoice();
       resetDocument('insurance');
       resetDealSync();
@@ -85,9 +99,8 @@ export default function CarDetailScreen() {
   };
 
   const handleChooseCar = () => {
-    const isDifferentCar = !!currentCar && currentCar.slug !== car.slug;
-    if (!isDifferentCar) {
-      proceedWithThisCar(false);
+    if (!needsConfirm) {
+      proceedWithThisCar(needsReset);
       return;
     }
     Alert.alert(

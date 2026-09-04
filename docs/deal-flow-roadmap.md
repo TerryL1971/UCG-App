@@ -176,6 +176,21 @@ real customer would hit it.
     app has no concept of "deposit paid, tied to car X" to transfer or
     refund — the confirmation dialog tells the customer to message their
     specialist about it rather than pretending the app handled it.
+  - **Bug in the first version of this fix, caught by Terry same day**:
+    the reset only fired when `currentCar` existed AND differed — so
+    choosing a car for the very FIRST time in a session (no prior car at
+    all) skipped it entirely. That missed something: `MockDealSync`
+    starts every session pre-advanced to "Picked Up" as a demo
+    convenience (see `dealSteps` in mock-data.ts) — a leftover state never
+    actually tied to any car. Terry: "I went to My Deal after choosing a
+    new car and I am on step 7, which is not possible since I have not
+    done any paperwork for this car." Fixed: whether to RESET
+    (`needsReset`) and whether to CONFIRM first (`needsConfirm`) are now
+    two separate checks — reset fires whenever the resulting deal doesn't
+    already belong to this exact car (including "no car chosen yet"),
+    confirm only fires when there's an actual previous, different car
+    whose progress is about to be lost (nothing to warn about on a first
+    pick).
 
 - **Service Center hub — open to non-customers.** New `/service` screen
   (`src/app/service.tsx`) + `src/constants/service-center.ts` with real
