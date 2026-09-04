@@ -1,6 +1,16 @@
 import Anthropic from '@anthropic-ai/sdk';
 
+import {
+  AI_CHAT_ENABLED,
+  AI_CHAT_HISTORY_WINDOW,
+  AI_CHAT_MAX_MESSAGE_LENGTH,
+  AI_CHAT_MAX_USER_MESSAGES,
+} from '@/constants/ai-chat';
 import { usareurBases } from '@/constants/mock-data';
+
+const NOT_CONNECTED_REPLY = "Our AI assistant isn't fully connected yet — a specialist will follow up with you directly.";
+const CONVERSATION_LIMIT_REPLY =
+  "We've covered a lot in this chat — let's continue with a real specialist from here. Tap \"Stuck and can't move forward?\" below to reach one on WhatsApp.";
 
 /**
  * The AI agent's backend — this is the whole reason it's a server route
@@ -118,6 +128,25 @@ export async function POST(request: Request) {
     return Response.json({ error: 'messages is required' }, { status: 400 });
   }
 
+  // The owner's kill switch (src/constants/ai-chat.ts) — checked
+  // server-side too, not just hidden in the client screen, so it actually
+  // stops spend even against a direct call to this route.
+  if (!AI_CHAT_ENABLED) {
+    return Response.json({ reply: NOT_CONNECTED_REPLY });
+  }
+
+  // Cost guards, enforced here even though the client (salesperson.tsx)
+  // already enforces its own copies — a client-side limit alone doesn't
+  // stop someone calling this route directly. See ai-chat.ts for why each
+  // of these exists.
+  const userMessageCount = body.messages.filter((m) => m.role === 'user').length;
+  if (userMessageCount > AI_CHAT_MAX_USER_MESSAGES) {
+    return Response.json({ reply: CONVERSATION_LIMIT_REPLY });
+  }
+  if (body.messages.some((m) => typeof m.content !== 'string' || m.content.length > AI_CHAT_MAX_MESSAGE_LENGTH)) {
+    return Response.json({ error: 'A message is too long' }, { status: 400 });
+  }
+
   const contextLine = body.context
     ? `\n\nThis customer's submission: car — ${body.context.carLabel ?? 'not specified'}; base — ${
         body.context.base ?? 'not specified'
@@ -136,9 +165,7 @@ export async function POST(request: Request) {
   // accurate "isn't connected yet" one. Checking the env var directly
   // sidesteps guessing at the SDK's exact error shape entirely.
   if (!process.env.ANTHROPIC_API_KEY) {
-    return Response.json({
-      reply: "Our AI assistant isn't fully connected yet — a specialist will follow up with you directly.",
-    });
+    return Response.json({ reply: NOT_CONNECTED_REPLY });
   }
 
   try {
@@ -157,9 +184,17 @@ export async function POST(request: Request) {
       // pricing. Revisit if replies start feeling shallow for what
       // customers actually ask.
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1024,
+      // Trimmed from 1024 (Sept 6, alongside the other ai-chat.ts limits)
+      // — the system prompt already asks for a few sentences, not an
+      // essay; this just puts a firmer ceiling on worst-case output cost.
+      max_tokens: 600,
       system: SYSTEM_PROMPT + contextLine,
-      messages: body.messages.map((m) => ({ role: m.role, content: m.content })),
+      // Only the most recent AI_CHAT_HISTORY_WINDOW messages actually get
+      // sent, not the whole conversation — see ai-chat.ts: resending full
+      // history every turn is what makes a chat's total cost grow with
+      // the square of its length, not linearly. The customer's own screen
+      // still shows everything; the model just won't recall further back.
+      messages: body.messages.slice(-AI_CHAT_HISTORY_WINDOW).map((m) => ({ role: m.role, content: m.content })),
     });
 
     const textBlock = response.content.find((block) => block.type === 'text');
@@ -173,9 +208,7 @@ export async function POST(request: Request) {
     const isAuthError = error instanceof Anthropic.AuthenticationError;
     return Response.json(
       {
-        reply: isAuthError
-          ? "Our AI assistant isn't fully connected yet — a specialist will follow up with you directly."
-          : 'Something went wrong on our end — please try again in a moment.',
+        reply: isAuthError ? NOT_CONNECTED_REPLY : 'Something went wrong on our end — please try again in a moment.',
       },
       { status: 200 },
     );

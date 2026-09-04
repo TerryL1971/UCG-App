@@ -7,6 +7,12 @@ import { SendIcon, StarIcon } from '@/components/icons';
 import { SalespersonAvatarFull } from '@/components/salesperson-avatar';
 import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/ui/screen-header';
+import {
+  AI_CHAT_ENABLED,
+  AI_CHAT_HISTORY_WINDOW,
+  AI_CHAT_MAX_MESSAGE_LENGTH,
+  AI_CHAT_MAX_USER_MESSAGES,
+} from '@/constants/ai-chat';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { SUPPORT_WHATSAPP, ucgAssistant, whatsappChatUrl } from '@/constants/mock-data';
 import { parseJsonResponse } from '@/lib/api-fetch';
@@ -65,9 +71,16 @@ export default function SalespersonScreen() {
   const [input, setInput] = useState('');
   const [isSending, setIsSending] = useState(false);
 
+  // Cost guard (src/constants/ai-chat.ts): past this many customer
+  // messages, stop calling the API and hand off to a human instead —
+  // re-enforced server-side too, this is just what stops the UI from ever
+  // offering another API call once the limit's reached.
+  const userMessageCount = messages.filter((m) => m.role === 'user').length;
+  const reachedLimit = userMessageCount >= AI_CHAT_MAX_USER_MESSAGES;
+
   const sendMessage = async () => {
     const text = input.trim();
-    if (!text || isSending) return;
+    if (!text || isSending || reachedLimit) return;
 
     const nextMessages: ChatMessage[] = [...messages, { role: 'user', content: text }];
     setMessages(nextMessages);
@@ -79,7 +92,11 @@ export default function SalespersonScreen() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: nextMessages,
+          // Only the recent window is actually sent — see
+          // AI_CHAT_HISTORY_WINDOW's doc comment for why (resending full
+          // history every turn is the biggest cost driver in a chat UI).
+          // The customer's own screen (`messages` state) keeps everything.
+          messages: nextMessages.slice(-AI_CHAT_HISTORY_WINDOW),
           context: {
             carLabel,
             base: intake?.base,
@@ -105,6 +122,42 @@ export default function SalespersonScreen() {
       setIsSending(false);
     }
   };
+
+  const messageASpecialist = () =>
+    Linking.openURL(
+      whatsappChatUrl(SUPPORT_WHATSAPP, `Hi UCG — I'm stuck in the app on ${carLabel} and need a hand.`),
+    ).catch(() => {});
+
+  // The owner's kill switch (src/constants/ai-chat.ts) — flip
+  // AI_CHAT_ENABLED to false and this screen stops calling the AI
+  // entirely, no other changes needed. Everything else the AI chat would
+  // otherwise gate (deposit, warranty, insurance, timeline) stays
+  // reachable — only the chat itself is replaced.
+  if (!AI_CHAT_ENABLED) {
+    return (
+      <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+        <ScreenHeader title="UCG Assistant" />
+        <View style={styles.disabledBody}>
+          <SalespersonAvatarFull size={64} />
+          <Text style={styles.disabledTitle}>Chat with a UCG specialist</Text>
+          <Text style={styles.disabledText}>
+            Our AI assistant isn&apos;t available right now — message a real UCG specialist on WhatsApp instead,
+            and they&apos;ll help you with {carLabel} directly.
+          </Text>
+          <Button label="Message a UCG Specialist" onPress={messageASpecialist} style={styles.disabledButton} />
+        </View>
+        <View style={styles.ctaWrap}>
+          <Button
+            label="Hold This Car — Make a Deposit"
+            variant="secondary"
+            style={styles.depositButton}
+            onPress={() => router.push('/deposit')}
+          />
+          <Button label="View My Timeline  →" onPress={() => router.push('/(tabs)/deal')} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
@@ -161,22 +214,36 @@ export default function SalespersonScreen() {
           )}
         </ScrollView>
 
-        <View style={styles.inputRow}>
-          <TextInput
-            ref={inputRef}
-            value={input}
-            onChangeText={setInput}
-            placeholder="Ask about financing, licensing, warranty…"
-            placeholderTextColor={Colors.textFaint}
-            style={styles.input}
-            multiline
-            blurOnSubmit={false}
-            onSubmitEditing={() => sendMessage()}
-          />
-          <Pressable style={styles.sendButton} onPress={sendMessage} disabled={isSending} hitSlop={8}>
-            <SendIcon color="#fff" />
-          </Pressable>
-        </View>
+        {reachedLimit ? (
+          // Cost guard (ai-chat.ts) — past AI_CHAT_MAX_USER_MESSAGES, the
+          // input is replaced outright rather than just letting one more
+          // send fail, so it's obvious this is a deliberate handoff, not
+          // a broken chat.
+          <View style={styles.limitRow}>
+            <Text style={styles.limitText}>
+              We&apos;ve covered a lot here — let&apos;s continue with a real specialist.
+            </Text>
+            <Button label="Message a UCG Specialist" onPress={messageASpecialist} style={styles.limitButton} />
+          </View>
+        ) : (
+          <View style={styles.inputRow}>
+            <TextInput
+              ref={inputRef}
+              value={input}
+              onChangeText={setInput}
+              placeholder="Ask about financing, licensing, warranty…"
+              placeholderTextColor={Colors.textFaint}
+              style={styles.input}
+              multiline
+              maxLength={AI_CHAT_MAX_MESSAGE_LENGTH}
+              blurOnSubmit={false}
+              onSubmitEditing={() => sendMessage()}
+            />
+            <Pressable style={styles.sendButton} onPress={sendMessage} disabled={isSending} hitSlop={8}>
+              <SendIcon color="#fff" />
+            </Pressable>
+          </View>
+        )}
 
         {/* An explicit, always-reachable way to close the keyboard —
             tap-outside-to-dismiss isn't reliable enough on its own to be
@@ -187,17 +254,7 @@ export default function SalespersonScreen() {
           <Text style={styles.doneRowText}>Done ⌄</Text>
         </Pressable>
 
-        <Pressable
-          style={styles.stuckRow}
-          hitSlop={6}
-          onPress={() =>
-            Linking.openURL(
-              whatsappChatUrl(
-                SUPPORT_WHATSAPP,
-                `Hi UCG — I'm stuck in the app on ${carLabel} and need a hand.`,
-              ),
-            ).catch(() => {})
-          }>
+        <Pressable style={styles.stuckRow} hitSlop={6} onPress={messageASpecialist}>
           <Text style={styles.stuckText}>Stuck and can&apos;t move forward? Message a UCG specialist  →</Text>
         </Pressable>
 
@@ -313,4 +370,31 @@ const styles = StyleSheet.create({
   },
   ctaWrap: { paddingHorizontal: Spacing.xxl, paddingTop: 4, paddingBottom: 8, gap: 10 },
   depositButton: { marginBottom: 0 },
+  disabledBody: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.xxl,
+    gap: 6,
+  },
+  disabledTitle: { fontFamily: Fonts.display, fontSize: 20, color: Colors.text, textAlign: 'center', marginTop: 8 },
+  disabledText: {
+    fontFamily: Fonts.body,
+    fontSize: 14,
+    color: Colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  disabledButton: { width: '100%', marginTop: 16 },
+  limitRow: {
+    backgroundColor: '#fff',
+    borderRadius: Radius.lg,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    padding: 14,
+    gap: 10,
+    marginTop: 8,
+  },
+  limitText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.textMuted, textAlign: 'center', lineHeight: 19 },
+  limitButton: { marginBottom: 0 },
 });

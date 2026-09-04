@@ -19,7 +19,15 @@ sale/purchase screenshots. `GAP` steps get narrated or skipped.
 ## The 10 phases
 
 1. **Find the car** — browse live inventory `WORKS` · car detail `WORKS` ·
-   ask the UCG Assistant (AI) `MOCK` (needs a Claude key to reply).
+   ask the UCG Assistant (AI) `WORKS` (Sept 4: real Claude key connected,
+   Haiku 4.5). Cost-limited Sept 6 (`src/constants/ai-chat.ts`) —
+   `AI_CHAT_ENABLED` is the owner's kill switch (Terry: "I may need to
+   scrap it, but I have to allow the owner to make that decision"; if
+   they do, it's this one line), plus a 12-message-per-conversation cap
+   and a trimmed history window so cost doesn't scale with the square of
+   a conversation's length. Terry's also weighing replacing this whole
+   chat with a static FAQ page instead — noted, not built, pending that
+   decision.
 2. **Start the deal** — intake: name/WhatsApp/base/cash-or-financing/lender
    `WORKS` · **APO/FPO address** `WORKS` · USAREUR license status + photo
    `WORKS` · survives restart & switching cars `WORKS`.

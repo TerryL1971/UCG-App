@@ -265,6 +265,29 @@ export function TimelineRoad({ steps, car, viewedIndex, onStepPress, horizontal 
   const ys = waypoints.map((w) => w.y);
   const inputRange = waypoints.map((_, i) => (steps.length > 1 ? i / (steps.length - 1) : 0));
 
+  // Passed road fades to invisible (RoadSegment/RoadStop above) but was
+  // still reserving its full layout space, leaving a dead gap between the
+  // info card and the live part of the road that only grew with every
+  // step advanced (Terry, 2026-09-06: "the car needs to move up right
+  // under the bottom of the information"). Fix: crop the container down
+  // to just the remaining span and shift the whole road up/left by
+  // whatever's been driven past, animated off the same `progress` value
+  // that already drives the car — so the crop line and the car always
+  // move in lockstep.
+  const alongs = horizontal ? xs : ys;
+  const windowStarts = alongs.map((_, i) => (i > 0 ? alongs[i - 1] : 0));
+
+  const cropStyle = useAnimatedStyle(() => {
+    const startAlong = interpolate(progress.value, inputRange, windowStarts, 'clamp');
+    const along = alongTotal - startAlong;
+    return horizontal ? { width: along } : { height: along };
+  });
+
+  const shiftStyle = useAnimatedStyle(() => {
+    const startAlong = interpolate(progress.value, inputRange, windowStarts, 'clamp');
+    return { transform: [horizontal ? { translateX: -startAlong } : { translateY: -startAlong }] };
+  });
+
   const carStyle = useAnimatedStyle(() => {
     const x = interpolate(progress.value, inputRange, xs, 'clamp');
     const y = interpolate(progress.value, inputRange, ys, 'clamp');
@@ -284,58 +307,77 @@ export function TimelineRoad({ steps, car, viewedIndex, onStepPress, horizontal 
   const finalStop = waypoints[lastIndex];
 
   return (
-    <View style={{ width: containerWidth, height: containerHeight, alignSelf: 'center' }}>
-      <Svg width={containerWidth} height={containerHeight} style={StyleSheet.absoluteFill}>
-        {waypoints.slice(0, -1).map((wp, i) => (
-          <RoadSegment
-            key={i}
-            p0={wp}
-            p1={waypoints[i + 1]}
+    <Animated.View
+      style={[
+        horizontal ? { height: containerHeight } : { width: containerWidth },
+        styles.cropWrap,
+        cropStyle,
+      ]}>
+      <Animated.View style={[{ width: containerWidth, height: containerHeight }, shiftStyle]}>
+        <Svg width={containerWidth} height={containerHeight} style={StyleSheet.absoluteFill}>
+          {waypoints.slice(0, -1).map((wp, i) => (
+            <RoadSegment
+              key={i}
+              p0={wp}
+              p1={waypoints[i + 1]}
+              index={i}
+              totalSteps={steps.length}
+              horizontal={horizontal}
+              progress={progress}
+            />
+          ))}
+        </Svg>
+
+        {waypoints.map((wp, i) => (
+          <RoadStop
+            key={steps[i].id}
+            step={steps[i]}
             index={i}
             totalSteps={steps.length}
+            wp={wp}
+            containerWidth={containerWidth}
+            containerHeight={containerHeight}
             horizontal={horizontal}
+            isLast={i === lastIndex}
+            isViewed={i === viewedIndex}
             progress={progress}
+            onPress={() => onStepPress(i)}
           />
         ))}
-      </Svg>
 
-      {waypoints.map((wp, i) => (
-        <RoadStop
-          key={steps[i].id}
-          step={steps[i]}
-          index={i}
-          totalSteps={steps.length}
-          wp={wp}
-          containerWidth={containerWidth}
-          containerHeight={containerHeight}
-          horizontal={horizontal}
-          isLast={i === lastIndex}
-          isViewed={i === viewedIndex}
-          progress={progress}
-          onPress={() => onStepPress(i)}
-        />
-      ))}
+        {showPhoto && car && (
+          <Animated.View
+            style={[
+              styles.photoWrap,
+              { left: finalStop.x - 34, top: finalStop.y - 34 - 6, pointerEvents: 'none' },
+              photoStyle,
+            ]}>
+            <Image source={{ uri: car.thumbnail }} style={styles.photo} contentFit="cover" />
+          </Animated.View>
+        )}
 
-      {showPhoto && car && (
-        <Animated.View
-          style={[
-            styles.photoWrap,
-            { left: finalStop.x - 34, top: finalStop.y - 34 - 6, pointerEvents: 'none' },
-            photoStyle,
-          ]}>
-          <Image source={{ uri: car.thumbnail }} style={styles.photo} contentFit="cover" />
+        <Animated.View style={[styles.carShadow, carStyle, { pointerEvents: 'none' }]} />
+        <Animated.View style={[styles.carWrap, carStyle, { pointerEvents: 'none' }]}>
+          <CarSideIcon size={CAR_SIZE} />
         </Animated.View>
-      )}
-
-      <Animated.View style={[styles.carShadow, carStyle, { pointerEvents: 'none' }]} />
-      <Animated.View style={[styles.carWrap, carStyle, { pointerEvents: 'none' }]}>
-        <CarSideIcon size={CAR_SIZE} />
       </Animated.View>
-    </View>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
+  cropWrap: {
+    alignSelf: 'center',
+    overflow: 'hidden',
+    // Explicit and low on purpose — this is a screen full of Reanimated
+    // `transform`-driven views (the car, the road signs' fade), and a
+    // transformed view can end up in its own compositing layer that
+    // outranks normal document order. Pinning it low keeps this component
+    // from ever visually outranking a screen pushed on top of it (Terry,
+    // 2026-09-06: a screen opened from a link here, e.g. Wire
+    // Instructions, needs to render above the road, not under it).
+    zIndex: 0,
+  },
   stopRow: {
     position: 'absolute',
     alignItems: 'center',

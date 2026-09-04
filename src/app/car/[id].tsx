@@ -125,7 +125,22 @@ export default function CarDetailScreen() {
           {car.images.length > 0 ? (
             <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
               {car.images.map((uri) => (
-                <Image key={uri} source={{ uri }} style={{ width: SCREEN_WIDTH, height: 240 }} contentFit="cover" />
+                <Image
+                  key={uri}
+                  source={{ uri }}
+                  style={{ width: SCREEN_WIDTH, height: 240 }}
+                  contentFit="cover"
+                  // usedcarguys.net's own listing photos have a "UCG Used
+                  // Car Guys / Military Sales" banner baked into the top
+                  // of the shot itself — cover-fit crops from the center
+                  // by default, which left that banner sitting right at
+                  // the top edge of the hero, crowding the safe area
+                  // (Terry, 2026-09-06). Biasing the crop toward the
+                  // bottom of the source photo pushes the banner out of
+                  // frame instead — the app already has its own header,
+                  // it doesn't need the dealer's watermark repeated here.
+                  contentPosition="bottom"
+                />
               ))}
             </ScrollView>
           ) : (
