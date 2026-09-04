@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Dimensions, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Dimensions, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
@@ -9,15 +9,21 @@ import { ArrowLeftIcon, DrivetrainIcon, FuelIcon, GaugeIcon, HeartIcon, Transmis
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { useDeal } from '@/lib/deal-context';
 import { useDealIntake } from '@/lib/deal-intake-context';
+import { useDealDocuments } from '@/lib/documents-context';
+import { useDealSync } from '@/lib/deal-sync';
 import { useSaved } from '@/lib/saved-context';
 import { fetchInventoryDetail, type InventoryDetail } from '@/lib/ucg-inventory';
+import { useWarranty } from '@/lib/warranty-context';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function CarDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { chooseCar } = useDeal();
+  const { car: currentCar, chooseCar } = useDeal();
   const { demoteIntakeToDraft } = useDealIntake();
+  const { clearChoice: clearWarrantyChoice } = useWarranty();
+  const { resetDocument } = useDealDocuments();
+  const { reset: resetDealSync } = useDealSync();
   const { isSaved, toggleSaved } = useSaved();
   const [car, setCar] = useState<InventoryDetail | null>(null);
   const [error, setError] = useState(false);
@@ -56,6 +62,48 @@ export default function CarDetailScreen() {
       </SafeAreaView>
     );
   }
+
+  // Everything below this car's price/eligibility depends on THIS car —
+  // switching to a different one part-way through a deal isn't just
+  // "update the car," it invalidates work already done for the old one
+  // (Terry, 2026-09-05): a 2-Year PPP decision made for a 2019 sedan means
+  // nothing for a 2025 EV (different eligibility, different price), the
+  // 7-step timeline and any financing terms were built around the old
+  // car's numbers, and Proof of Insurance is issued against a specific
+  // vehicle in Germany, not the person. Driver's License, Orders, and
+  // Proof of Residence stay untouched — those are about the customer, same
+  // reasoning `demoteIntakeToDraft` already applies to the rest of intake.
+  const proceedWithThisCar = (isDifferentCar: boolean) => {
+    demoteIntakeToDraft();
+    chooseCar(car);
+    if (isDifferentCar) {
+      clearWarrantyChoice();
+      resetDocument('insurance');
+      resetDealSync();
+    }
+    router.push('/deal-intake');
+  };
+
+  const handleChooseCar = () => {
+    const isDifferentCar = !!currentCar && currentCar.slug !== car.slug;
+    if (!isDifferentCar) {
+      proceedWithThisCar(false);
+      return;
+    }
+    Alert.alert(
+      'Switch to this car?',
+      `You already have the ${currentCar!.year} ${currentCar!.title} in progress. Switching to the ${car.year} ${
+        car.title
+      } resets your 2-Year Protection Plan choice, Proof of Insurance, and deal timeline for the new car — your ` +
+        `Driver's License, Orders, and Proof of Residence stay as they are. If you already paid a deposit or ` +
+        `reservation fee on the other car, message your specialist about transferring or refunding it — that part ` +
+        `isn't something this app can do on its own.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Switch Cars', style: 'destructive', onPress: () => proceedWithThisCar(true) },
+      ],
+    );
+  };
 
   return (
     <View style={styles.screen}>
@@ -102,20 +150,7 @@ export default function CarDetailScreen() {
       </ScrollView>
 
       <SafeAreaView edges={['bottom']} style={styles.ctaBar}>
-        <Button
-          label="Choose This Car  →"
-          onPress={() => {
-            // A previous car's intake shouldn't still read as "submitted"
-            // for a different car — but the customer's own details (name,
-            // WhatsApp, base, APO, license) are about them, not the car,
-            // and kept vanishing on people. Demote: keep the answers as a
-            // draft that pre-fills the fresh form, drop only the
-            // "submitted" status.
-            demoteIntakeToDraft();
-            chooseCar(car);
-            router.push('/deal-intake');
-          }}
-        />
+        <Button label="Choose This Car  →" onPress={handleChooseCar} />
       </SafeAreaView>
     </View>
   );

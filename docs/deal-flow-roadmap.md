@@ -149,6 +149,34 @@ real customer would hit it.
   - `clearIntake()` still exists and still wipes both layers — Reset Test
     Data (Account tab) uses it.
 
+- **Switching cars mid-deal now resets everything the CAR determines, not
+  just intake.** Terry, 2026-09-05: changing cars is a bigger event than
+  the app treated it as — a 2-Year PPP decision made for one car (price,
+  eligibility) means nothing for a different one; a 2025 EV and a 2019
+  sedan aren't the same warranty decision. `car/[id].tsx`'s "Choose This
+  Car" now, when a DIFFERENT car than the one already in progress is
+  picked:
+  1. Confirms first (`Alert.alert`) — switching cars silently used to just
+     overwrite `DealContext.car` with zero warning.
+  2. `demoteIntakeToDraft()` — unchanged, customer details carry over.
+  3. `clearWarrantyChoice()` (warranty-context) — the PPP accept/decline
+     was global, not tied to a car; now it resets so eligibility/price get
+     re-decided for the new car.
+  4. `resetDocument('insurance')` (documents-context, new method) — Proof
+     of Insurance is issued against a specific vehicle in Germany
+     (Deckungskarte/eVB), so it resets to "needed." Driver's License,
+     Orders, and Proof of Residence are deliberately left alone — they're
+     about the customer, not the car.
+  5. `resetDealSync()` (deal-sync's existing `reset()`, the same one
+     "Reset Test Data" uses) — the 7-step timeline, financing terms, and
+     payment status were all built around the old car's price and
+     approvals; none of that is valid for a new one.
+  - **Left as a real, named open question, not silently decided**: what
+    happens to a deposit/reservation fee already paid on the old car? The
+    app has no concept of "deposit paid, tied to car X" to transfer or
+    refund — the confirmation dialog tells the customer to message their
+    specialist about it rather than pretending the app handled it.
+
 - **Service Center hub — open to non-customers.** New `/service` screen
   (`src/app/service.tsx`) + `src/constants/service-center.ts` with real
   content from usedcarguys.net/service-center/ (fetched Sept 3): oil

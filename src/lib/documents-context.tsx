@@ -28,6 +28,14 @@ interface DealDocumentsContextValue {
   /** Drops one page by index — lets a customer remove a bad page without
    * losing the rest of an already multi-page upload. */
   removeDocumentPage: (id: string, pageIndex: number) => void;
+  /** Puts one document back to "needed" with no pages — for the ONE
+   * document that's actually tied to the car, not the person: Proof of
+   * Insurance (a German policy's Deckungskarte/eVB is issued against a
+   * specific vehicle). Called when the customer switches cars — see
+   * car/[id].tsx. Driver's License, Orders, and Proof of Residence are
+   * deliberately untouched by this; they're about the customer, not the
+   * car, same reasoning as `demoteIntakeToDraft` in deal-intake-context. */
+  resetDocument: (id: string) => void;
   resetDocuments: () => void;
 }
 
@@ -53,6 +61,8 @@ export function DealDocumentsProvider({ children }: { children: ReactNode }) {
         setDocuments((docs) =>
           docs.map((d) => (d.id === id ? { ...d, uris: d.uris.filter((_, i) => i !== pageIndex) } : d)),
         ),
+      resetDocument: (id: string) =>
+        setDocuments((docs) => docs.map((d) => (d.id === id ? { ...d, status: 'needed', uris: [] } : d))),
       resetDocuments: () => setDocuments(withNoPages()),
     }),
     [documents],
