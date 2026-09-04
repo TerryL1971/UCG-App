@@ -42,7 +42,10 @@ sale/purchase screenshots. `GAP` steps get narrated or skipped.
 6. **Your documents (KYC)** — License / Proof of Insurance / Orders /
    Proof of Residence, multi-page capture `WORKS` · "team notified" `MOCK`.
 7. **UCG's paperwork — two paths by stock number** (full detail in
-   **[docs/purchase-paperwork.md](./purchase-paperwork.md)**). All `GAP`:
+   **[docs/purchase-paperwork.md](./purchase-paperwork.md)**). The
+   `/deal-paperwork` screen (linked from the "Contract Signed" step)
+   generates these as real, printable PDFs from the deal's own data —
+   price, buyer, vehicle, financing — `WORKS` **(shipped 2026-09-04)**:
    - **`DEN*****`** (never USAREUR-registered) → **Cost Estimate** (price +
      VAT). Customer needs 3–5 copies → VAT Office + Service FCU / Community
      Bank for an **Official Cashier's Check** → VAT Office issues the
@@ -52,8 +55,12 @@ sale/purchase screenshots. `GAP` steps get narrated or skipped.
    - **`DE*****`** (previously USAREUR-registered, or US-spec) →
      **Purchase Order** + **5 signed copies of the Bill of Sale**.
    - Bill of Sale is an official **Kaufvertrag / Rechnung** either way;
-     plus Warranty Cert, Hand-Over Doc (DealerTeam Forms).
-   - Customer download→print→sign→scan→upload `MOCK` · Contract Signed `MOCK`.
+     plus Warranty Cert, Hand-Over Doc (DealerTeam Forms) — those two
+     still `GAP`, not generated.
+   - Generated PDFs are explicitly labeled sample documents, not the
+     binding contract — UCG still signs the real paperwork with the
+     customer. Customer download→print→sign→scan→upload `MOCK` · Contract
+     Signed `MOCK`.
 8. **Done in Germany, by a person** — all `GAP`:
    - **`DE` path:** customer takes the 5 Bill-of-Sale copies to the **base
      Customs Office** → gets **3–5 AE Form 550-175A** → UCG takes them to

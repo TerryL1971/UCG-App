@@ -260,11 +260,9 @@ function StepDetailContent({ step, car }: { step: DealStep; car: ReturnType<type
         <Text style={styles.detailPlainText}>
           Signed electronically. A copy was emailed to you — print a copy for your records if you&apos;d like one.
         </Text>
-        <Pressable
-          style={styles.detailLinkRow}
-          onPress={() => Alert.alert('Not connected yet', "Viewing the signed contract isn't wired up yet.")}>
+        <Pressable style={styles.detailLinkRow} onPress={() => router.push('/deal-paperwork')}>
           <DownloadIcon size={14} color={Colors.navy} />
-          <Text style={styles.detailLink}>View Contract</Text>
+          <Text style={styles.detailLink}>View Your Paperwork</Text>
         </Pressable>
       </View>
     );

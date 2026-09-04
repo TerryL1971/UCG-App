@@ -9,6 +9,7 @@ import { CheckCircleIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
+import { HOLD_AMOUNT } from '@/constants/mock-data';
 import { isDenStock } from '@/constants/vro-checklists';
 import { parseJsonResponse } from '@/lib/api-fetch';
 import { useDeal } from '@/lib/deal-context';
@@ -16,18 +17,19 @@ import { useDealSync } from '@/lib/deal-sync';
 
 /**
  * Real decision, confirmed by Terry (Sept 1): a flat $300.00 USD, not a
- * percentage of price. This is no longer a placeholder — see
- * docs/deal-flow-roadmap.md's "Make A Deposit" section. Still running
- * through PayPal *Sandbox* until real/live credentials replace the ones
- * in `.env` (see that doc for what else "going live" needs beyond this),
- * so no real money moves yet even though the number itself is real.
+ * percentage of price (see `HOLD_AMOUNT` in mock-data.ts). This is no
+ * longer a placeholder — see docs/deal-flow-roadmap.md's "Make A Deposit"
+ * section. Still running through PayPal *Sandbox* until real/live
+ * credentials replace the ones in `.env` (see that doc for what else
+ * "going live" needs beyond this), so no real money moves yet even though
+ * the number itself is real.
  *
  * On a DEN**** car (EU-spec, never USAREUR-registered) this payment can't
  * legally be called a "deposit" — VAT-Form purchases don't allow one — so
  * it's presented as a refundable **reservation fee**. See
  * docs/purchase-paperwork.md.
  */
-const DEPOSIT_AMOUNT = '300.00';
+const DEPOSIT_AMOUNT = HOLD_AMOUNT;
 
 type DepositStatus = 'idle' | 'opening' | 'capturing' | 'success' | 'cancelled' | 'error';
 

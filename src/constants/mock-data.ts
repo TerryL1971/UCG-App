@@ -362,6 +362,17 @@ export const warrantyDeclineReasons = [
   'Not sure yet — want to talk it over first',
 ] as const;
 
+/**
+ * Real decision, confirmed by Terry (Sept 1): a flat $300.00 USD, not a
+ * percentage of price. Shared between the deposit screen (deposit.tsx) and
+ * the generated paperwork (deal-documents.ts) so both quote the exact same
+ * number — this used to live only inside deposit.tsx as a local constant.
+ * On a DEN**** car it's presented as a refundable reservation fee instead
+ * of a deposit (VAT-Form purchases can't take a deposit) — see
+ * `isDenStock` in vro-checklists.ts and docs/purchase-paperwork.md.
+ */
+export const HOLD_AMOUNT = '300.00';
+
 export type PaymentMethod = 'cash' | 'financing';
 
 export type LicenseStatus = 'have' | 'not_yet';

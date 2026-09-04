@@ -89,7 +89,11 @@ Euro-spec checklist if it's an EU-spec car that was previously registered.
   the VAT process (the Cashier's Check *is* the payment) and happens
   around the VAT-Office step, not as a separate "wire the balance" action.
 - **Cost Estimate (DEN) / Purchase Order + 5× Bill of Sale (DE)** as
-  generated documents — still `GAP`.
+  generated documents — `src/app/deal-paperwork.tsx` + `src/lib/deal-documents.ts`.
+  **(shipped 2026-09-04 — real printable PDFs, filled from the deal's
+  own price/buyer/vehicle/financing data, linked from the "Contract
+  Signed" step on My Deal.)** Still explicitly labeled sample documents,
+  not the binding contract.
 - The Customs Office / Zollamt / VAT Office steps, the multi-copy counts,
   and the Esso gas card are process the app should *show the customer*
   (a checklist / "what happens next"), not perform — still `GAP`.
