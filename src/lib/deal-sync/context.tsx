@@ -8,7 +8,7 @@ import {
 } from 'react';
 
 import { createDealSync } from './factory';
-import type { DealServerState, DealSignal, DealSyncBackend } from './types';
+import type { DealServerState, DealSignal, DealSyncBackend, PaymentStatus } from './types';
 
 /**
  * React binding for the deal-sync backend. Holds one backend instance for
@@ -25,6 +25,7 @@ interface DealSyncContextValue {
   send: (signal: DealSignal) => void;
   reset: () => void;
   jumpToStep: (index: number) => void;
+  setPaymentStatus: (status: PaymentStatus) => void;
 }
 
 const DealSyncContext = createContext<DealSyncContextValue | null>(null);
@@ -48,6 +49,7 @@ export function DealSyncProvider({ children }: { children: ReactNode }) {
       send: (signal: DealSignal) => backend.send(signal),
       reset: () => backend.reset(),
       jumpToStep: (index: number) => backend.jumpToStep(index),
+      setPaymentStatus: (status: PaymentStatus) => backend.setPaymentStatus(status),
     }),
     [state, backend],
   );

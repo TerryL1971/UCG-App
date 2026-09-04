@@ -46,7 +46,17 @@ sale/purchase screenshots. `GAP` steps get narrated or skipped.
    minus the deposit. Cash: wire instructions + printable PDF `WORKS` →
    customer wires → **admin verifies funds (PIF)** `GAP`. Financing: UCG
    finance app link `WORKS` → bank approves → **bank wires UCG** `GAP` →
-   **admin verifies funds** `GAP`. Payment status the customer sees `MOCK`.
+   **admin verifies funds** `GAP`. Payment status the customer sees, for
+   the cash path — Awaiting Wire → Verifying → Funds Received — now
+   `WORKS` **(shipped 2026-09-04)**: `/wire-instructions` has an
+   "I've Sent My Wire" button (`deal-sync`'s new `paymentStatus` +
+   `payment-submitted` signal), auto-advances to Funds Received after a
+   wait the same way the 7-step timeline's "waiting on UCG/bank" steps
+   already do, and shows on My Deal's Application step too. Actually
+   verifying funds landed is still done by a person — this only makes the
+   *status* real, not the verification itself. A `__DEV__`-only row lets a
+   tester jump straight to any state, same pattern as My Deal's
+   "Jump to Step."
 6. **Your documents (KYC)** — License / Proof of Insurance / Orders /
    Proof of Residence, multi-page capture `WORKS` · "team notified" `MOCK`.
 7. **UCG's paperwork — two paths by stock number** (full detail in

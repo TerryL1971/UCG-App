@@ -6,7 +6,7 @@ import {
   type DealStep,
 } from '@/constants/mock-data';
 
-import type { DealServerState, DealSignal, DealSyncBackend } from './types';
+import type { DealServerState, DealSignal, DealSyncBackend, PaymentStatus } from './types';
 
 /**
  * The default backend everywhere today. An in-memory state machine over
@@ -45,11 +45,15 @@ function currentIndex(steps: DealStep[]): number {
 }
 
 /** Which step id a given customer signal is allowed to complete, but only
- * while that step is the current one AND it's "waiting on you". */
+ * while that step is the current one AND it's "waiting on you". Not
+ * consulted for 'payment-submitted' — that signal has its own dedicated
+ * handling in `send()` (it drives `paymentStatus`, not a timeline step) —
+ * the `() => false` entry exists only so this stays a total `Record`. */
 const SIGNAL_COMPLETES: Record<DealSignal['type'], (step: DealStep) => boolean> = {
   'intake-submitted': (s) => s.id === 'matched' || s.id === 'application',
   'deposit-paid': (s) => s.id === 'matched',
   'documents-updated': (s) => s.id === 'documents',
+  'payment-submitted': () => false,
 };
 
 export class MockDealSync implements DealSyncBackend {
@@ -59,8 +63,14 @@ export class MockDealSync implements DealSyncBackend {
   // flips on the `deposit-paid` signal — matching "a salesperson is
   // assigned by management once the customer has placed a deposit".
   private assigned = true;
+  // A brand-new demo deal is financed (see `dealSteps`/`financingTerms`
+  // defaults), so this starts 'awaiting_payment' rather than implying a
+  // cash wire is already in flight — it only becomes visible/relevant once
+  // the customer is actually on the cash path.
+  private paymentStatus: PaymentStatus = 'awaiting_payment';
   private listeners = new Set<() => void>();
   private timer: ReturnType<typeof setTimeout> | null = null;
+  private paymentTimer: ReturnType<typeof setTimeout> | null = null;
   // Memoized so useSyncExternalStore doesn't see a fresh object on every
   // call and re-render forever — cleared on every mutation by emit().
   private cachedState: DealServerState | null = null;
@@ -72,6 +82,7 @@ export class MockDealSync implements DealSyncBackend {
         steps: this.steps,
         financingTerms: financingApproved ? demoFinancingTerms : null,
         salesperson: this.assigned ? salesperson : null,
+        paymentStatus: this.paymentStatus,
       };
     }
     return this.cachedState;
@@ -88,6 +99,20 @@ export class MockDealSync implements DealSyncBackend {
     // A confirmed deposit is what gets a real salesperson assigned.
     if (signal.type === 'deposit-paid') this.assigned = true;
 
+    if (signal.type === 'payment-submitted') {
+      // "I sent the wire" — moves to 'payment_submitted' immediately, then
+      // simulates admin verifying funds landed (PIF) after a wait, the
+      // same "waiting on UCG auto-advances" pattern the 7-step timeline
+      // already uses. Only meaningful from 'awaiting_payment' — resending
+      // once already submitted/verified is a no-op, not a reset backward.
+      if (this.paymentStatus === 'awaiting_payment') {
+        this.paymentStatus = 'payment_submitted';
+        this.emit();
+        this.schedulePaymentVerification();
+      }
+      return;
+    }
+
     const step = this.steps[currentIndex(this.steps)];
     if (step && step.waitingOn === 'you' && SIGNAL_COMPLETES[signal.type]?.(step)) {
       this.advance();
@@ -98,8 +123,10 @@ export class MockDealSync implements DealSyncBackend {
 
   reset(): void {
     this.clearTimer();
+    this.clearPaymentTimer();
     this.steps = freshDealSteps;
     this.assigned = false; // fresh deal — no salesperson until a deposit
+    this.paymentStatus = 'awaiting_payment';
     this.emit();
     this.scheduleAutoAdvance();
   }
@@ -112,6 +139,15 @@ export class MockDealSync implements DealSyncBackend {
     this.steps = stepsAtIndex(index);
     this.assigned = index >= 1;
     this.emit();
+  }
+
+  setPaymentStatus(status: PaymentStatus): void {
+    // Dev/test only (see the interface doc comment) — same "stop
+    // pretending the timer is real" override as jumpToStep.
+    this.clearPaymentTimer();
+    this.paymentStatus = status;
+    this.emit();
+    if (status === 'payment_submitted') this.schedulePaymentVerification();
   }
 
   private advance(): void {
@@ -134,6 +170,21 @@ export class MockDealSync implements DealSyncBackend {
     if (this.timer) {
       clearTimeout(this.timer);
       this.timer = null;
+    }
+  }
+
+  private schedulePaymentVerification(): void {
+    this.clearPaymentTimer();
+    this.paymentTimer = setTimeout(() => {
+      this.paymentStatus = 'funds_verified';
+      this.emit();
+    }, AUTO_ADVANCE_MS);
+  }
+
+  private clearPaymentTimer(): void {
+    if (this.paymentTimer) {
+      clearTimeout(this.paymentTimer);
+      this.paymentTimer = null;
     }
   }
 

@@ -2,13 +2,14 @@ import * as Print from 'expo-print';
 import { router } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { wireInstructions } from '@/constants/mock-data';
+import { useDealSync, type PaymentStatus } from '@/lib/deal-sync';
 
 /**
  * Real wire instructions for a cash deal — see the comment on
@@ -59,8 +60,25 @@ function buildHtml(): string {
   `;
 }
 
+const PAYMENT_STATUS_COPY: Record<PaymentStatus, { title: string; body: string }> = {
+  awaiting_payment: {
+    title: 'Awaiting Your Wire',
+    body: 'Once you’ve sent it, let us know below — we’ll flag it for verification.',
+  },
+  payment_submitted: {
+    title: 'Wire Submitted — Verifying',
+    body: 'We’re confirming your funds landed. This is usually same business day.',
+  },
+  funds_verified: {
+    title: 'Funds Received',
+    body: 'Your payment is confirmed. Your salesperson is moving your paperwork forward.',
+  },
+};
+
 export default function WireInstructionsScreen() {
   const [isWorking, setIsWorking] = useState(false);
+  const { state: dealState, send: sendDealSignal, setPaymentStatus } = useDealSync();
+  const paymentStatus = dealState.paymentStatus;
 
   const handlePrint = async () => {
     try {
@@ -137,6 +155,44 @@ export default function WireInstructionsScreen() {
           onPress={handleSharePdf}
           style={styles.button}
         />
+
+        <View
+          style={[
+            styles.statusCard,
+            paymentStatus === 'funds_verified' && styles.statusCardVerified,
+          ]}>
+          <Text style={styles.statusTitle}>{PAYMENT_STATUS_COPY[paymentStatus].title}</Text>
+          <Text style={styles.statusBody}>{PAYMENT_STATUS_COPY[paymentStatus].body}</Text>
+          {paymentStatus === 'awaiting_payment' && (
+            <Button
+              label="I've Sent My Wire"
+              onPress={() => sendDealSignal({ type: 'payment-submitted' })}
+              style={styles.statusButton}
+            />
+          )}
+        </View>
+
+        {/* Dev/testing only — same rationale as My Deal's "Jump to Step"
+            row: lets each payment state be checked directly without
+            waiting on the simulated verification timer. __DEV__ is false
+            in a real release build, so this can't reach a real customer. */}
+        {__DEV__ && (
+          <View style={styles.testingRow}>
+            <Text style={styles.testingLabel}>TESTING — Payment Status:</Text>
+            <View style={styles.testingChips}>
+              {(['awaiting_payment', 'payment_submitted', 'funds_verified'] as PaymentStatus[]).map((s) => (
+                <Pressable
+                  key={s}
+                  onPress={() => setPaymentStatus(s)}
+                  style={[styles.testingChip, s === paymentStatus && styles.testingChipActive]}>
+                  <Text style={[styles.testingChipText, s === paymentStatus && styles.testingChipTextActive]}>
+                    {PAYMENT_STATUS_COPY[s].title}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -154,6 +210,45 @@ function Row({ label, value }: { label: string; value: string }) {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: Colors.bg },
   body: { paddingHorizontal: Spacing.xxl, paddingBottom: Spacing.xl, paddingTop: 4 },
+  statusCard: {
+    backgroundColor: Colors.navyTint,
+    borderRadius: Radius.lg,
+    padding: 14,
+    marginTop: 20,
+  },
+  statusCardVerified: { backgroundColor: Colors.greenTint },
+  statusTitle: { fontFamily: Fonts.bodyBold, fontSize: 14.5, color: Colors.navy },
+  statusBody: { fontFamily: Fonts.body, fontSize: 12.5, color: Colors.text, lineHeight: 18, marginTop: 3 },
+  statusButton: { marginTop: 10 },
+  testingRow: {
+    marginTop: 14,
+    padding: 8,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: '#C9CDD9',
+  },
+  testingLabel: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: 9.5,
+    color: Colors.textFaint,
+    letterSpacing: 0.4,
+    marginBottom: 6,
+  },
+  testingChips: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
+  testingChip: {
+    paddingHorizontal: 9,
+    height: 26,
+    borderRadius: 13,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  testingChipActive: { backgroundColor: Colors.navy, borderColor: Colors.navy },
+  testingChipText: { fontFamily: Fonts.bodySemibold, fontSize: 10.5, color: Colors.textMuted },
+  testingChipTextActive: { color: '#fff' },
   companyName: { fontFamily: Fonts.display, fontSize: 20, color: Colors.navy },
   companyMeta: { fontFamily: Fonts.body, fontSize: 12.5, color: Colors.textMuted, lineHeight: 19, marginTop: 4 },
   title: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.red, marginTop: 20, lineHeight: 21 },

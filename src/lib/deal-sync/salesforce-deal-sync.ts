@@ -1,4 +1,4 @@
-import type { DealServerState, DealSignal, DealSyncBackend } from './types';
+import type { DealServerState, DealSignal, DealSyncBackend, PaymentStatus } from './types';
 
 /**
  * Stub. This is where a real DealerTeam / Salesforce integration lands —
@@ -36,4 +36,6 @@ export class SalesforceDealSync implements DealSyncBackend {
   reset(): void {}
 
   jumpToStep(_index: number): void {}
+
+  setPaymentStatus(_status: PaymentStatus): void {}
 }

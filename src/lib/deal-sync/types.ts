@@ -8,6 +8,19 @@ import type { DealStep, FinancingTerms, Salesperson } from '@/constants/mock-dat
  * that stays in its own device-local context. See this folder's other
  * files and docs/salesforce-dealerteam-integration-plan.md.
  */
+/**
+ * Where a CASH payment stands — the wire-instructions screen has nothing
+ * else tracking this, unlike financing (which rides the 7-step timeline's
+ * own 'financing' step, "waiting on the bank"). See end-to-end-flow.md
+ * Phase 5: "Payment status the customer sees `MOCK`" — this is that.
+ * `awaiting_payment`: instructions shown, nothing sent yet.
+ * `payment_submitted`: the customer says they wired it.
+ * `funds_verified`: stands in for admin confirming funds actually landed
+ * (PIF) — still `GAP` as a real process, this is the customer-visible
+ * status once it would happen.
+ */
+export type PaymentStatus = 'awaiting_payment' | 'payment_submitted' | 'funds_verified';
+
 export interface DealServerState {
   /** The customer-facing 7-step timeline. Shape is identical to
    * mock-data.ts's `DealStep[]` so the (fragile) timeline-road SVG never
@@ -22,6 +35,9 @@ export interface DealServerState {
    * lives here; a DealerTeam integration would return the actually-assigned
    * person. */
   salesperson: Salesperson | null;
+  /** Cash-payment status only — a financed deal's progress is the
+   * 'financing' step above instead. See `PaymentStatus`. */
+  paymentStatus: PaymentStatus;
 }
 
 /**
@@ -33,7 +49,8 @@ export interface DealServerState {
 export type DealSignal =
   | { type: 'intake-submitted' }
   | { type: 'deposit-paid' }
-  | { type: 'documents-updated' };
+  | { type: 'documents-updated' }
+  | { type: 'payment-submitted' };
 
 /**
  * The one interface the whole app talks to for deal state. Screens never
@@ -55,4 +72,7 @@ export interface DealSyncBackend {
    * A real backend can't fake its own state from the client, so
    * `SalesforceDealSync` no-ops this. */
   jumpToStep(index: number): void;
+  /** Dev/test only — jump straight to a payment status, same rationale as
+   * `jumpToStep`. `SalesforceDealSync` no-ops this too. */
+  setPaymentStatus(status: PaymentStatus): void;
 }

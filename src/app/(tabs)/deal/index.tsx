@@ -22,7 +22,7 @@ import {
 } from '@/constants/mock-data';
 import { useDeal } from '@/lib/deal-context';
 import { useDealIntake } from '@/lib/deal-intake-context';
-import { useDealSync } from '@/lib/deal-sync';
+import { useDealSync, type PaymentStatus } from '@/lib/deal-sync';
 import { useDealDocuments } from '@/lib/documents-context';
 
 /** The camera/share action under "Picked Up" — its own component (not
@@ -109,6 +109,15 @@ function PickupPhotoAction() {
 
 const documentStatusLabel: Record<string, string> = { needed: 'Needed', uploaded: 'Uploaded', approved: 'Approved' };
 
+/** Maps the cash-payment status (deal-sync's `PaymentStatus`) onto
+ * StatusChip's fixed palette — same three-stage shape as document status,
+ * so it reads consistently rather than needing its own color scheme. */
+const paymentStatusChip: Record<PaymentStatus, { status: 'needed' | 'uploaded' | 'approved'; label: string }> = {
+  awaiting_payment: { status: 'needed', label: 'Awaiting Wire' },
+  payment_submitted: { status: 'uploaded', label: 'Verifying' },
+  funds_verified: { status: 'approved', label: 'Funds Received' },
+};
+
 /** Content for the persistent "currently viewing" panel — one case per
  * step id. "ready" and "pickup" have their own richer content; the rest
  * get a plain verification card. */
@@ -170,10 +179,15 @@ function StepDetailContent({ step, car }: { step: DealStep; car: ReturnType<type
     if (intake?.paymentMethod === 'cash') {
       return (
         <View style={[styles.detailCard, { flexDirection: 'column', alignItems: 'stretch', gap: 8 }]}>
-          <Text style={styles.detailPlainText}>
-            Paying cash for {carLabel} — no financing application needed. If you&apos;re sending a wire, the
-            instructions are one tap away.
-          </Text>
+          <View style={styles.paymentStatusRow}>
+            <Text style={[styles.detailPlainText, { flex: 1 }]}>
+              Paying cash for {carLabel} — no financing application needed.
+            </Text>
+            <StatusChip
+              status={paymentStatusChip[dealState.paymentStatus].status}
+              label={paymentStatusChip[dealState.paymentStatus].label}
+            />
+          </View>
           <Pressable style={styles.detailLinkRow} onPress={() => router.push('/wire-instructions')}>
             <DownloadIcon size={14} color={Colors.navy} />
             <Text style={styles.detailLink}>View Wire Instructions</Text>
@@ -683,6 +697,7 @@ const styles = StyleSheet.create({
   detailLinkRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
   detailLink: { fontFamily: Fonts.bodySemibold, fontSize: 12.5, color: Colors.navy },
   docDetailRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  paymentStatusRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 },
   docDetailName: { flex: 1, fontFamily: Fonts.bodySemibold, fontSize: 12.5, color: Colors.text },
   financeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   financeStat: { width: '46%' },
