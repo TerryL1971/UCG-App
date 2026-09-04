@@ -9,6 +9,7 @@ import { CheckCircleIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
+import { isDenStock } from '@/constants/vro-checklists';
 import { parseJsonResponse } from '@/lib/api-fetch';
 import { useDeal } from '@/lib/deal-context';
 import { useDealSync } from '@/lib/deal-sync';
@@ -20,6 +21,11 @@ import { useDealSync } from '@/lib/deal-sync';
  * through PayPal *Sandbox* until real/live credentials replace the ones
  * in `.env` (see that doc for what else "going live" needs beyond this),
  * so no real money moves yet even though the number itself is real.
+ *
+ * On a DEN**** car (EU-spec, never USAREUR-registered) this payment can't
+ * legally be called a "deposit" — VAT-Form purchases don't allow one — so
+ * it's presented as a refundable **reservation fee**. See
+ * docs/purchase-paperwork.md.
  */
 const DEPOSIT_AMOUNT = '300.00';
 
@@ -29,6 +35,9 @@ export default function DepositScreen() {
   const { car } = useDeal();
   const { send: sendDealSignal } = useDealSync();
   const carLabel = car ? `${car.year} ${car.title}` : 'your car';
+  const isReservationFee = isDenStock(car?.stockNumber);
+  const feeNoun = isReservationFee ? 'reservation fee' : 'deposit';
+  const feeNounTitle = isReservationFee ? 'Reservation Fee' : 'Deposit';
   const [status, setStatus] = useState<DepositStatus>('idle');
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -45,7 +54,7 @@ export default function DepositScreen() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           amount: DEPOSIT_AMOUNT,
-          description: `Deposit to hold the ${carLabel} for 5 days`,
+          description: `${isReservationFee ? 'Reservation fee' : 'Deposit'} to hold the ${carLabel} for 5 days`,
           returnUrl,
           cancelUrl,
         }),
@@ -95,8 +104,11 @@ export default function DepositScreen() {
             <CheckCircleIcon size={56} />
             <Text style={styles.title}>You&apos;re Holding This Car</Text>
             <Text style={styles.body_text}>
-              Your deposit is confirmed. The {carLabel} is on hold for 5 days while your specialist puts the rest
+              Your {feeNoun} is confirmed. The {carLabel} is on hold for 5 days while your specialist puts the rest
               of your deal together.
+              {isReservationFee
+                ? ' You get this reservation fee back — on an EU-spec car it can’t be a deposit.'
+                : ''}
             </Text>
             <Button
               label="Next: Protect Your Car  →"
@@ -114,12 +126,23 @@ export default function DepositScreen() {
           <>
             <Text style={styles.title}>Reserve the {carLabel}</Text>
             <Text style={styles.body_text}>
-              A refundable deposit puts a <Text style={styles.bold}>5-day hold</Text> on this car — on the website
-              and with UCG — while the rest of your deal comes together.
+              {isReservationFee ? (
+                <>
+                  A refundable <Text style={styles.bold}>reservation fee</Text> puts a{' '}
+                  <Text style={styles.bold}>5-day hold</Text> on this car. On an EU-spec car this can’t be a
+                  deposit &mdash; VAT rules &mdash; so you get it back.
+                </>
+              ) : (
+                <>
+                  A refundable <Text style={styles.bold}>deposit</Text> puts a{' '}
+                  <Text style={styles.bold}>5-day hold</Text> on this car &mdash; on the website and with UCG
+                  &mdash; while the rest of your deal comes together.
+                </>
+              )}
             </Text>
 
             <View style={styles.amountCard}>
-              <Text style={styles.amountLabel}>Deposit Amount</Text>
+              <Text style={styles.amountLabel}>{feeNounTitle}</Text>
               <Text style={styles.amountValue}>${DEPOSIT_AMOUNT}</Text>
               <Text style={styles.amountNote}>Sandbox mode — no real charge yet.</Text>
             </View>
@@ -137,7 +160,7 @@ export default function DepositScreen() {
             {status === 'error' && <Text style={styles.errorText}>{errorMessage}</Text>}
 
             <Button
-              label="Pay Deposit with PayPal"
+              label={isReservationFee ? 'Pay Reservation Fee with PayPal' : 'Pay Deposit with PayPal'}
               onPress={startDeposit}
               style={styles.button}
             />

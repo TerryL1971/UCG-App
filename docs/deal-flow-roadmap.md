@@ -8,6 +8,33 @@ real customer would hit it.
 
 ## Shipped Sept 4
 
+- **Purchase-paperwork process captured + deposit relabel for DEN cars.**
+  Terry laid out the full two-path process (2026-09-04) — now in
+  **`docs/purchase-paperwork.md`**:
+  - **`DEN*****`** (EU-spec, never USAREUR-registered): the hold payment
+    **legally can't be a "deposit"** (VAT-Form purchases don't allow one),
+    so it's a **refundable reservation fee**. Then Cost Estimate (price +
+    VAT) → customer takes 3–5 copies to the VAT Office + Service FCU /
+    Community Bank for an **official cashier's check** → VAT Office issues
+    the VAT Form → UCG stamps it. The cashier's check *is* the payment.
+  - **`DE*****`** (previously USAREUR-registered, or US-spec): normal
+    deposit → Purchase Order + **5 signed Bill-of-Sale copies** → base
+    Customs Office → 3–5 AE Form 550-175A → German Zollamt to stamp (**not
+    until funds wired**) → 2 stay with Zollamt, 3 retained (dealership /
+    VRO / customer) → VRO issues Transfer Title docs, plates, sticker →
+    separate room for the **Esso gas card**.
+  - **`DE` resale to a non-SOFA-card holder** costs that buyer **19% VAT +
+    10% import fee** at the Zulassungsstelle — the tax the VAT Form removes
+    for a SOFA customer.
+  - **Shipped in code:** `deposit.tsx` now checks `isDenStock(stockNumber)`
+    (`src/constants/vro-checklists.ts`) and relabels the whole screen
+    "Reservation Fee" with "you get it back — on an EU-spec car it can't be
+    a deposit" copy, including the PayPal order description. The VRO
+    screen's VAT-form line explains the Cost Estimate / cashier's-check
+    process. Everything else (Cost Estimate / Purchase Order / 550-175A
+    generation, the Customs/Zollamt/VAT-Office steps as a customer-facing
+    checklist) is still `GAP`.
+
 - **VRO Checklist screen (`/vro-checklist`).** What the customer needs at
   the Vehicle Registration Office — split into "UCG handles these" vs "you
   bring these", with a US-spec / EU-spec toggle (defaults from the stock

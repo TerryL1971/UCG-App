@@ -84,7 +84,11 @@ export const vroBaseline: Record<VehicleSpec, VroChecklist> = {
         label: 'Bill of Sale',
         detail: 'An official Kaufvertrag or Rechnung listing make, model, year, and VIN. If no VAT form is used it shows the tax treatment (taxes outside the sale price, or § 25a UStG).',
       },
-      { label: 'VAT form', detail: 'Prepared, and stamped at the UCG location where you buy the car, where it applies.' },
+      {
+        label: 'VAT form',
+        detail:
+          'For a never-USAREUR-registered car (DEN stock number): UCG gives you a Cost Estimate; you take 3–5 copies to the VAT Office and to Service Federal Credit Union or Community Bank for an official cashier’s check; the VAT Office issues the form; UCG stamps it. Your salesperson walks you through this.',
+      },
       { label: 'German title book (Fahrzeugbrief) and registration (Fahrzeugschein)' },
       {
         label: 'Official proof of deregistration',
@@ -142,11 +146,19 @@ export function vroOfficeForBase(base: string | undefined | null): VroOffice | n
   return vroOffices.find((o) => b.includes(o.base.toLowerCase())) ?? null;
 }
 
-/** Best guess at US-spec vs EU-spec from the stock number: a 3-letter
- * "DEN" prefix means EU-spec, never registered on the USAREUR system (see
- * docs/deal-flow-roadmap.md). Anything else defaults to US-spec. The
+/** A "DEN" prefix means an EU-spec car that has **never been registered
+ * on the USAREUR-AF system** (see docs/purchase-paperwork.md). These are
+ * the cars that go through the Cost Estimate → VAT Form process, and the
+ * hold payment on them can't legally be a "deposit" — it's a refundable
+ * reservation fee. A plain "DE" prefix is a car that was USAREUR-
+ * registered (or is US-spec), and a normal deposit is fine. */
+export function isDenStock(stockNumber: string | undefined | null): boolean {
+  return !!stockNumber && /^den/i.test(stockNumber);
+}
+
+/** Best guess at US-spec vs EU-spec from the stock number: `DEN` → EU-spec
+ * (never USAREUR-registered). Anything else defaults to US-spec. The VRO
  * screen lets the customer flip it — the salesperson knows for sure. */
 export function guessVehicleSpec(stockNumber: string | undefined | null): VehicleSpec {
-  if (stockNumber && /^den/i.test(stockNumber)) return 'eu';
-  return 'us';
+  return isDenStock(stockNumber) ? 'eu' : 'us';
 }

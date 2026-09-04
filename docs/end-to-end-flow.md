@@ -23,10 +23,12 @@ sale/purchase screenshots. `GAP` steps get narrated or skipped.
 2. **Start the deal** — intake: name/WhatsApp/base/cash-or-financing/lender
    `WORKS` · **APO/FPO address** `WORKS` · USAREUR license status + photo
    `WORKS` · survives restart & switching cars `WORKS`.
-3. **Reserve it** — $300 PayPal deposit `WORKS` (Sandbox) · hold registered
-   in DealerTeam `GAP` (UCG admin, manual) · salesperson assigned by
-   management after deposit `MOCK` (`DealServerState.salesperson`, null
-   until `deposit-paid`).
+3. **Reserve it** — $300 PayPal hold `WORKS` (Sandbox). On a `DEN*****`
+   car (EU-spec, never USAREUR-registered) this is a **refundable
+   reservation fee, not a deposit** — VAT-Form purchases can't take a
+   deposit; the screen relabels it `WORKS`. Hold registered in DealerTeam
+   `GAP` (UCG admin, manual) · salesperson assigned by management after the
+   hold `MOCK`. See **[docs/purchase-paperwork.md](./purchase-paperwork.md)**.
 4. **Add-ons** (accept/decline each — these set the final price, so they
    come before payment) — 2-Year PPP $999 `WORKS` · **American Auto Nation
    insurance** `WORKS` (`/insurance` — offer + WhatsApp quote handoff;
@@ -39,19 +41,30 @@ sale/purchase screenshots. `GAP` steps get narrated or skipped.
    **admin verifies funds** `GAP`. Payment status the customer sees `MOCK`.
 6. **Your documents (KYC)** — License / Proof of Insurance / Orders /
    Proof of Residence, multi-page capture `WORKS` · "team notified" `MOCK`.
-7. **UCG's paperwork** — US-spec / registered → **Purchase Order** `GAP` ·
-   EU-spec DEN → **Cost Estimate** for the "Super" VAT form, stamped at the
-   UCG location `GAP` · **Bill of Sale — official Kaufvertrag or Rechnung**
-   (German tax-law compliant; handwritten not accepted for a dealer sale),
-   Warranty Cert, Hand-Over Doc `GAP` (DealerTeam Forms tab) · customer
-   download→print→sign→scan→upload `MOCK` · Contract Signed `MOCK`.
-8. **Done in Germany, by a person** — **US Customs Form 550-175A**
-   (buy) / **550-175B cleared through Zollamt** (sell-back) `GAP` · **TÜV /
-   safety inspection, UCG pays** `GAP` (required to register any used or
-   Germany-bought car) · VAT form stamped `GAP` · for EU-spec: the German
-   title book (Fahrzeugbrief) + registration (Fahrzeugschein) + official
-   **deregistration MFR** on letterhead, or the USAREUR-AF Transfer Title
-   `GAP`.
+7. **UCG's paperwork — two paths by stock number** (full detail in
+   **[docs/purchase-paperwork.md](./purchase-paperwork.md)**). All `GAP`:
+   - **`DEN*****`** (never USAREUR-registered) → **Cost Estimate** (price +
+     VAT). Customer needs 3–5 copies → VAT Office + Service FCU / Community
+     Bank for an **Official Cashier's Check** → VAT Office issues the
+     **VAT Form** → back to UCG, who stamps it. The Cashier's Check *is*
+     the payment — for DEN cars, paying and the VAT process are the same
+     step.
+   - **`DE*****`** (previously USAREUR-registered, or US-spec) →
+     **Purchase Order** + **5 signed copies of the Bill of Sale**.
+   - Bill of Sale is an official **Kaufvertrag / Rechnung** either way;
+     plus Warranty Cert, Hand-Over Doc (DealerTeam Forms).
+   - Customer download→print→sign→scan→upload `MOCK` · Contract Signed `MOCK`.
+8. **Done in Germany, by a person** — all `GAP`:
+   - **`DE` path:** customer takes the 5 Bill-of-Sale copies to the **base
+     Customs Office** → gets **3–5 AE Form 550-175A** → UCG takes them to
+     the **German Zollamt** to be stamped (**not until funds are wired**).
+     Stamped copies: 2 stay with Zollamt, 3 retained (dealership / VRO /
+     customer).
+   - **`DEN` path:** UCG **stamps the VAT Form** and completes the packet.
+   - Both: **TÜV / safety inspection, UCG pays** (required for any used or
+     Germany-bought car). For EU-spec: German title book (Fahrzeugbrief) +
+     registration (Fahrzeugschein) + official **deregistration MFR** on
+     letterhead, or the USAREUR-AF Transfer Title.
 9. **The VRO packet** — the **`/vro-checklist` screen** now shows the
    customer exactly what they need `WORKS` (US/EU-spec toggle, UCG-provides
    vs you-bring, the warnings). UCG still assembles the actual **cover
@@ -70,9 +83,10 @@ sale/purchase screenshots. `GAP` steps get narrated or skipped.
      authorization if financed via a German bank.
    - **Sponsor must be present**; Title 10 → Orders for every transaction;
      can't register anything if existing registrations aren't compliant.
-   Customer carries the packet to the VRO → registration, USAREUR plates,
-   environmental sticker. Stuttgart VRO: Bldg 2930, Panzer Kaserne.
-   Ramstein/KMC and other garrisons have their own checklists — confirm
+   Customer carries the packet to the VRO → **Transfer Title documents,
+   USAREUR plates, environmental sticker**, and (separate room) their
+   **Esso gas card**. Stuttgart VRO: Bldg 2930, Panzer Kaserne. Ramstein/
+   KMC and other garrisons have their own checklists and quirks — confirm
    per location.
 10. **Delivery** — Car Ready → Picked Up (photo, Google review) `MOCK` ·
     Service Center `WORKS` · Sell It Back `MOCK` (no valuation engine) ·
