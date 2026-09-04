@@ -68,6 +68,9 @@ function AppShell({ fontsLoaded }: { fontsLoaded: boolean }) {
         <Stack.Screen name="deposit" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="warranty" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="insurance" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="add-ons" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="winter-tires" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="paint-protection" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="vro-checklist" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="service" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="wire-instructions" options={{ animation: 'slide_from_right' }} />

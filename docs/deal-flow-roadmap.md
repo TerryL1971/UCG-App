@@ -825,35 +825,43 @@ options not specified yet). That "why" matters: it's presumably what a
 salesperson would want to see, and/or what decides whether the American
 Auto Nation handoff below makes sense for this specific decline reason.
 
-## Add-on upsells: Service (winter tires), PPF — content pending
+## Add-on upsells: Service (winter tires), PPF — shipped 2026-09-04
 
 Terry described a **"Service" button on a bottom row of options, before
 a final pricing summary**, for a winter-tire upsell, plus a separate
 **PPF (paint protection film)** upsell option. Read together with the
-2-year warranty requirement just above, this sounds like one combined
-add-ons/checkout-style screen (Service/winter tires, PPF, 2-yr
-warranty, each with its own accept/decline) that sits before a final
-price total — but that's my working interpretation of the description,
-not confirmed, and **nothing is built here yet**. Deliberately not
-guessing at a screen layout blind:
+2-year warranty requirement just above, that read as one combined
+add-ons/checkout-style screen — built as `/add-ons` (`src/app/add-ons.tsx`):
+a hub for all four add-ons (PPP, American Auto Nation insurance, Winter
+Tires, PPF) with a running price total. The deposit screen now routes
+into it instead of straight to the warranty screen.
 
-- **Winter tires (the "Service" button):** Terry is getting the actual
-  flyer — waiting on that before building real content, the same way
-  the PPP warranty section above only has real numbers because the real
-  flyer was provided first.
-  - **Assumption worth naming, not treating as decided**: given
-    UCG serves customers heading to a country with genuinely cold,
-    snowy winters (unlike much of the continental US many customers are
-    coming from), a winter-tire upsell probably isn't just a nice-to-have
-    accessory pitch — it may be closer to a safety/legal-requirement
-    conversation (Germany has a winter-tire requirement in relevant
-    conditions). Worth confirming with the flyer/Terry whether that
-    framing ("recommended add-on" vs. "you may be required to have
-    these") should shape the copy, rather than assuming either way.
-- **PPF:** no details or flyer yet — waiting on that too.
-- Once both flyers exist, this becomes buildable the same way the PPP
-  section did: real terms transcribed exactly, not paraphrased or
-  invented.
+- **Winter tires:** still no flyer from Terry, so no dollar figure is
+  invented (`/winter-tires`, `src/app/winter-tires.tsx`). What DID ship:
+  the assumption below turned out right and is worth building around
+  regardless of the flyer — Germany's winter-tire requirement is a real,
+  documented traffic-law fact (StVO §2(3a), **situational**: triggered by
+  ice/snow/slush/frost/black ice, not fixed calendar dates; M+S or Alpine
+  3-peak-mountain-snowflake marked tires; ~€60 fine, more if it causes an
+  obstruction). The screen leads with that, framed as general information
+  and not legal advice, then hands off to a salesperson via WhatsApp for
+  actual pricing once the flyer exists.
+  - ~~**Assumption worth naming, not treating as decided**~~ — resolved:
+    yes, frame this as closer to a safety/legal-requirement conversation
+    than a pure accessory pitch. The original assumption below is kept
+    for the record.
+    > Given UCG serves customers heading to a country with genuinely cold,
+    > snowy winters (unlike much of the continental US many customers are
+    > coming from), a winter-tire upsell probably isn't just a nice-to-have
+    > accessory pitch — it may be closer to a safety/legal-requirement
+    > conversation.
+- **PPF:** still no flyer — `/paint-protection` (`src/app/paint-protection.tsx`)
+  has a generic, non-UCG-specific explainer of what PPF is, and hands off
+  to a salesperson via WhatsApp for pricing/coverage.
+- Once both flyers exist, replace the generic explainer content with the
+  real terms transcribed exactly, the same way the PPP section did — and
+  the "ask your salesperson" pricing line can become a real number in
+  `computeDealPricing` (src/lib/deal-documents.ts).
 
 ## If PPP is declined: American Auto Nation insurance quote
 

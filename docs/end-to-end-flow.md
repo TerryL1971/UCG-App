@@ -29,11 +29,19 @@ sale/purchase screenshots. `GAP` steps get narrated or skipped.
    deposit; the screen relabels it `WORKS`. Hold registered in DealerTeam
    `GAP` (UCG admin, manual) · salesperson assigned by management after the
    hold `MOCK`. See **[docs/purchase-paperwork.md](./purchase-paperwork.md)**.
-4. **Add-ons** (accept/decline each — these set the final price, so they
-   come before payment) — 2-Year PPP $999 `WORKS` · **American Auto Nation
-   insurance** `WORKS` (`/insurance` — offer + WhatsApp quote handoff;
-   pushed per the owners) · Winter Tire Program `GAP` (flyer pending) ·
-   PPF `GAP` (flyer pending).
+4. **Add-ons** — the `/add-ons` screen ("a Service button on a bottom row
+   of options, before a final pricing summary," per
+   docs/deal-flow-roadmap.md) `WORKS` **(shipped 2026-09-04)**: a hub for
+   all four add-ons plus a running price total (car + PPP only — nothing
+   invents a price for the other three). 2-Year PPP $999, real
+   accept/decline `WORKS` · **American Auto Nation insurance** `WORKS`
+   (`/insurance` — offer + WhatsApp quote handoff; pushed per the owners) ·
+   **Winter Tire Program** `WORKS` (`/winter-tires` — Germany's real
+   situational winter-tire law, StVO §2(3a), spelled out; pricing still
+   "ask your salesperson," flyer pending) · **PPF** `WORKS`
+   (`/paint-protection` — generic explainer; pricing still "ask your
+   salesperson," flyer pending). Deposit screen now routes into this hub
+   instead of straight to the warranty screen.
 5. **Pay for the car** — the amount is the car plus any add-ons above,
    minus the deposit. Cash: wire instructions + printable PDF `WORKS` →
    customer wires → **admin verifies funds (PIF)** `GAP`. Financing: UCG

@@ -102,9 +102,9 @@ buying anything — same app, different door.)*
 | Financing — link to real app | **Built** — links to usedcarguys.net/finance/ | — |
 | Financing — "submitted" checkbox for salesperson | **NOT built** | Backend |
 | 2-Year PPP accept/decline + reason | **Built** (2026-09-03) — `/warranty` screen, real terms, eligibility check, decline captures the "why" | — |
-| American Auto Nation insurance quote | **Planned** — WhatsApp handoff pattern; the PPP-decline flow is meant to lead here | What AAN needs beyond intake; referral terms |
-| Winter Tire Program | **NOT built** | Flyer (pending from Terry) |
-| Paint Protection Film | **NOT built** | Flyer (pending from Terry) |
+| American Auto Nation insurance quote | **Built** — `/insurance` screen, WhatsApp handoff pattern; the PPP-decline flow leads here | What AAN needs beyond intake; referral terms |
+| Winter Tire Program | **Built** (2026-09-04) — `/winter-tires` screen, Germany's real situational winter-tire law (StVO §2(3a)) | Real flyer/pricing from Terry — still "ask your salesperson" |
+| Paint Protection Film | **Built** (2026-09-04) — `/paint-protection` screen, generic explainer | Real flyer/pricing from Terry — still "ask your salesperson" |
 | Refer a Friend | **NOT built** | Backend + reward mechanism decision |
 | **Service center** (oil, repair, tires — open to *anyone*, not just buyers) | **Built** (2026-09-03) — `/service` hub, real service list, hands off to UCG's `/book/` etc.; entry points on Browse + Account | Real hours; whether `/book/` should be embedded vs. linked |
 | Sell / trade — VIN → multi-step form → quote | **Partial** — Sell It Back screen exists, no real quote engine | Real valuation source (mirror usedcarguys.net/sell-your-vehicle/ 9-step) |

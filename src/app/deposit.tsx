@@ -113,8 +113,8 @@ export default function DepositScreen() {
                 : ''}
             </Text>
             <Button
-              label="Next: Protect Your Car  →"
-              onPress={() => router.replace('/warranty')}
+              label="Next: Add-Ons  →"
+              onPress={() => router.replace('/add-ons')}
               style={styles.button}
             />
             <Button

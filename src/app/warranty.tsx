@@ -86,7 +86,7 @@ export default function WarrantyScreen() {
           ) : null}
 
           <Button label="Change My Answer" variant="secondary" style={styles.recapBtn} onPress={clearChoice} />
-          <Button label="Back to My Deal" style={styles.recapBtn} onPress={() => router.replace('/(tabs)/deal')} />
+          <Button label="Back to Add-Ons" style={styles.recapBtn} onPress={() => router.back()} />
         </View>
       </SafeAreaView>
     );

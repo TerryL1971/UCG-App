@@ -264,6 +264,10 @@ function StepDetailContent({ step, car }: { step: DealStep; car: ReturnType<type
           <DownloadIcon size={14} color={Colors.navy} />
           <Text style={styles.detailLink}>View Your Paperwork</Text>
         </Pressable>
+        <Pressable style={styles.detailLinkRow} onPress={() => router.push('/add-ons')}>
+          <DownloadIcon size={14} color={Colors.navy} />
+          <Text style={styles.detailLink}>Review Add-Ons &amp; Total</Text>
+        </Pressable>
       </View>
     );
   }
