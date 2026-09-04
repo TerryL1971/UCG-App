@@ -150,7 +150,13 @@ export async function POST(request: Request) {
     // whole route instead of degrading to the honest fallback below.
     const client = new Anthropic();
     const response = await client.messages.create({
-      model: 'claude-opus-5',
+      // Haiku 4.5, not Opus — this chat runs on a $5 API key Terry funds
+      // himself (Sept 4), so cost per turn matters. Haiku 4.5 handles this
+      // system prompt (fixed, verified UCG facts, not open-ended reasoning)
+      // comfortably at roughly 2 cents a conversation instead of Opus
+      // pricing. Revisit if replies start feeling shallow for what
+      // customers actually ask.
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 1024,
       system: SYSTEM_PROMPT + contextLine,
       messages: body.messages.map((m) => ({ role: m.role, content: m.content })),
