@@ -170,10 +170,14 @@ export function ClockIcon({ size = 20, color = '#273368', strokeWidth = 2 }: Ico
 }
 
 export function WrenchIcon({ size = 20, color = '#273368', strokeWidth = 2 }: IconProps) {
+  // The previous path (a single diagonal sliver) read as a stray pen
+  // stroke at the small sizes this actually renders at (Terry: "the
+  // service icon needs something different, it doesn't look right"). This
+  // is the standard wrench glyph — recognizable at 16-20px.
   return (
     <Svg {...base(size)}>
       <Path
-        d="M14.5 6a3.5 3.5 0 0 0 4.6 4.6l-2.1 2.1-6.6 6.6a2 2 0 0 1-2.8-2.8l6.6-6.6L14.5 6z"
+        d="M14.7 6.3a1 1 0 0 0 0 1.41l1.59 1.59a1 1 0 0 0 1.41 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"
         {...strokeProps(color, strokeWidth)}
       />
     </Svg>

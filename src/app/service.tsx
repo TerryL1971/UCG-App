@@ -7,6 +7,7 @@ import { ScreenHeader } from '@/components/ui/screen-header';
 import { whatsappChatUrl } from '@/constants/mock-data';
 import { serviceContact, serviceLinks, serviceOfferings } from '@/constants/service-center';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
+import { directionsUrl } from '@/lib/maps';
 
 /**
  * The Service Center hub. Deliberately reachable without a deal and
@@ -69,7 +70,11 @@ export default function ServiceScreen() {
           label={serviceContact.email}
           onPress={() => openUrl(`mailto:${serviceContact.email}`)}
         />
-        <ContactRow icon={<MapPinIcon size={17} color={Colors.navy} />} label={serviceContact.address} />
+        <ContactRow
+          icon={<MapPinIcon size={17} color={Colors.navy} />}
+          label={serviceContact.address}
+          onPress={() => openUrl(directionsUrl(serviceContact.address))}
+        />
       </ScrollView>
     </SafeAreaView>
   );
