@@ -96,6 +96,13 @@ export default function SellBackScreen() {
 
   useEffect(() => {
     if (lastScannedVin) {
+      // Genuinely needs an effect, not just local derived state — this
+      // also has to clear the source signal in vin-scan-context (an
+      // external system), which is the actual textbook case an effect is
+      // for. eslint-disable justified: the "avoid setState in an effect"
+      // rule can't tell this apart from the pure prop-mirroring anti-
+      // pattern it's meant to catch.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPlate(lastScannedVin);
       clearLastScannedVin();
     }

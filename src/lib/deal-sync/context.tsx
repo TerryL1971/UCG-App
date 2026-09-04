@@ -32,7 +32,7 @@ const DealSyncContext = createContext<DealSyncContextValue | null>(null);
 
 export function DealSyncProvider({ children }: { children: ReactNode }) {
   const backendRef = useRef<DealSyncBackend | null>(null);
-  if (!backendRef.current) {
+  if (backendRef.current == null) {
     backendRef.current = createDealSync();
   }
   const backend = backendRef.current;

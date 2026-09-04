@@ -247,6 +247,10 @@ export function TimelineRoad({ steps, car, viewedIndex, onStepPress, horizontal 
     progress.value = withTiming(target, { duration, easing: Easing.inOut(Easing.cubic) });
 
     if (isAtFinalStop && car) {
+      // This effect's whole job is driving the Reanimated shared values
+      // above (an external animation system) — showPhoto just has to stay
+      // in lockstep with that, not just mirror a prop, so it belongs here.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShowPhoto(true);
       morph.value = withTiming(1, { duration: 450 });
     } else {

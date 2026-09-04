@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.navyTint,
   },
   photoFallback: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
   },

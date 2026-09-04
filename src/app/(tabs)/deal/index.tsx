@@ -323,9 +323,17 @@ export default function TimelineScreen() {
   // dealSteps can change out from under this screen — "Reset Test Data"
   // resets it from the Account tab, and Expo Router keeps tab screens
   // mounted across tab switches, so this isn't just a first-render concern.
-  useEffect(() => {
+  // "Adjust state when a prop changes," computed during render (React's
+  // own recommended replacement for an effect here) instead of an effect:
+  // targetIndex is a pure function of dealSteps (the useMemo above), so
+  // tracking dealSteps itself catches every case an effect keyed on both
+  // would have, including "same targetIndex, new dealSteps reference"
+  // (e.g. re-tapping the same dev Jump-to-Step chip mid-review).
+  const [prevDealSteps, setPrevDealSteps] = useState(dealSteps);
+  if (dealSteps !== prevDealSteps) {
+    setPrevDealSteps(dealSteps);
     setViewedIndex(targetIndex);
-  }, [dealSteps, targetIndex]);
+  }
 
   // Whenever the deal actually advances a step (not just when reviewing
   // history via the back/forward arrows — that's a deliberate look-back,

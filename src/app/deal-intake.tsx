@@ -169,8 +169,14 @@ export default function DealIntakeScreen() {
   // custom overlay). Same pattern as sell-back.tsx reading lastScannedVin.
   useEffect(() => {
     if (lastCapturedLicensePhoto) {
+      // Same reasoning as sell-back.tsx's lastScannedVin handoff: this
+      // also clears an external context signal, so it's a real effect,
+      // not the "mirroring a prop into state" anti-pattern the
+      // set-state-in-effect rule is meant to catch.
+      /* eslint-disable react-hooks/set-state-in-effect */
       if (lastCapturedLicensePhoto.side === 'front') setLicensePhotoFrontUri(lastCapturedLicensePhoto.uri);
       else setLicensePhotoBackUri(lastCapturedLicensePhoto.uri);
+      /* eslint-enable react-hooks/set-state-in-effect */
       clearLastCapturedLicensePhoto();
     }
   }, [lastCapturedLicensePhoto, clearLastCapturedLicensePhoto]);

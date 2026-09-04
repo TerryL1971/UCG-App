@@ -8,6 +8,10 @@ export function useColorScheme() {
   const [hasHydrated, setHasHydrated] = useState(false);
 
   useEffect(() => {
+    // The standard client-hydration-detection idiom (this file is Expo's
+    // own template boilerplate) — there's no way to know "the client has
+    // mounted" other than an effect; that's what mount effects are for.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHasHydrated(true);
   }, []);
 
