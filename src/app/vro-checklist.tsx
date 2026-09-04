@@ -118,6 +118,12 @@ export default function VroChecklistScreen() {
           {selling ? 'form 550-175B' : 'AE 190-1'}), worded as the Stuttgart office has it.
           {base && base !== 'Stuttgart' ? ` The ${base} VRO may phrase a few things differently — your salesperson confirms the exact list for your base.` : ''}
         </Text>
+
+        {!selling && (
+          <Pressable style={styles.roadLink} onPress={() => router.push('/road-to-plates')}>
+            <Text style={styles.roadLinkText}>See the whole road to plates, step by step  →</Text>
+          </Pressable>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -231,4 +237,6 @@ const styles = StyleSheet.create({
   officeLink: { fontFamily: Fonts.bodySemibold, fontSize: 12.5, color: Colors.navy, marginTop: 4 },
 
   footNote: { fontFamily: Fonts.body, fontSize: 11, color: Colors.textFaint, lineHeight: 16 },
+  roadLink: { alignSelf: 'flex-start', paddingVertical: 2 },
+  roadLinkText: { fontFamily: Fonts.bodySemibold, fontSize: 12.5, color: Colors.red },
 });

@@ -151,6 +151,11 @@ export default function DealPaperworkScreen() {
           </>
         )}
 
+        <Pressable style={styles.roadCard} onPress={() => router.push('/road-to-plates')}>
+          <Text style={styles.roadTitle}>What happens after I pay?  →</Text>
+          <Text style={styles.roadSubtitle}>Customs, TÜV, the VAT/VRO process, and plates — in order.</Text>
+        </Pressable>
+
         <Text style={styles.footerNote}>
           These are sample documents generated from your deal details, not the binding contract — UCG signs the
           official paperwork with you directly. Questions? Message your specialist.
@@ -214,6 +219,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   docBtnPrimaryLabel: { fontFamily: Fonts.bodySemibold, fontSize: 13, color: '#fff' },
+  roadCard: {
+    backgroundColor: '#fff',
+    borderRadius: Radius.lg,
+    padding: 14,
+    marginTop: 18,
+    ...Shadow.card,
+  },
+  roadTitle: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.navy },
+  roadSubtitle: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textMuted, marginTop: 2 },
   footerNote: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textFaint, lineHeight: 18, marginTop: 22 },
   messageButton: { marginTop: 14 },
 });

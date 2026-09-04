@@ -95,6 +95,13 @@ sale/purchase screenshots. `GAP` steps get narrated or skipped.
    **Esso gas card**. Stuttgart VRO: Bldg 2930, Panzer Kaserne. Ramstein/
    KMC and other garrisons have their own checklists and quirks — confirm
    per location.
+   - **"What happens after I pay?"** — Phases 7-9 as one narrative,
+     personalized DEN vs DE: the **`/road-to-plates`** screen
+     (`src/constants/road-to-plates.ts`), linked from `/deal-paperwork` and
+     from `/vro-checklist` `WORKS` **(shipped 2026-09-04)**. Not a live
+     tracker — every step on it is still done by a person (`GAP`), so it's
+     a walk-through of what to expect and roughly the order, not a status
+     the app updates on its own.
 10. **Delivery** — Car Ready → Picked Up (photo, Google review) `MOCK` ·
     Service Center `WORKS` · Sell It Back `MOCK` (no valuation engine; but
     the "Offer Accepted" state now links to a **"Clearing Your Car" VRO

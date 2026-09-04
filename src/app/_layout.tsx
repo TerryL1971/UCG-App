@@ -72,6 +72,7 @@ function AppShell({ fontsLoaded }: { fontsLoaded: boolean }) {
         <Stack.Screen name="service" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="wire-instructions" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="deal-paperwork" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="road-to-plates" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="scan-vin" options={{ animation: 'slide_from_bottom', presentation: 'fullScreenModal' }} />
         <Stack.Screen
           name="capture-license"
