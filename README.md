@@ -1,400 +1,385 @@
-# Used Car Guys — mobile app
+<div align="center">
 
-An Expo / React Native app for [Used Car Guys](https://www.usedcarguys.net) —
-browse the lot, get matched with a specialist, track a deal from application
-to pickup, and (eventually) sell a car back — for a dealership serving US
-military stationed in Germany.
+<img src="brand/ucg-logo-full.png" alt="Used Car Guys" width="320" />
 
-## Running it
+# Used Car Guys — Mobile App
+
+**Browse the lot. Meet your specialist. Track the deal from application to plates.**
+An Expo / React Native app for [Used Car Guys](https://www.usedcarguys.net) — a dealership serving U.S. military stationed in Germany.
+
+<br />
+
+![Expo SDK](https://img.shields.io/badge/Expo_SDK-57-000020?logo=expo&logoColor=white)
+![React Native](https://img.shields.io/badge/React_Native-0.86-61DAFB?logo=react&logoColor=white)
+![React](https://img.shields.io/badge/React-19.2-149ECA?logo=react&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-6.0-3178C6?logo=typescript&logoColor=white)
+![Expo Router](https://img.shields.io/badge/Expo_Router-file--based-000020?logo=expo&logoColor=white)
+![Powered by Claude](https://img.shields.io/badge/AI_agent-Claude-D97757?logo=anthropic&logoColor=white)
+
+![Platforms](https://img.shields.io/badge/platforms-iOS_|_Android_|_Web-4630EB)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Last commit](https://img.shields.io/github/last-commit/TerryL1971/UCG-App)
+![Repo size](https://img.shields.io/github/repo-size/TerryL1971/UCG-App)
+![Languages](https://img.shields.io/github/languages/top/TerryL1971/UCG-App)
+
+</div>
+
+---
+
+## Table of Contents
+
+- [Why this app](#why-this-app)
+- [The customer journey](#the-customer-journey)
+- [Feature tour](#feature-tour)
+- [Tech stack](#tech-stack)
+- [Quick start](#quick-start)
+- [Environment variables](#environment-variables)
+- [Screen map](#screen-map)
+- [Project layout](#project-layout)
+- [Design decisions worth knowing](#design-decisions-worth-knowing)
+- [Still mocked / not wired up](#still-mocked--not-wired-up)
+- [Known gaps](#known-gaps)
+- [Roadmap](#roadmap)
+- [License](#license)
+
+---
+
+## Why this app
+
+Buying a car in the U.S. military community in Germany has moving parts a normal
+dealership app never touches — a USAREUR driver's license, a PCS timeline, DEN vs.
+DE registration, VAT forms, a Vehicle Registration Office checklist. This app walks
+a customer through the whole thing: **find a car → open a real deal → get matched
+with a specialist → track every step → drive to plates → and (eventually) sell it
+back.**
+
+The guiding principle throughout: **when something isn't wired up yet, the app says
+so honestly** rather than faking it. Every "not connected yet" message in here is
+deliberate.
+
+---
+
+## The customer journey
+
+```
+Onboarding → Browse the lot → Car detail → Start Your Deal (intake)
+     → Meet Your Specialist (AI agent) → Hold the car ($300 deposit)
+     → My Deal timeline  ──►  Documents · Financing · Contract · Road to Plates
+     → Picked up 🎉 (photo + share + Google review)
+                                             └─►  Sell It Back  (own tab)
+```
+
+Five tabs: **Browse · Saved · My Deal · Sell Back · Account.**
+
+---
+
+## Feature tour
+
+### 🚗 Live inventory, straight off the real site
+Browse and Car Detail read real cars from usedcarguys.net
+([`src/lib/ucg-inventory.ts`](src/lib/ucg-inventory.ts)). There's no public API yet, so
+this is a scraper against the public pages — it fails gracefully with a visible
+error, and [`docs/wordpress-inventory-api-spec.md`](docs/wordpress-inventory-api-spec.md)
+specs the endpoint it should become.
+
+### 📝 "Start Your Deal" — a real intake, not a straight shot to a salesperson
+There's no real deal (and no timeline) until someone knows cash vs. financed, which
+base the customer is headed to, and where they stand on a license.
+[`src/app/deal-intake.tsx`](src/app/deal-intake.tsx) gathers exactly that:
+
+<details>
+<summary><b>What the intake collects</b></summary>
+
+- A **swipeable gallery of the car's own photos** at the top — so the customer
+  doesn't lose the photos the moment they leave the detail page.
+- Name, contact (explicitly WhatsApp), and destination base — a curated list of
+  major U.S. military communities in Germany, plus free-text "Other".
+- Cash or financing, with lender / down-payment fields that appear only once
+  financing is picked.
+- **USAREUR driver's license status** — genuinely researched, not invented.
+  Primary link is [JKO](https://jko.jten.mil/) (course *USA 007*, exam *USA 007B*,
+  60-day-valid cert), the actual exam a family member can take online before a PCS.
+  The app warns that JKO's "connection is not private" browser warning is a known
+  DoD-PKI quirk and safe to continue through. Study-first secondary link points at
+  the U.S. Army's own official page. Passing score (85%+) and the arrival-day
+  checklist (printed cert, stateside license, DoD ID/CAC, $30 fee, on-site vision
+  check) are corroborated against the official Army Garrison page.
+- Already licensed? Scan **front and back** of the card straight into the app.
+- Submitting **opens WhatsApp pre-filled** with everything above. Button reads
+  "Submit for a Salesperson" — a location can have more than one, and assignment
+  is still an open question.
+
+</details>
+
+### 🤖 "Meet Your Specialist" is a real AI agent
+[`src/app/salesperson.tsx`](src/app/salesperson.tsx) is an in-app chat backed by a real
+Expo Router API route ([`src/app/api/chat+api.ts`](src/app/api/chat+api.ts)) that calls
+the Claude API (Haiku 4.5, cost-limited). The system prompt is built entirely from
+**real, verified content** — the actual USAREUR licensing process, real 1-yr / 2-yr
+warranty terms, real locations — not guesses. The Anthropic key lives only in the
+server route, never in the shipped app. No key set? The chat still works, every
+reply an honest "a specialist will follow up" fallback.
+
+### 💳 A real PayPal deposit flow
+"Hold This Car — Make a Deposit" opens [`src/app/deposit.tsx`](src/app/deposit.tsx),
+which puts a **5-day hold** on a car via real **PayPal Sandbox** checkout — server
+routes ([`create-order`](src/app/api/paypal/create-order+api.ts) /
+[`capture-order`](src/app/api/paypal/capture-order+api.ts)) create and capture a real
+Orders API order, opened in-app via `expo-web-browser` and returned by deep link.
+Going live later is a credential swap, not a rewrite. **The deposit is a flat
+$300.00 USD** — a real decision. No graceful fallback here: missing credentials fail
+with a visible error rather than walking someone into a payment they can't finish.
+
+### 🛣️ The journey timeline is a winding road, not a progress bar
+[`src/components/timeline-road.tsx`](src/components/timeline-road.tsx) — an SVG road
+curving down the screen, each step a road-sign marker (status by color:
+done / current / upcoming). Highlights:
+
+| | |
+|---|---|
+| **Back / forward review** | Step through any *already-reached* stop to review it; forward is capped at where the deal actually stands. |
+| **Who's it waiting on** | Every step shows You / UCG / the Bank — the real question this screen answers. |
+| **Persistent detail panel** | Matched → specialist card, Documents → real list, Financing → loan terms, Car Ready → photo, Picked Up → camera + share + review. |
+| **Landscape mode** | Only the My Deal tab unlocks rotation; the road reflows left-to-right on a horizontally scrolling canvas. Re-locks to portrait on unmount. |
+| **Distance-scaled animation** | Drive duration scales with distance traveled; completed road fades out behind the car and fades back in as you reverse — driven by one continuous `progress` value via `react-native-svg` + Reanimated `useAnimatedProps`. |
+
+Two earlier versions (straight-line tap-to-expand, then a first road pass) are intact
+in git history — this is still an experiment, not a settled design.
+
+### 📸 Camera & photos, done properly
+- **VIN barcode scanning** ([`scan-vin.tsx`](src/app/scan-vin.tsx), `expo-camera`) —
+  scans the Code 39 sticker instead of typing 17 characters; falls back to manual entry.
+- **Sell It Back photo grid** — open-ended (up to 15), take or pick, tap to
+  replace/remove. Matches the real 8–10+ condition-photos-per-car workflow.
+- **Auto-resize, not just compress** ([`src/lib/image.ts`](src/lib/image.ts)) — every
+  photo downscaled to 1024px on the long side before it's kept.
+- **"Picked Up" camera** — snap the customer with their car, share straight to
+  Instagram / Facebook / Messages via the native share sheet, then "Leave a Google
+  Review" opens the right one of UCG's **six** per-location Google listings.
+
+### 🔧 The stuff that happens after you pay
+Dedicated screens for the parts a normal app skips: **Your Road to Plates**
+([`road-to-plates.tsx`](src/app/road-to-plates.tsx)), **VRO Checklist** for clearing a
+car ([`vro-checklist.tsx`](src/app/vro-checklist.tsx), real USAG Stuttgart form
+550-175B), real generated PDFs (Purchase Order, Cost Estimate, Bill of Sale —
+[`deal-paperwork.tsx`](src/app/deal-paperwork.tsx)), an **Add-ons hub** with a running
+total (Winter Tires, Paint Protection, Warranty, Insurance referral), and a
+**Service Center** screen whose address opens directions.
+
+### ✅ Everything else that's actually real
+Saved cars share real state · Create Account / Log In forms with validation · Sessions
+persist (AsyncStorage) and returning users skip onboarding · Sell It Back pre-fills
+the VIN if you bought the car here · "Reset Test Data" clears account, chosen car,
+intake, timeline progress, saved cars and pending VIN scan in one tap · choosing a
+new car starts the deal fresh.
+
+---
+
+## Tech stack
+
+| Area | Choice |
+|---|---|
+| Framework | **Expo SDK 57** · React Native 0.86 · React 19.2 (React Compiler on) |
+| Routing | **Expo Router** — file-based, typed routes, `+api.ts` server routes |
+| Language | TypeScript 6 |
+| UI / motion | `react-native-reanimated` 4 · `react-native-svg` · `expo-linear-gradient` · Barlow / Barlow Condensed (brand fonts) |
+| Device | `expo-camera` · `expo-image-picker` · `expo-image-manipulator` · `expo-screen-orientation` · `expo-sharing` · `expo-print` |
+| Backend (partial) | Supabase (auth, gated on credentials) · Expo Router API routes for Claude + PayPal |
+| AI | `@anthropic-ai/sdk` — Claude Haiku 4.5, server-side only |
+| Payments | PayPal Orders API (Sandbox) |
+
+> **Why SDK 57 and not "latest":** pinned on purpose. Expo Go only ever runs one
+> SDK line, so the project either matches the published Expo Go app or device
+> testing breaks. Re-check Expo Go's supported SDK before bumping — see
+> [AGENTS.md](AGENTS.md).
+
+---
+
+## Quick start
 
 ```bash
 npm install
 npx expo start
 ```
 
-Scan the QR code with **Expo Go** (iOS/Android) on a phone on the same
-Wi-Fi. This project is pinned to **Expo SDK 54** on purpose — see
-[AGENTS.md](./AGENTS.md) for why (short version: the published Expo Go app
-only supports SDK 54 as of writing; don't bump this without checking that
-first, or device testing breaks).
+Scan the QR code with **Expo Go** (iOS / Android) on a phone on the same Wi-Fi.
 
-### Enabling server-side integrations
-
-Both of these need a `.env` file at the project root (already gitignored
-— never commit real values):
-
-```
-ANTHROPIC_API_KEY=sk-ant-...
-
-PAYPAL_CLIENT_ID=...
-PAYPAL_CLIENT_SECRET=...
-# Optional — defaults to PayPal's sandbox host. Only change this to
-# api-m.paypal.com once genuinely ready to take real payments.
-# PAYPAL_API_BASE=https://api-m.sandbox.paypal.com
+```bash
+npm run ios       # open in the iOS simulator
+npm run android   # open on an Android emulator/device
+npm run web        # run in the browser
+npm run lint       # expo lint
 ```
 
-- **`ANTHROPIC_API_KEY`** powers the "Meet Your Specialist" chat
-  (`src/app/salesperson.tsx`), read by `src/app/api/chat+api.ts`. Without
-  it, the chat still works, but every reply is an honest "isn't fully
-  connected yet, a specialist will follow up" fallback rather than a
-  real answer.
-- **`PAYPAL_CLIENT_ID` / `PAYPAL_CLIENT_SECRET`** power the deposit flow
-  (`src/app/deposit.tsx`, reached from "Hold This Car — Make a Deposit"
-  on the salesperson screen), read by `src/app/api/paypal/create-order+api.ts`
-  and `capture-order+api.ts`. Get free sandbox credentials at
-  developer.paypal.com — no live business account or verification
-  needed for sandbox. Without these set, tapping the deposit button
-  fails with a real, visible error (there's no graceful fallback for
-  this one — starting a payment with no way to complete it isn't
-  something to paper over the way an unanswered chat message can be).
+---
 
-None of these keys ever ship inside the app itself — they're only read
-by server routes (`+api.ts` files), which Expo Router excludes from the
-client bundle. Works against `npx expo start`'s dev server as-is; a real
-published app needs real hosting for these routes first — see
-[docs/backend-and-ai-agent-plan.md](./docs/backend-and-ai-agent-plan.md).
+## Environment variables
 
-## What's actually built
+Copy [`.env.example`](.env.example) → `.env` at the project root (already gitignored —
+**never commit real values**). Everything degrades gracefully except the deposit flow.
 
-- **Onboarding → Browse → Car Detail → Salesperson match → Journey timeline
-  → Documents → Sell it back** — the full flow, in the real brand
-  (navy/red, Barlow/Barlow Condensed, the real logo). Sell It Back is a
-  full tab of its own (Browse / Saved / My Deal / Sell Back / Account),
-  not buried inside Account.
-- **Live inventory.** Browse and Car Detail read real cars off
-  usedcarguys.net (`src/lib/ucg-inventory.ts`) — there's no public API for
-  this yet, so it's a scraper against the public pages. See
-  [docs/wordpress-inventory-api-spec.md](./docs/wordpress-inventory-api-spec.md)
-  for the real endpoint this should become.
-- **The chosen car carries through the flow.** Tapping "Choose This Car"
-  is tracked in-memory (`src/lib/deal-context.tsx`) so the salesperson and
-  timeline screens reference the actual car, not a placeholder.
-- **"Choose This Car" leads to a real intake, not straight to a
-  salesperson with nothing behind it.** There's no real deal — and so no
-  real timeline — until someone knows cash vs. financed, which base the
-  customer's headed to, and where they stand on a license. The new
-  **Start Your Deal** screen (`src/app/deal-intake.tsx`) gathers exactly
-  that before the salesperson-match screen, standing in for what a
-  salesperson would type into Dealer Team (Salesforce) to open a real
-  deal (`DealIntake` in `mock-data.ts`, held in-memory by
-  `src/lib/deal-intake-context.tsx`):
-  - A **swipeable gallery of the car's own photos** at the top of the
-    screen (all of `car.images`, same pattern as the detail page) — added
-    after David's first look at the app surfaced that the customer loses
-    access to the car's photos the moment they leave the detail page.
-  - Name, a way to reach them, and which US base they're headed to (a
-    curated list of major US military communities in Germany, plus a
-    free-text "Other" — the list will always be incomplete, so it doesn't
-    pretend otherwise).
-  - Cash or financing, with lender/down-payment fields that only appear
-    once financing is picked.
-  - **USAREUR driver's license status** — genuinely researched, not
-    invented, and corrected twice in one afternoon by actually checking
-    what got reported back: the original practice-test link 404'd on a
-    real device, got independently reproduced (dead site, not a typo, so
-    it's gone for good, not re-added later), and got swapped for the U.S.
-    Army's own official page. Terry then pasted that page's full text back
-    while checking the fix, which caught a second thing: it's not an
-    interactive practice test (correctly labeled as a study-first
-    secondary link now, not "Practice the Test"), but it also revealed
-    [JKO](https://jko.jten.mil/) isn't CAC-gated the way the first pass
-    assumed — non-CAC family members can get a free sponsored account —
-    so JKO ("USA 007" the course, "USA 007B" the exam, 60-day-valid
-    certification) is now the **primary** link, since it's the actual
-    exam, doable online before a PCS move, not a proxy for it. Also
-    explicitly **not** linked: two Quizlet flashcard sets Terry found
-    while double-checking — user-submitted content for a real government
-    exam that neither of us could verify (Quizlet 403's this app's own
-    fetch tooling), and Terry raised the same accuracy concern
-    independently before it was even asked — and held up again when a
-    separate AI-generated answer Terry checked repeated the same
-    unverifiable claim about one of those sets, which isn't
-    confirmation of it. One more real, reproducible finding along the
-    way: fetching a direct JKO login URL failed with the exact signature
-    of a DoD PKI certificate not being in a normal device's trust store
-    (confirmed via search as a common, well-documented experience, not
-    just this app's tooling) — so the app now warns right next to the
-    JKO button that a "connection is not private" browser warning is
-    normal there and safe to continue through, instead of letting it
-    look like a broken link. Also added, once corroborated by the
-    official Army Garrison page itself: the 85%-or-higher passing score
-    and the arrival-day checklist (printed certificate, stateside
-    license, DoD ID/CAC, $30 fee, on-site vision check). If they already
-    have a license, they scan **both the front and back** straight into
-    the app
-    (same `expo-image-picker` + `compressPhoto` pattern as Sell It Back's
-    photo grid, two slots here) instead of bringing the physical card in
-    later.
-  - Submitting **opens WhatsApp with everything above pre-filled** as a
-    message (`whatsappChatUrl(salesperson.whatsapp, message)` — the same
-    helper, now used with its optional message argument for the first
-    time). The button reads **"Submit for a Salesperson"**, not "Send to
-    My Salesperson" — a location can have more than one salesperson and
-    how that gets assigned is still an open question (see
-    [docs/deal-flow-roadmap.md](./docs/deal-flow-roadmap.md)), so the copy
-    stopped presuming a specific person before that's decided. One honest
-    limit: WhatsApp's `wa.me` links can't attach a photo automatically, so
-    the license photos stay saved in the app and the message just flags
-    that they're there — documented in-app, not silently pretended to
-    work.
-  - The salesperson-match screen shows a short confirmation once intake
-    was submitted ("Marcus already has what you sent — Ramstein / KMC,
-    financing...") instead of acting like the two screens don't know about
-    each other.
-  - **What this doesn't do yet, on purpose:** it doesn't change
-    `dealSteps`/the timeline itself — that's still the same
-    further-along-than-day-one mock it always was. Gating the *actual*
-    timeline on this intake (starting a brand-new deal at step zero, etc.)
-    is a real next step, not done here — the user asked to leave the
-    timeline alone for now while this got built. What comes *after* this
-    screen — a deposit/hold step, a warranty upsell, an insurance
-    referral, and more — is written up, not built yet, in
-    [docs/deal-flow-roadmap.md](./docs/deal-flow-roadmap.md).
-- **Book a real Pre-Buy Inspection — on Sell It Back, after an offer is
-  accepted, not on the car detail screen.** First built in the wrong
-  place (buying *from* UCG) and corrected once flagged: a pre-buy
-  inspection is UCG inspecting a car it's about to buy *from a
-  customer*, so it lives in Sell It Back, gated behind a real
-  submit → "awaiting your accept" → "offer accepted" flow (no fake
-  dollar figure shown, since there's no real pricing backend — an
-  honest "I've Accepted My Offer" step stands in for that until one
-  exists). Opens UCG's actual Microsoft Bookings calendar for
-  Ramstein/KMC (`ucgLocations[].bookingUrl` in `mock-data.ts`); the
-  other five locations' links, and a way to know which lot a car is
-  actually at, are both still needed (see
-  [docs/deal-flow-roadmap.md](./docs/deal-flow-roadmap.md)).
-- **Choosing a new car starts fresh, and test data is one tap to clear.**
-  A previous car's deal-intake submission no longer lingers once a
-  different car is chosen. The Account tab also has a **Reset Test
-  Data** action that clears the account, chosen car, deal-intake, the
-  **My Deal timeline's progress**, saved cars, and any pending VIN scan
-  in one confirmed tap — resetting the timeline was added after testing
-  showed a reset that left `dealSteps` untouched didn't feel like a real
-  reset at all (`src/lib/deal-steps-context.tsx`; the further-along
-  demo default on first launch is unchanged, only a reset moves it back
-  to a genuinely fresh, just-matched deal).
-- **"Meet Your Specialist" is a real AI agent, not a WhatsApp handoff to
-  a human.** Submitting the deal-intake form no longer opens WhatsApp —
-  it lands on an in-app chat window
-  (`src/app/salesperson.tsx`) backed by a real server route
-  (`src/app/api/chat+api.ts`, an Expo Router API route) that calls the
-  Claude API. The Anthropic API key lives only in that server route's
-  environment, never inside the shipped app — same rule already applied
-  to DealerTeam credentials. The agent's system prompt is built entirely
-  from real, verified content gathered this session (the actual USAREUR
-  licensing process, the real 1-yr/2-yr warranty terms, real locations)
-  rather than left to guess at UCG-specific facts. **No "Talk to a
-  Human" fallback right now** — removed Sept 2 on Terry's call, since
-  `salesperson.whatsapp` is still the fake placeholder number and a
-  button pointing at nobody is worse than no button; the system prompt
-  was updated to have the agent say a specialist will follow up instead
-  of directing to a nonexistent link. Re-add once UCG's real WhatsApp
-  Business number exists. Works today against `npx expo start`'s dev
-  server (see
-  "Enabling server-side integrations" above); a real published app needs
-  real hosting for this route — this is
-  [docs/backend-and-ai-agent-plan.md](./docs/backend-and-ai-agent-plan.md)'s
-  Tier 1 agent, now actually built rather than only planned.
-- **A real PayPal deposit flow.** "Hold This Car — Make a Deposit" on the
-  salesperson screen opens `src/app/deposit.tsx`, which puts a 5-day hold
-  on a car via real PayPal Sandbox checkout — server routes
-  (`src/app/api/paypal/create-order+api.ts` / `capture-order+api.ts`,
-  sharing `src/lib/paypal-server.ts`) create and capture a real Orders
-  API order, opened in-app via `expo-web-browser`'s
-  `openAuthSessionAsync` and returned via a deep link (no PayPal native
-  SDK — those need a custom dev client, which would break testing via
-  plain Expo Go). Per
-  [docs/backend-and-ai-agent-plan.md](./docs/backend-and-ai-agent-plan.md)'s
-  "Strategy" section: this uses PayPal's own Sandbox rather than a
-  homemade fake, so going live later is a credential swap
-  (`PAYPAL_API_BASE` + real keys), not a rewrite. **The deposit is a
-  flat $300.00 USD**, a real decision (not a placeholder) — see
-  `deposit.tsx`'s own comment and
-  [docs/deal-flow-roadmap.md](./docs/deal-flow-roadmap.md). Unlike the
-  AI agent, there's no graceful "not connected" fallback if
-  `PAYPAL_CLIENT_ID`/`SECRET` are missing — it fails with a visible
-  error instead, since silently accepting a customer into a payment flow
-  with no way to complete it would be worse than an honest error.
-- **The journey timeline is a winding road with signs, not a straight
-  line** (`src/components/timeline-road.tsx`) — an SVG road curving side
-  to side down the screen, each step a small road-sign marker (one
-  consistent shape, status shown by color — done/current/upcoming) rather
-  than seven different novelty signs, which would've gotten visually
-  noisy at phone size. A car icon marks whichever step is currently being
-  viewed and crossfades into the customer's actual car photo when that's
-  the final stop. **The car's position and the detail panel are driven by
-  the same `viewedIndex`, not just a one-way reveal** — a back/forward
-  control bar above the road (`reviewBar` in `deal/index.tsx`) lets you
-  step through any *already-reached* step to review it; forward is capped
-  at wherever the deal actually stands, so you can look back at history
-  but can't drive into a future that hasn't happened yet. Whatever step
-  is being viewed shows in a persistent panel above the road (not a modal
-  you have to open) — Matched shows the salesperson's contact card,
-  Documents the real document list, Financing the loan terms, Contract a
-  signed confirmation, Car Ready the photo card, Picked Up the
-  camera+share+review actions. Every step also shows **who it's waiting
-  on** — You / UCG / the Bank (`waitingOn` on each step in
-  `mock-data.ts`) — meant to answer the actual question this screen
-  exists for: what's blocking the deal, and whose job is it to unblock it.
-  **This replaced a straight-line, tap-to-expand-inline version of the
-  same screen**, then that first road version replaced *itself* once
-  (dots → signs, modal → persistent panel, one-way reveal → back/forward)
-  after the first pass turned out to hide the pickup camera/review
-  buttons behind a tap, which was a real regression, not just a style
-  question. Both earlier versions are intact in git history if this one
-  doesn't work out either — this is genuinely still an experiment, not
-  a settled design.
-- **The road can go landscape.** Only the My Deal tab unlocks rotation
-  (`expo-screen-orientation` — unlocked on this screen's mount, re-locked
-  to portrait on unmount so leaving the tab doesn't unlock rotation
-  elsewhere in the app; every other screen stays portrait-only). Turn the
-  phone sideways and the road reflows to run left-to-right across a
-  horizontally-scrolling canvas instead of top-to-bottom — same
-  waypoint/curve math, axes swapped (`horizontal` prop on `TimelineRoad`).
-  Fixed a real bug found on first use: the screen's `SafeAreaView` only
-  reserved the `top` edge, which is fine in portrait but wrong in
-  landscape — the notch/dynamic island moves to a *side* edge when
-  rotated, so `top`-only was leaving that side completely unprotected.
-  Now reserves `top`, `left`, and `right`.
-- **The road drives slower, and completed road fades away behind you as
-  you go** — a real animation redesign, not just a speed tweak. Duration
-  now scales with distance traveled (a full drive feels like a real trip,
-  a single back/forward step still feels snappy) instead of a fixed
-  650ms. Each road segment and its sign fade out together once the car
-  has driven a step past them, and fade back in as the car retreats —
-  driven by the same continuous `progress` value that positions the car,
-  so pressing Back doesn't just move the car backward, it un-fades the
-  road behind it step by step. Segments are individually animatable via
-  `react-native-svg`'s `Animated.createAnimatedComponent(G)` +
-  Reanimated's `useAnimatedProps` (the SVG-specific pattern — plain
-  `useAnimatedStyle` doesn't drive SVG props the way it drives RN View
-  styles). This fades the road to transparent rather than truly tucking
-  it behind the header/detail-panel chrome via z-index — a lighter-weight
-  version of "disappears" that reads the same but doesn't require
-  restructuring the screen into overlapping layers.
-- **A real camera button on "Picked Up"** — snap a photo of the customer
-  with their car and share it straight to whatever app you want
-  (Instagram, Facebook, Messages…) via the native share sheet
-  (`expo-sharing`), meant for posting to UCG's social pages. Next to it,
-  a "Leave a Google Review" button opens a picker for UCG's six real
-  locations (Ramstein, Kaiserslautern, Stuttgart, Spangdahlem,
-  Grafenwoehr, Wiesbaden — `ucgLocations` in `mock-data.ts`) and opens
-  that location's actual Google Business listing — UCG turns out to have
-  a separate Google listing per lot, not one shared listing, so picking
-  the right one matters. See the comment on `ucgLocations` for how these
-  were found and verified (and for a real mistake this caught: an earlier
-  version hardcoded a single review link that turned out to be a stale,
-  unrelated identifier once actually checked against the real listings).
-  Both this and the timeline's pinned-bar Call/Text touchpoint now go
-  through **WhatsApp** (`whatsappChatUrl` in `mock-data.ts`), not the
-  native phone/SMS apps. One honest limit: WhatsApp doesn't publish a way
-  to auto-dial a voice call the way `tel:` does, so "Call" opens the
-  WhatsApp chat too (one tap from the real call button inside WhatsApp)
-  rather than faking a one-tap call that wouldn't actually work. (The
-  salesperson-match screen itself no longer has Call/Text buttons — see
-  the AI agent bullet below for what replaced them.)
-- **Saving a car actually saves it.** The heart button on a car card and
-  the Saved tab share real state (`src/lib/saved-context.tsx`), not just a
-  per-card toggle that went nowhere.
-- **Real Create Account / Log In screens** (`src/app/create-account.tsx`,
-  `src/app/log-in.tsx`) — actual forms with validation, not a dead bypass.
-  "Browse without an account" still skips straight in, on purpose.
-- **Sell It Back knows if you bought the car from us.** If the car you're
-  selling back is the one you chose earlier in the app, the form recognizes
-  it and pre-fills the VIN (`src/app/(tabs)/sell-back.tsx`, reads
-  `deal-context`). If not, it's just a normal blank form — works either way.
-- **VIN barcode scanning** (`src/app/scan-vin.tsx`, `expo-camera`) — scans
-  the Code 39 barcode on a VIN sticker instead of making someone type all
-  17 characters. Falls back to manual entry if camera permission is denied
-  or scanning doesn't work out.
-- **Real photo attach on Sell It Back** (`expo-image-picker`) — an open-
-  ended grid, not a fixed count: take a photo or choose from the library,
-  tap the **+** tile to keep adding (up to 15 — a soft ceiling, not a
-  realistic limit), tap an existing photo for Replace/Remove. Matches the
-  actual dealership workflow of 8-10+ condition photos per car.
-- **Photos are auto-resized, not just compressed** (`src/lib/image.ts`,
-  `expo-image-manipulator`) — every photo is downscaled to 1024px on the
-  long side before it's kept, since a phone camera photo can be several MB
-  at full resolution and that adds up fast across a batch. Resizing the
-  actual dimensions is what shrinks file size; JPEG quality alone on a
-  huge image doesn't.
+| Variable | Powers | Without it |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | AI specialist chat ([`chat+api.ts`](src/app/api/chat+api.ts)) | Chat still works; every reply is an honest "a specialist will follow up" fallback |
+| `PAYPAL_CLIENT_ID` / `PAYPAL_CLIENT_SECRET` | Deposit flow ([`deposit.tsx`](src/app/deposit.tsx)) | Deposit button fails with a **visible error** — no graceful fallback, by design |
+| `PAYPAL_API_BASE` | *(optional)* PayPal host | Defaults to Sandbox. Only set to `api-m.paypal.com` when genuinely ready for real money |
+| `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Real Supabase auth ([`supabase.ts`](src/lib/supabase.ts)) | Auth stays in local on-device stand-in mode |
 
-- **Staying logged in.** Sessions persist (AsyncStorage) — closing and
-  reopening the app remembers you, and returning logged-in users skip
-  onboarding entirely instead of re-typing their info every time.
+> Keys never ship inside the app — they're read only by `+api.ts` server routes,
+> which Expo Router excludes from the client bundle. Works against `npx expo start`'s
+> dev server as-is; a published app needs real hosting for those routes first — see
+> [`docs/backend-and-ai-agent-plan.md`](docs/backend-and-ai-agent-plan.md).
 
-## What's still mocked / not wired up
+---
 
-- **Auth is a stand-in** (`src/lib/auth-context.tsx`) — the forms validate
-  properly and the app genuinely tracks a logged-in user (shows their real
-  name/email on the Account tab, supports logging out) across app restarts,
-  but signing up or logging in accepts anything well-formed. There's no
-  real backend, no password check, no server-issued token — just a name
-  and email saved locally.
-- **Salesperson assignment** is a hardcoded person (`src/constants/mock-data.ts`)
-  — this is the piece that needs the Salesforce Dealer Team API. **The
-  WhatsApp number attached to that person is a placeholder that reaches
-  no one** (`491700000000` — has been fake since this file's first
-  version). It briefly became consequential when the AI agent's
-  "Talk to a Human" fallback pointed at it — that fallback was removed
-  Sept 2 for exactly this reason, so nothing in the app links to this
-  number right now, but it still needs UCG's real WhatsApp Business
-  number before that (or anything else using this constant) gets
-  re-added. DealerTeam
-  turns out to be a real, Salesforce-native DMS/CRM (confirmed, not
-  assumed — see
-  [docs/salesforce-dealerteam-integration-plan.md](./docs/salesforce-dealerteam-integration-plan.md)
-  for the architecture plan: REST API + Connected App for writes, Change
-  Data Capture + Streaming/Pub-Sub API for real-time reads, a backend
-  proxy either way since Salesforce credentials can't live in the app).
-  The new deal-intake screen (below) is Phase 0 of that plan — it gathers
-  real structured info but still hands it off by WhatsApp message, not an
-  API call, since none of the above exists yet.
-- **Deal progress** (application submitted, financing approved, etc.) and
-  **documents** are also mock data — pending whatever system actually
-  tracks financing status. It's deliberately set further along than a
-  brand-new deal (`dealSteps` in `mock-data.ts`, "Picked Up" as the
-  current step) so the Car Ready photo and pickup camera are visible by
-  default instead of requiring someone to hand-edit the file to see them.
-- **The salesperson's photo** is an illustrated placeholder
-  (`src/components/salesperson-avatar.tsx`) — the plan is admin-uploaded
-  real photos, with the illustration as a fallback when none is set.
-- **Document upload** (on the Documents tab) still shows an honest "not
-  connected yet" message — no file storage backend exists for it yet.
-  Photo attach on Sell It Back is real now (see above); documents aren't.
+## Screen map
+
+<details>
+<summary><b>All screens (Expo Router — <code>src/app/</code>)</b></summary>
+
+| Route | Purpose |
+|---|---|
+| `index.tsx` | Onboarding |
+| `(tabs)/index.tsx` | Browse the lot |
+| `(tabs)/saved.tsx` | Saved cars |
+| `(tabs)/deal/index.tsx` | My Deal timeline (the winding road) |
+| `(tabs)/deal/documents.tsx` | Deal documents |
+| `(tabs)/sell-back.tsx` | Sell It Back |
+| `(tabs)/account.tsx` | Account + Reset Test Data |
+| `car/[id].tsx` | Car detail |
+| `deal-intake.tsx` | Start Your Deal |
+| `capture-license.tsx` | Scan USAREUR license front/back |
+| `scan-vin.tsx` | VIN barcode scanner |
+| `salesperson.tsx` | Meet Your Specialist (AI chat) |
+| `deposit.tsx` | $300 PayPal hold |
+| `deal-paperwork.tsx` | Generated PDFs — Purchase Order / Cost Estimate / Bill of Sale |
+| `wire-instructions.tsx` | Cash-wire payment instructions |
+| `road-to-plates.tsx` | What happens after you pay |
+| `vro-checklist.tsx` | Clearing your car (form 550-175B) |
+| `add-ons.tsx` | Add-ons hub + running total |
+| `warranty.tsx` · `winter-tires.tsx` · `paint-protection.tsx` · `insurance.tsx` | Individual add-on screens |
+| `service.tsx` | Service Center |
+| `create-account.tsx` · `log-in.tsx` | Auth forms |
+| `api/chat+api.ts` | Claude chat server route |
+| `api/paypal/*+api.ts` | PayPal create / capture order |
+
+</details>
+
+---
 
 ## Project layout
 
 ```
 src/
-  app/           Screens (Expo Router — file-based routing)
-  components/    Shared UI (buttons, chips, icons, car card, avatar, timeline dot)
-  constants/     Theme (brand colors/fonts) + remaining mock data
-  lib/           Live inventory scraper, deal/saved/auth/vin-scan contexts
-brand/           Source logo files + extracted brand colors
-design-mockup/   The original Claude Design canvas this app was built from
-docs/            Specs/plans for integrations we're waiting on (WordPress
-                 inventory API, Salesforce DealerTeam sync), the deal-flow
-                 roadmap (deposit, warranty, referrals, DEN/VAT, more), the
-                 real-backend + management-dashboard + AI-agent plan, and
-                 Germany/EU legal research + draft Privacy Policy/Impressum
-                 (none of it legal advice — starting points for counsel)
+  app/            Screens (Expo Router file-based routing) + api/ server routes
+  components/     Shared UI — buttons, chips, fields, car card, avatar,
+                  timeline-dot, timeline-road (the SVG road), animated splash
+  constants/      Theme (brand colors/fonts) + mock data + AI prompt + checklists
+  lib/            Live inventory scraper; deal / saved / auth / intake / docs /
+                  license / warranty / vin-scan contexts; image resize; maps;
+                  paypal-server; supabase; deal-sync/ (Salesforce adapter seam)
+  hooks/          use-color-scheme
+
+brand/            Source logo files + extracted brand colors
+design-mockup/    The original Claude Design canvas this app was built from
+assets/           App icons, splash, favicon
+docs/             Specs & plans for integrations we're waiting on:
+                  · wordpress-inventory-api-spec       · salesforce-dealerteam-integration-plan
+                  · backend-and-ai-agent-plan          · deal-flow-roadmap
+                  · end-to-end-flow · product-vision   · pre-launch-checklist
+                  · vro-checklists · purchase-paperwork
+                  · legal-considerations-germany + draft privacy-policy / impressum
+                    (not legal advice — starting points for counsel)
 ```
 
-## Known gaps worth knowing about
+---
 
-- The inventory scraper is inherently fragile — it reads the site's current
-  HTML structure directly, so a redesign of usedcarguys.net will break it.
-  It fails gracefully (shows an error, doesn't crash) but won't self-heal.
-- Deal state (`deal-context.tsx`) is in-memory only — closing the app loses
-  it. That's fine for now; it should move to a real backend once accounts
-  exist.
-- **The timeline road (`timeline-road.tsx`) still hasn't been fully
-  checked on a real device** — landscape mode surfaced one real bug
-  already (the safe-area edges fix above), which is exactly the kind of
-  thing that only shows up on an actual device, not in a bundler check.
-  The newer per-segment fade animation (SVG `G` + `useAnimatedProps`) is
-  a pattern that's easy to get subtly wrong in ways TypeScript/Metro
-  can't catch — worth specifically confirming the fade actually animates
-  smoothly (not just cuts on/off) before treating it as final. Still a
-  clean revert if any of this doesn't land — see the note above.
+## Design decisions worth knowing
+
+<details>
+<summary><b>The chosen car carries through the whole flow</b></summary>
+
+Tapping "Choose This Car" is tracked in-memory ([`src/lib/deal-context.tsx`](src/lib/deal-context.tsx))
+so the salesperson and timeline screens reference the actual car, not a placeholder.
+Choosing a *different* car resets everything that car determines.
+</details>
+
+<details>
+<summary><b>Pre-Buy Inspection lives in Sell It Back, not car detail</b></summary>
+
+A pre-buy inspection is UCG inspecting a car it's about to buy *from a customer* — so
+it's gated behind a real submit → "awaiting your accept" → "offer accepted" flow in
+Sell It Back. No fake dollar figure (there's no pricing backend). Opens UCG's actual
+Microsoft Bookings calendar for Ramstein/KMC.
+</details>
+
+<details>
+<summary><b>Everything routes through WhatsApp, not tel: / sms:</b></summary>
+
+`whatsappChatUrl` in `mock-data.ts`. One honest limit: WhatsApp has no auto-dial, so
+"Call" opens the chat (one tap from the real call button inside WhatsApp) rather than
+faking a one-tap call. `wa.me` links can't auto-attach photos, so license photos stay
+in the app and the message just flags that they exist.
+</details>
+
+<details>
+<summary><b>The deal-sync seam</b></summary>
+
+[`src/lib/deal-sync/`](src/lib/deal-sync/) already has the adapter shape for a real
+Salesforce **DealerTeam** DMS/CRM (`mock-deal-sync` today, `salesforce-deal-sync`
+stubbed) — REST + Connected App for writes, Change Data Capture / Pub-Sub for
+real-time reads, a backend proxy either way. See
+[`docs/salesforce-dealerteam-integration-plan.md`](docs/salesforce-dealerteam-integration-plan.md).
+</details>
+
+---
+
+## Still mocked / not wired up
+
+| Area | Status |
+|---|---|
+| **Auth** | Forms validate and the app tracks a logged-in user across restarts, but sign-up / log-in accepts anything well-formed. No server, no password check, no token. Supabase path exists, gated on credentials. |
+| **Salesperson assignment** | Hardcoded person in `mock-data.ts`. **The attached WhatsApp number (`491700000000`) is a placeholder that reaches no one.** Needs the DealerTeam API. |
+| **Deal progress & documents** | Mock data — deliberately set further along than day one so the Car Ready photo and pickup camera are visible by default. |
+| **Salesperson photo** | Illustrated placeholder ([`salesperson-avatar.tsx`](src/components/salesperson-avatar.tsx)); plan is admin-uploaded real photos with this as fallback. |
+| **Document upload** | Honest "not connected yet" — no file-storage backend yet. (Photo attach on Sell It Back *is* real.) |
+
+---
+
+## Known gaps
+
+- **The inventory scraper is inherently fragile** — it reads the site's current HTML,
+  so a redesign of usedcarguys.net breaks it. Fails gracefully, doesn't self-heal.
+- **Deal state is in-memory only** — closing the app loses it. Should move to a real
+  backend once accounts exist.
+- **The timeline road hasn't been fully checked on a real device.** Landscape mode
+  already surfaced one real bug (safe-area side edges). The per-segment SVG fade
+  animation is easy to get subtly wrong in ways TypeScript / Metro can't catch —
+  worth confirming it animates smoothly before treating it as final. Clean revert
+  available in git history.
+
+---
+
+## Roadmap
+
+Written up in [`docs/deal-flow-roadmap.md`](docs/deal-flow-roadmap.md) and
+[`docs/backend-and-ai-agent-plan.md`](docs/backend-and-ai-agent-plan.md):
+
+- [ ] Real WordPress inventory API (retire the scraper)
+- [ ] Salesforce DealerTeam sync — writes + real-time deal status
+- [ ] Real backend for auth, deal state, and document storage (Supabase)
+- [ ] Gate the actual timeline on the deal-intake (start a brand-new deal at step zero)
+- [ ] Real WhatsApp Business number → re-add "Talk to a Human"
+- [ ] Per-location Microsoft Bookings links + knowing which lot a car is on
+- [ ] Hosting for the `+api.ts` routes → publishable app
+- [ ] Management dashboard + Tier-2 AI agent
+
+---
+
+## License
+
+[MIT](LICENSE).
+
+<div align="center">
+<sub>Built with Expo · Designed for the U.S. military community in Germany 🇺🇸🇩🇪</sub>
+</div>
