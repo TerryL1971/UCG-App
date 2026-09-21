@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { DocumentIcon, IdCardIcon, MapPinIcon, PlusIcon, ShieldIcon } from '@/components/icons';
+import { IdCardIcon, MapPinIcon, PlusIcon } from '@/components/icons';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { StatusChip } from '@/components/ui/chip';
 import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
@@ -14,19 +14,17 @@ import { useDealDocuments, type DocumentState } from '@/lib/documents-context';
 import { compressPhoto } from '@/lib/image';
 import { useLicenseCapture, type LicenseSide } from '@/lib/license-capture-context';
 
-/** The one document this screen gives its own real camera to, instead of
- * the generic "+ Add Page" prompt every other document uses — a license
- * has a fixed shape a plain OS camera can't show a guide for (Terry:
- * "should have a see through box to line up the driver's license").
- * Reuses capture-license.tsx, the same overlay-camera screen deal-intake.tsx
- * already has for this exact purpose. */
+/** The only document on this screen now (Terry, 2026-09-21 — Proof of
+ * Insurance, Orders, and Proof of Residence were never UCG's to collect;
+ * see mock-data.ts's dealDocuments comment). It gets its own real camera
+ * instead of the generic "+ Add Page" prompt: a license has a fixed shape
+ * a plain OS camera can't show a guide for (Terry: "should have a see
+ * through box to line up the driver's license"). Reuses capture-license.tsx,
+ * the same overlay-camera screen deal-intake.tsx already has for this. */
 const LICENSE_DOC_ID = 'license';
 
 const iconFor: Record<DealDocument['icon'], (color: string) => React.ReactNode> = {
   id: (c) => <IdCardIcon color={c} />,
-  insurance: (c) => <ShieldIcon color={c} />,
-  income: (c) => <DocumentIcon color={c} />,
-  residence: (c) => <MapPinIcon color={c} />,
 };
 
 const statusLabel: Record<DealDocument['status'], string> = {
@@ -209,7 +207,7 @@ export default function DocumentsScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <View style={styles.headerWrap}>
-        <ScreenHeader title="Documents" subtitle="For your financing application" />
+        <ScreenHeader title="Documents" subtitle="Your driver's license, on file with UCG" />
       </View>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.list}>
@@ -224,8 +222,9 @@ export default function DocumentsScreen() {
           />
         ))}
         <Text style={styles.hint}>
-          Add as many pages as a document needs — insurance and orders often run more than one page. Your UCG
-          team is notified the moment a document&apos;s ready for review.
+          Proof of Insurance, Orders, and Proof of Residence aren&apos;t something UCG collects — you bring those
+          yourself to the Vehicle Registration Office (see your VRO packet below). Your UCG team is notified the
+          moment your license is ready for review.
         </Text>
 
         <Pressable style={styles.vroCard} onPress={() => router.push('/vro-checklist')}>

@@ -9,7 +9,6 @@ import { ArrowLeftIcon, DrivetrainIcon, FuelIcon, GaugeIcon, HeartIcon, Transmis
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { useDeal } from '@/lib/deal-context';
 import { useDealIntake } from '@/lib/deal-intake-context';
-import { useDealDocuments } from '@/lib/documents-context';
 import { useDealSync } from '@/lib/deal-sync';
 import { useSaved } from '@/lib/saved-context';
 import { fetchInventoryDetail, type InventoryDetail } from '@/lib/ucg-inventory';
@@ -22,7 +21,6 @@ export default function CarDetailScreen() {
   const { car: currentCar, chooseCar } = useDeal();
   const { demoteIntakeToDraft } = useDealIntake();
   const { clearChoice: clearWarrantyChoice } = useWarranty();
-  const { resetDocument } = useDealDocuments();
   const { reset: resetDealSync } = useDealSync();
   const { isSaved, toggleSaved } = useSaved();
   const [car, setCar] = useState<InventoryDetail | null>(null);
@@ -67,12 +65,14 @@ export default function CarDetailScreen() {
   // switching to a different one part-way through a deal isn't just
   // "update the car," it invalidates work already done for the old one
   // (Terry, 2026-09-05): a 2-Year PPP decision made for a 2019 sedan means
-  // nothing for a 2025 EV (different eligibility, different price), the
-  // 7-step timeline and any financing terms were built around the old
-  // car's numbers, and Proof of Insurance is issued against a specific
-  // vehicle in Germany, not the person. Driver's License, Orders, and
-  // Proof of Residence stay untouched — those are about the customer, same
-  // reasoning `demoteIntakeToDraft` already applies to the rest of intake.
+  // nothing for a 2025 EV (different eligibility, different price), and
+  // the 7-step timeline and any financing terms were built around the old
+  // car's numbers. Driver's License stays untouched — it's about the
+  // customer, not the car, same reasoning `demoteIntakeToDraft` already
+  // applies to the rest of intake. (Proof of Insurance used to be reset
+  // here too, back when this screen tracked it as a document to scan —
+  // it never actually belonged to UCG's app at all, see mock-data.ts's
+  // dealDocuments comment, so there's nothing car-specific left to reset.)
   //
   // `needsReset` also has to be true the very FIRST time anyone chooses a
   // car (`currentCar` is null), not just on an actual switch — deal-sync's
@@ -92,7 +92,6 @@ export default function CarDetailScreen() {
     chooseCar(car);
     if (shouldReset) {
       clearWarrantyChoice();
-      resetDocument('insurance');
       resetDealSync();
     }
     router.push('/deal-intake');
@@ -107,10 +106,9 @@ export default function CarDetailScreen() {
       'Switch to this car?',
       `You already have the ${currentCar!.year} ${currentCar!.title} in progress. Switching to the ${car.year} ${
         car.title
-      } resets your 2-Year Protection Plan choice, Proof of Insurance, and deal timeline for the new car — your ` +
-        `Driver's License, Orders, and Proof of Residence stay as they are. If you already paid a deposit or ` +
-        `reservation fee on the other car, message your specialist about transferring or refunding it — that part ` +
-        `isn't something this app can do on its own.`,
+      } resets your 2-Year Protection Plan choice and deal timeline for the new car — your Driver's License stays ` +
+        `as it is. If you already paid a deposit or reservation fee on the other car, message your specialist ` +
+        `about transferring or refunding it — that part isn't something this app can do on its own.`,
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Switch Cars', style: 'destructive', onPress: () => proceedWithThisCar(true) },

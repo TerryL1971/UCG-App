@@ -5,9 +5,9 @@ import { dealDocuments, type DealDocument } from '@/constants/mock-data';
 /** `uris` holds every locally-captured page for this document, in order —
  * real capture via expo-image-picker/expo-camera (deal/documents.tsx),
  * still no real file storage backend. Plural and an array (not a single
- * `uri`) since Terry asked for "1-x pages" per document (Sept 2): Proof of
- * Insurance, Orders, and Proof of Residence can each run multiple pages,
- * not just one photo. */
+ * `uri`), matching the "1-x pages" flow Terry originally asked for (Sept
+ * 2) for whatever document needs it — today that's just the license
+ * (front + back), but the shape doesn't assume a fixed count. */
 export type DocumentState = DealDocument & { uris: string[] };
 
 /**
@@ -22,20 +22,13 @@ export type DocumentState = DealDocument & { uris: string[] };
  */
 interface DealDocumentsContextValue {
   documents: DocumentState[];
-  /** Appends one more page to a document (the "1-x pages" flow — Insurance,
-   * Orders, and Proof of Residence can be more than a single photo). */
+  /** Appends one more page to a document (the "1-x pages" flow — front
+   * and back of a license, or anything else that ever needs more than
+   * one photo). */
   addDocumentPage: (id: string, uri: string) => void;
   /** Drops one page by index — lets a customer remove a bad page without
    * losing the rest of an already multi-page upload. */
   removeDocumentPage: (id: string, pageIndex: number) => void;
-  /** Puts one document back to "needed" with no pages — for the ONE
-   * document that's actually tied to the car, not the person: Proof of
-   * Insurance (a German policy's Deckungskarte/eVB is issued against a
-   * specific vehicle). Called when the customer switches cars — see
-   * car/[id].tsx. Driver's License, Orders, and Proof of Residence are
-   * deliberately untouched by this; they're about the customer, not the
-   * car, same reasoning as `demoteIntakeToDraft` in deal-intake-context. */
-  resetDocument: (id: string) => void;
   resetDocuments: () => void;
 }
 
@@ -82,8 +75,6 @@ export function DealDocumentsProvider({ children }: { children: ReactNode }) {
             return { ...d, uris, status: uris.length === 0 ? 'needed' : 'uploaded' };
           }),
         ),
-      resetDocument: (id: string) =>
-        setDocuments((docs) => docs.map((d) => (d.id === id ? { ...d, status: 'needed', uris: [] } : d))),
       resetDocuments: () => setDocuments(withNoPages()),
     }),
     [documents],

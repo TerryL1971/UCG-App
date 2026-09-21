@@ -185,25 +185,26 @@ export interface DealDocument {
   id: string;
   name: string;
   status: DocumentStatus;
-  icon: 'id' | 'insurance' | 'income' | 'residence';
+  icon: 'id';
 }
 
-// All approved — consistent with dealSteps' "documents" step being marked
-// done above. (These previously stayed partly "Needed" even once the
-// timeline claimed the step was complete, which contradicted itself the
-// moment someone actually looked at the document list.)
-//
-// "Orders" (Sept 2, Terry): renamed from "Proof of Income" — this is a
-// dealership for US military in Germany, so what's actually needed is
-// PCS/deployment orders, not a civilian pay-stub-style income proof.
-// Kept the internal `id`/`icon` as 'income' on purpose (touches
-// iconFor/statusLabel lookups elsewhere) — only the customer-facing
-// `name` changed.
+// Used to be four documents (License, Proof of Insurance, Orders, Proof
+// of Residence) — cut down to just the license (Terry, 2026-09-21):
+// Insurance and Orders were never UCG's to collect in the first place —
+// docs/vro-checklists.md's own "who provides what" split already had
+// both on the customer-carries-to-the-VRO-in-person side, not UCG's,
+// and Proof of Residence never matched a real VRO line item at all.
+// None of the three would even serve the VRO if scanned — the office
+// wants the physical original (Proof of Insurance specifically requires
+// the policy holder in person), not a photo in this app. Driver's
+// License is the one real thing UCG itself has a reason to hold on file.
+// `status` here is nominal only — documents-context.tsx's withNoPages()
+// always starts every document at 'needed' regardless of what's seeded
+// here (no real file yet means needed, full stop; see that file's own
+// comment). Kept as 'needed' rather than 'approved' so this doesn't read
+// as a status that's actually meaningful.
 export const dealDocuments: DealDocument[] = [
-  { id: 'license', name: "Driver's License (Front and Back)", status: 'approved', icon: 'id' },
-  { id: 'insurance', name: 'Proof of Insurance', status: 'approved', icon: 'insurance' },
-  { id: 'income', name: 'Orders', status: 'approved', icon: 'income' },
-  { id: 'residence', name: 'Proof of Residence', status: 'approved', icon: 'residence' },
+  { id: 'license', name: "Driver's License (Front and Back)", status: 'needed', icon: 'id' },
 ];
 
 export interface FinancingTerms {

@@ -65,8 +65,14 @@ sale/purchase screenshots. `GAP` steps get narrated or skipped.
    *status* real, not the verification itself. A `__DEV__`-only row lets a
    tester jump straight to any state, same pattern as My Deal's
    "Jump to Step."
-6. **Your documents (KYC)** — License / Proof of Insurance / Orders /
-   Proof of Residence, multi-page capture `WORKS` · "team notified" `MOCK`.
+6. **Your documents** — Driver's License (front + back), multi-page
+   capture `WORKS` · "team notified" `MOCK`. Used to also list Proof of
+   Insurance, Orders, and Proof of Residence — cut 2026-09-21 (Terry):
+   none of the three were ever UCG's to collect. All three are real VRO
+   requirements, but the customer brings them in person / the insurer
+   sends Proof of Insurance straight to the VRO — see
+   **[docs/vro-checklists.md](./vro-checklists.md)**'s "who provides
+   what" split, which already had this right before this screen did.
 7. **UCG's paperwork — two paths by stock number** (full detail in
    **[docs/purchase-paperwork.md](./purchase-paperwork.md)**). The
    `/deal-paperwork` screen (linked from the "Contract Signed" step)
