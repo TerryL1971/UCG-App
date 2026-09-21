@@ -49,55 +49,88 @@ work from WhatsApp, Genius Scan, or whatever they already use day to
 day — not a bolted-on tool in the customer's app. Building one would've
 solved nothing real.
 
-**Direction, confirmed with Terry:** UCG already has real mailboxes —
-`name@usedcarguys.net` for everyone (matches the letterhead on every
-sample document: `terry@usedcarguys.net`, `alex.birdie@usedcarguys.net`).
-Genius Scan (and nearly every scanner app) can email a scanned PDF
-directly — no new habit for a salesperson to learn, they already scan
-and hit "send." The plan:
+**Second framing, also superseded (2026-09-21): the real answer is
+SharePoint, not email.** UCG already runs Microsoft 365, and — this is
+the important part — **staff are already doing exactly this**, today,
+as their normal workflow: `theusedcarguys.sharepoint.com`'s "UCG
+Library" has a folder per stock number (`Vehicle Inventory / _DE
+Units... / (DE10003) 2019 Volkswagen Golf GTI`), with a `"Buying
+[SellerName]"` subfolder (UCG buying the car — mirrors this app's
+Sell It Back) and a `"Selling [BuyerName]"` subfolder (UCG selling the
+car — mirrors this app's regular purchase flow), each already holding
+the real thing: AE550 forms, driver's license copies, signed Purchase
+Orders/Bills of Sale, stamped 550s, the Vehicle Hand-Over Document,
+registration, wire confirmations, lien releases. Real staff (Carrie
+Leggett, Sabine Vogl, Anke Neumayer, and others) upload to these
+folders constantly. No new habit for anyone — this makes the
+email-ingestion idea above obsolete for anything tied to a real stock
+number; email inbound only still matters, if at all, for the case
+SharePoint doesn't cover (see below).
 
-1. A dedicated address, e.g. `scans@usedcarguys.net` — matching the
-   same `name@usedcarguys.net` convention Terry described, not a
-   separate subdomain, so it reads as a real UCG address like everyone
-   else's.
-2. **Still need to know: Microsoft 365 or Google Workspace?** — that's
-   the one fact this plan is blocked on. It decides how mail landing in
-   that inbox gets forwarded to a webhook:
-   - **Microsoft 365** — a Power Automate flow (trigger: "When a new
-     email arrives," condition: has attachment) calling an HTTP webhook,
-     or a Microsoft Graph API webhook subscription on the mailbox.
-   - **Google Workspace** — a Gmail API push notification (Pub/Sub) on
-     the mailbox, or an Apps Script trigger on a label/filter, calling
-     the webhook.
-3. **A new Edge Function** (not yet built — `lookup-deal-documents`'s
-   counterpart, something like `ingest-scanned-document`) that receives
-   the webhook, pulls the attachment, and needs a way to know which
-   deal/customer it belongs to. Realistic options, roughly in order of
-   how little they ask of the salesperson:
-   - The salesperson includes the customer's documents code (Problem 1,
-     above) in the subject line — e.g. "AB3D9XZK — signed PO" — the
-     function just parses it out. Cheapest to build, asks one small
-     habit of the salesperson (copy the code once).
-   - Match by whatever DealerTeam-ish identifying text is in the
-     subject/body (deal #, stock #) against `deal_documents`' existing
-     `car_stock_number` field — fuzzier, no new habit required, more
-     code to get right, more room for a wrong match.
-   - No automatic matching at all — every incoming scan lands in a
-     holding area (a `kind: 'unmatched'` row, or a separate table) and
-     someone (Terry, today) manually assigns it to the right deal from
-     the Supabase dashboard. Simplest function, most manual ongoing
-     work — reasonable as a real v1 while volume is still low.
+**Why this is a better integration target than email:**
+- **The key is already in the app.** `car.stockNumber` (from
+  `useDeal()`) IS the SharePoint folder name — no invented "documents
+  code" needed to look up a car that came from live inventory. The
+  documents code (Problem 1) still matters for Sell It Back before a
+  stock number/folder exists, and for anything this app generates
+  before a salesperson ever touches SharePoint.
+- **It's the real system of record**, not a parallel one this app
+  would be asking staff to also remember to use.
+
+**What it needs, and why this codebase can't do it alone:** reading
+SharePoint programmatically means talking to Microsoft Graph API, which
+means someone with Microsoft 365 admin rights registers an Azure AD
+app and grants it permission to that SharePoint site — `Sites.Read.All`
+or a site-scoped equivalent (application permission, since customers
+have no M365 login of their own; needs admin consent). That produces a
+tenant ID, client ID, and a client secret or certificate — which, like
+every other secret in this project, would live ONLY in a Supabase Edge
+Function's environment, never in the app itself.
+
+**Status (2026-09-21): Terry wants to confirm with IT before committing
+to a scope.** Reasonable — this touches the company's real M365 tenant,
+not a project-specific service. Nothing built yet on this front. Once
+there's a green light, the shape would be:
+
+1. IT registers the Azure AD app, grants it read (at minimum) access to
+   the UCG Library site, hands over tenant ID / client ID / client
+   secret.
+2. A new Edge Function (`lookup-vehicle-documents` or similar) takes a
+   stock number, calls Graph API to find the matching
+   `Vehicle Inventory/.../({stockNumber}) .../"Buying "` or `"Selling "`
+   subfolder, and returns file names + short-lived download links —
+   same `withSupabase`/`ctx` shape as `lookup-deal-documents`, just a
+   different upstream.
+3. Client-side, likely folded into the same "Have a Code?"-style UI on
+   the Documents screen, or a parallel lookup keyed off `car.stockNumber`
+   automatically when a real inventory car is in play — genuinely two
+   reasonable options here, worth deciding once scope (read vs.
+   read+write) is settled with IT.
+
+If IT scope ends up narrower than full Graph API access (e.g., they'd
+rather not grant a third-party app read access to the whole SharePoint
+site), the email-ingestion plan below is the fallback — kept for that
+reason, not because it's still the preferred path.
+
+<details>
+<summary>Original email-ingestion plan (fallback, not the current direction)</summary>
+
+UCG has real mailboxes — `name@usedcarguys.net` for everyone. Genius
+Scan (and nearly every scanner app) can email a scanned PDF directly.
+
+1. A dedicated address, e.g. `scans@usedcarguys.net`.
+2. Microsoft 365 (confirmed, 2026-09-21) — a Power Automate flow
+   (trigger: "When a new email arrives," condition: has attachment)
+   calling an HTTP webhook, or a Microsoft Graph API webhook
+   subscription on the mailbox.
+3. A new Edge Function receives the webhook, pulls the attachment, and
+   needs a way to know which deal/customer it belongs to — e.g. the
+   salesperson includes the documents code (Problem 1) in the subject
+   line.
 4. Uploads to the `documents` bucket + a `deal_documents` row, same
-   shape `document-storage.ts` already writes from the client side —
-   this Edge Function is just another writer into the same system,
-   using its own service-role access instead of the customer app's
-   anon-key path.
+   shape `document-storage.ts` already writes from the client side.
 
-**Status: designed, not built.** Waiting on: (a) which platform runs
-`usedcarguys.net` mail, (b) which of the three matching strategies above
-Terry wants for v1, (c) actually provisioning the `scans@usedcarguys.net`
-mailbox and its forwarding rule/webhook subscription — all outside what
-this codebase can do on its own.
+</details>
 
 ## What already exists to build on
 
