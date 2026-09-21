@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -12,6 +12,15 @@ import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
 import { type DealDocument } from '@/constants/mock-data';
 import { useDealDocuments, type DocumentState } from '@/lib/documents-context';
 import { compressPhoto } from '@/lib/image';
+import { useLicenseCapture, type LicenseSide } from '@/lib/license-capture-context';
+
+/** The one document this screen gives its own real camera to, instead of
+ * the generic "+ Add Page" prompt every other document uses — a license
+ * has a fixed shape a plain OS camera can't show a guide for (Terry:
+ * "should have a see through box to line up the driver's license").
+ * Reuses capture-license.tsx, the same overlay-camera screen deal-intake.tsx
+ * already has for this exact purpose. */
+const LICENSE_DOC_ID = 'license';
 
 const iconFor: Record<DealDocument['icon'], (color: string) => React.ReactNode> = {
   id: (c) => <IdCardIcon color={c} />,
@@ -41,11 +50,14 @@ function DocCard({
   doc,
   isAdding,
   onAddPage,
+  onAddLicenseSide,
   onRemovePage,
 }: {
   doc: DocumentState;
   isAdding: boolean;
   onAddPage: () => void;
+  /** Only passed for the license doc — see LICENSE_DOC_ID above. */
+  onAddLicenseSide?: (side: LicenseSide) => void;
   onRemovePage: (pageIndex: number) => void;
 }) {
   const pageCount = doc.uris.length;
@@ -87,10 +99,29 @@ function DocCard({
         </ScrollView>
       )}
 
-      <Pressable style={styles.addPageButton} onPress={onAddPage} disabled={isAdding}>
-        <PlusIcon size={16} color={Colors.red} />
-        <Text style={styles.addPageLabel}>{pageCount > 0 ? 'Add Another Page' : 'Add Page'}</Text>
-      </Pressable>
+      {onAddLicenseSide ? (
+        <View style={styles.licenseAddRow}>
+          <Pressable
+            style={[styles.addPageButton, styles.licenseAddButton]}
+            onPress={() => onAddLicenseSide('front')}
+            disabled={isAdding}>
+            <PlusIcon size={16} color={Colors.red} />
+            <Text style={styles.addPageLabel}>Add Front</Text>
+          </Pressable>
+          <Pressable
+            style={[styles.addPageButton, styles.licenseAddButton]}
+            onPress={() => onAddLicenseSide('back')}
+            disabled={isAdding}>
+            <PlusIcon size={16} color={Colors.red} />
+            <Text style={styles.addPageLabel}>Add Back</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <Pressable style={styles.addPageButton} onPress={onAddPage} disabled={isAdding}>
+          <PlusIcon size={16} color={Colors.red} />
+          <Text style={styles.addPageLabel}>{pageCount > 0 ? 'Add Another Page' : 'Add Page'}</Text>
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -101,6 +132,17 @@ export default function DocumentsScreen() {
   // to actually show up there too, not just in this screen's own state.
   const { documents, addDocumentPage, removeDocumentPage } = useDealDocuments();
   const [addingId, setAddingId] = useState<string | null>(null);
+  const { lastCapturedLicensePhoto, clearLastCapturedLicensePhoto } = useLicenseCapture();
+
+  // Handoff from capture-license.tsx's overlay camera — `for` guards
+  // against also picking up a capture meant for deal-intake.tsx's own
+  // front/back slots (see the doc comment on LicenseCaptureTarget).
+  useEffect(() => {
+    if (lastCapturedLicensePhoto && lastCapturedLicensePhoto.for === 'documents') {
+      addDocumentPage(LICENSE_DOC_ID, lastCapturedLicensePhoto.uri);
+      clearLastCapturedLicensePhoto();
+    }
+  }, [lastCapturedLicensePhoto, clearLastCapturedLicensePhoto, addDocumentPage]);
 
   const captureFor = async (id: string, useCamera: boolean) => {
     const permission = useCamera
@@ -132,6 +174,38 @@ export default function DocumentsScreen() {
     ]);
   };
 
+  // License-only picker fallback — "Take Photo" below goes through the
+  // overlay camera instead; this is just for someone who already has a
+  // photo of their license saved (same option deal-intake.tsx offers).
+  const pickLicenseFromLibrary = async (side: LicenseSide) => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permission needed', 'Allow photo library access to add your license.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
+    if (result.canceled || !result.assets[0]) return;
+
+    setAddingId(LICENSE_DOC_ID);
+    try {
+      const compressed = await compressPhoto(result.assets[0].uri);
+      addDocumentPage(LICENSE_DOC_ID, compressed);
+    } finally {
+      setAddingId(null);
+    }
+  };
+
+  const promptLicenseSide = (side: LicenseSide) => {
+    Alert.alert(`Add ${side === 'front' ? 'Front' : 'Back'} of License`, undefined, [
+      {
+        text: 'Take Photo',
+        onPress: () => router.push({ pathname: '/capture-license', params: { side, for: 'documents' } }),
+      },
+      { text: 'Choose from Library', onPress: () => pickLicenseFromLibrary(side) },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <View style={styles.headerWrap}>
@@ -145,6 +219,7 @@ export default function DocumentsScreen() {
             doc={doc}
             isAdding={addingId === doc.id}
             onAddPage={() => promptAddPage(doc)}
+            onAddLicenseSide={doc.id === LICENSE_DOC_ID ? promptLicenseSide : undefined}
             onRemovePage={(pageIndex) => removeDocumentPage(doc.id, pageIndex)}
           />
         ))}
@@ -235,6 +310,8 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
   },
   addPageLabel: { fontFamily: Fonts.bodySemibold, fontSize: 13, color: Colors.red },
+  licenseAddRow: { flexDirection: 'row', gap: 8 },
+  licenseAddButton: { flex: 1 },
   hint: {
     textAlign: 'center',
     fontFamily: Fonts.body,

@@ -8,7 +8,7 @@ import { ArrowLeftIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { compressPhoto } from '@/lib/image';
-import { useLicenseCapture, type LicenseSide } from '@/lib/license-capture-context';
+import { useLicenseCapture, type LicenseCaptureTarget, type LicenseSide } from '@/lib/license-capture-context';
 
 /**
  * Custom camera screen for the license photo (Terry, Sept 2: "there should
@@ -21,7 +21,7 @@ import { useLicenseCapture, type LicenseSide } from '@/lib/license-capture-conte
  * barcode frame, since it's a different-shaped object to align.
  */
 export default function CaptureLicenseScreen() {
-  const { side } = useLocalSearchParams<{ side: LicenseSide }>();
+  const { side, for: target } = useLocalSearchParams<{ side: LicenseSide; for?: LicenseCaptureTarget }>();
   const { setLastCapturedLicensePhoto } = useLicenseCapture();
   const [permission, requestPermission] = useCameraPermissions();
   const [isCapturing, setIsCapturing] = useState(false);
@@ -36,7 +36,7 @@ export default function CaptureLicenseScreen() {
       const photo = await cameraRef.current.takePictureAsync({ quality: 0.8 });
       if (!photo) return;
       const compressed = await compressPhoto(photo.uri);
-      setLastCapturedLicensePhoto(side === 'back' ? 'back' : 'front', compressed);
+      setLastCapturedLicensePhoto(side === 'back' ? 'back' : 'front', compressed, target === 'documents' ? 'documents' : 'intake');
       router.back();
     } finally {
       setIsCapturing(false);

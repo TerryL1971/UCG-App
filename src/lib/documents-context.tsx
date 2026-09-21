@@ -41,8 +41,19 @@ interface DealDocumentsContextValue {
 
 const DealDocumentsContext = createContext<DealDocumentsContextValue | null>(null);
 
+// `dealDocuments` seeds every document "approved" (mock-data.ts's own
+// comment: matching `dealSteps`' "Documents" step being marked done for
+// the demo). That was fine as long as "approved" meant something — it
+// doesn't here: this always sets `uris: []`, i.e. no real file was ever
+// captured through this screen. A status of "Approved" (or "Uploaded")
+// with nothing behind it is the exact self-contradiction the "all
+// approved" fix was originally trying to close, one level deeper (Terry,
+// testing, 2026-09: "without an image, approved should not be there
+// either"). No file always means "needed," full stop — the same
+// invariant addDocumentPage/removeDocumentPage already enforce on every
+// later change, just applied to the starting state too.
 function withNoPages(): DocumentState[] {
-  return dealDocuments.map((d) => ({ ...d, uris: [] }));
+  return dealDocuments.map((d) => ({ ...d, status: 'needed', uris: [] }));
 }
 
 export function DealDocumentsProvider({ children }: { children: ReactNode }) {
@@ -57,9 +68,19 @@ export function DealDocumentsProvider({ children }: { children: ReactNode }) {
       // dishonest about what's actually happened.
       addDocumentPage: (id: string, uri: string) =>
         setDocuments((docs) => docs.map((d) => (d.id === id ? { ...d, status: 'uploaded', uris: [...d.uris, uri] } : d))),
+      // Same honesty rule as addDocumentPage, the other direction: removing
+      // a page changes what's actually on file, so a prior "uploaded"/
+      // "approved" status can't just sit there unchanged (Terry, testing,
+      // 2026-09: deleted the only page and the card kept reading "Uploaded"
+      // with nothing behind it). Empty goes back to "needed"; anything
+      // left still needs a fresh look, same as a brand-new upload does.
       removeDocumentPage: (id: string, pageIndex: number) =>
         setDocuments((docs) =>
-          docs.map((d) => (d.id === id ? { ...d, uris: d.uris.filter((_, i) => i !== pageIndex) } : d)),
+          docs.map((d) => {
+            if (d.id !== id) return d;
+            const uris = d.uris.filter((_, i) => i !== pageIndex);
+            return { ...d, uris, status: uris.length === 0 ? 'needed' : 'uploaded' };
+          }),
         ),
       resetDocument: (id: string) =>
         setDocuments((docs) => docs.map((d) => (d.id === id ? { ...d, status: 'needed', uris: [] } : d))),

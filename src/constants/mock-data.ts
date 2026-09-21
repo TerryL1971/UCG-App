@@ -200,7 +200,7 @@ export interface DealDocument {
 // iconFor/statusLabel lookups elsewhere) — only the customer-facing
 // `name` changed.
 export const dealDocuments: DealDocument[] = [
-  { id: 'license', name: "Driver's License", status: 'approved', icon: 'id' },
+  { id: 'license', name: "Driver's License (Front and Back)", status: 'approved', icon: 'id' },
   { id: 'insurance', name: 'Proof of Insurance', status: 'approved', icon: 'insurance' },
   { id: 'income', name: 'Orders', status: 'approved', icon: 'income' },
   { id: 'residence', name: 'Proof of Residence', status: 'approved', icon: 'residence' },

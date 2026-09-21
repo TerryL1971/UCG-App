@@ -167,8 +167,15 @@ export default function DealIntakeScreen() {
   // goes through a real camera screen with an alignment rectangle, not
   // ImagePicker.launchCameraAsync's native camera UI, which can't show a
   // custom overlay). Same pattern as sell-back.tsx reading lastScannedVin.
+  //
+  // `for` guards against deal-intake.tsx's own useEffect firing on a
+  // capture meant for deal/documents.tsx's "Driver's License" card, which
+  // now uses this same overlay camera — Expo Router's native stack keeps
+  // a pushed screen mounted (just covered), so without this check a
+  // capture taken from Documents while this screen was still paused
+  // underneath it would silently land here too.
   useEffect(() => {
-    if (lastCapturedLicensePhoto) {
+    if (lastCapturedLicensePhoto && lastCapturedLicensePhoto.for === 'intake') {
       // Same reasoning as sell-back.tsx's lastScannedVin handoff: this
       // also clears an external context signal, so it's a real effect,
       // not the "mirroring a prop into state" anti-pattern the
@@ -203,7 +210,10 @@ export default function DealIntakeScreen() {
 
   const promptLicenseSource = (side: LicenseSide) => {
     Alert.alert(`Add ${side === 'front' ? 'Front' : 'Back'} of License`, undefined, [
-      { text: 'Take Photo', onPress: () => router.push({ pathname: '/capture-license', params: { side } }) },
+      {
+        text: 'Take Photo',
+        onPress: () => router.push({ pathname: '/capture-license', params: { side, for: 'intake' } }),
+      },
       { text: 'Choose from Library', onPress: () => pickLicenseFromLibrary(side) },
       { text: 'Cancel', style: 'cancel' },
     ]);
