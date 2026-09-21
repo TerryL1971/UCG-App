@@ -1,13 +1,17 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 
 import { dealDocuments, type DealDocument } from '@/constants/mock-data';
+import { uploadDocumentPhoto } from '@/lib/document-storage';
 
 /** `uris` holds every locally-captured page for this document, in order —
- * real capture via expo-image-picker/expo-camera (deal/documents.tsx),
- * still no real file storage backend. Plural and an array (not a single
- * `uri`), matching the "1-x pages" flow Terry originally asked for (Sept
- * 2) for whatever document needs it — today that's just the license
- * (front + back), but the shape doesn't assume a fixed count. */
+ * real capture via expo-image-picker/expo-camera (deal/documents.tsx).
+ * These are always local file:// uris, used for instant on-screen
+ * thumbnails; addDocumentPage below also fires off a real upload
+ * (document-storage.ts) so the photo isn't ONLY on this one phone.
+ * Plural and an array (not a single `uri`), matching the "1-x pages"
+ * flow Terry originally asked for (Sept 2) for whatever document needs
+ * it — today that's just the license (front + back), but the shape
+ * doesn't assume a fixed count. */
 export type DocumentState = DealDocument & { uris: string[] };
 
 /**
@@ -59,8 +63,17 @@ export function DealDocumentsProvider({ children }: { children: ReactNode }) {
       // salesperson/backend would need to actually review the new file(s),
       // so leaving it marked "approved" after adding a page would be
       // dishonest about what's actually happened.
-      addDocumentPage: (id: string, uri: string) =>
-        setDocuments((docs) => docs.map((d) => (d.id === id ? { ...d, status: 'uploaded', uris: [...d.uris, uri] } : d))),
+      addDocumentPage: (id: string, uri: string) => {
+        setDocuments((docs) => docs.map((d) => (d.id === id ? { ...d, status: 'uploaded', uris: [...d.uris, uri] } : d)));
+        // Fire-and-forget: the real, durable copy (Terry, 2026-09-21:
+        // "how will a salesperson see and retrieve any of the scanned
+        // docs?"). The UI above already has what it needs — the local
+        // uri — so this doesn't block or need to succeed for the screen
+        // to work; it silently no-ops if Supabase isn't configured or
+        // the bucket isn't set up yet, same as every other Supabase
+        // integration point in this app.
+        uploadDocumentPhoto(id, uri).catch(() => {});
+      },
       // Same honesty rule as addDocumentPage, the other direction: removing
       // a page changes what's actually on file, so a prior "uploaded"/
       // "approved" status can't just sit there unchanged (Terry, testing,

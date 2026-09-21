@@ -105,9 +105,20 @@ it changes about launch-readiness:
   `paypal/*+api.ts`) currently only runs against `npx expo start`'s
   local dev server. None of this is reachable by a real customer's
   phone yet, independent of any credential being live.
-- **Document/deposit data has no retention policy** because there's
-  nowhere real for it to live yet — license photos, deal documents,
-  deposit records are all currently local-device-only.
+- **Document/deposit data has no retention policy.** Partially changed
+  2026-09-21: license photos now upload to a private Supabase Storage
+  bucket (`src/lib/document-storage.ts`) instead of living only on the
+  customer's phone — Terry asked how a salesperson would ever see/
+  retrieve a scanned document, and the honest answer was "they can't."
+  Still needs, before this is real for real customers: (1) Terry
+  creating the `documents` bucket + an insert policy in the Supabase
+  dashboard — nothing here can do that itself, no service-role key lives
+  in this app; (2) an actual retrieval UI — right now "retrieval" means
+  opening the bucket in the Supabase dashboard by hand, there's no
+  salesperson-facing screen at all; (3) deposit records are still
+  local-device-only, untouched by this. This makes the item right below
+  (legal counsel, GDPR) more urgent, not less — real PII now has
+  somewhere real to persist.
 
 ## D. Blocked on a decision only Terry/UCG can make
 
