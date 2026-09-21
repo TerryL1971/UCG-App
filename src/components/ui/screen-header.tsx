@@ -8,10 +8,18 @@ export function ScreenHeader({
   title,
   subtitle,
   onBack,
+  badge,
 }: {
   title: string;
   subtitle?: string;
   onBack?: () => void;
+  /** Optional accessory next to the title — a "✓ Submitted"-style pill,
+   * say, when a screen represents a step in a larger deal that's already
+   * complete (Terry, 2026-09-21: a completed step "should have a check
+   * mark or something that lets the customer know this step is
+   * complete"). Absent by default — every existing caller renders
+   * exactly as before. */
+  badge?: React.ReactNode;
 }) {
   return (
     <View style={styles.row}>
@@ -21,8 +29,11 @@ export function ScreenHeader({
         style={styles.backButton}>
         <ArrowLeftIcon />
       </Pressable>
-      <View>
-        <Text style={styles.title}>{title}</Text>
+      <View style={{ flex: 1 }}>
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>{title}</Text>
+          {badge}
+        </View>
         {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
       </View>
     </View>
@@ -47,6 +58,11 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   title: {
     fontFamily: Fonts.display,

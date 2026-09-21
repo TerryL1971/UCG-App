@@ -14,8 +14,6 @@ import {
   usareurBases,
   USAREUR_OFFICIAL_JKO_URL,
   USAREUR_STUDY_GUIDE_URL,
-  SUPPORT_WHATSAPP,
-  whatsappChatUrl,
   type ApoAddress,
   type ApoAddressStatus,
   type ApoOffice,
@@ -28,7 +26,6 @@ import { useAuth } from '@/lib/auth-context';
 import { useDeal } from '@/lib/deal-context';
 import { useDealIntake } from '@/lib/deal-intake-context';
 import { useDealSync } from '@/lib/deal-sync';
-import { getOwnerId } from '@/lib/document-storage';
 import { compressPhoto } from '@/lib/image';
 import { useLicenseCapture } from '@/lib/license-capture-context';
 
@@ -56,16 +53,6 @@ export default function DealIntakeScreen() {
   const { user } = useAuth();
   const { lastCapturedLicensePhoto, clearLastCapturedLicensePhoto } = useLicenseCapture();
   const carLabel = car ? `${car.year} ${car.title}` : 'your next car';
-
-  // Prefetched so it's ready the moment Submit is tapped — see
-  // handleSubmit below for why this needs to reach a salesperson at all
-  // (Terry, 2026-09-21: "how will a salesman know to use it?" — a
-  // documents code sitting only on the Documents tab, that nothing ever
-  // surfaces to anyone, answers nothing).
-  const [myCode, setMyCode] = useState<string | null>(null);
-  useEffect(() => {
-    getOwnerId().then(setMyCode);
-  }, []);
 
   // Pre-fill order: a submitted intake wins, then the running draft
   // (field values saved continuously so navigating away mid-fill, or
@@ -248,37 +235,31 @@ export default function DealIntakeScreen() {
     // DealerTeam integration it'd create/update the Sales Up record.
     sendDealSignal({ type: 'intake-submitted' });
 
-    // Real WhatsApp handoff again (Terry, 2026-09-06 originally removed
-    // this when the AI agent took over "salesperson" duties; that agent
-    // is off now — AI_CHAT_ENABLED: false, ai-chat.ts — so salesperson.tsx
-    // IS the WhatsApp screen again, and this is the one place a
-    // salesperson actually learns anything about a new deal). Documents
-    // code included on purpose (Terry, 2026-09-21: "how will a salesman
-    // know to use it?") — this is the first message a salesperson ever
-    // sees for this customer, so it's the one guaranteed place the code
-    // reaches them without relying on the customer remembering to share
-    // it later. Skipped only if myCode hasn't loaded yet (AsyncStorage
-    // read didn't finish in time) — worth having the rest of the message
-    // rather than blocking submission on it.
-    const licenseLine = licenseStatus === 'have' ? 'Has a USAREUR license already' : 'Still needs a USAREUR license';
-    const message = [
-      `Hi! I'm starting a deal on the ${carLabel}.`,
-      `Name: ${fullName.trim()}`,
-      `Base: ${effectiveBase}`,
-      `Payment: ${paymentMethod === 'cash' ? 'Cash' : 'Financing'}`,
-      licenseLine,
-      myCode ? `Documents code: ${myCode}` : '',
-    ]
-      .filter(Boolean)
-      .join('\n');
-    Linking.openURL(whatsappChatUrl(SUPPORT_WHATSAPP, message)).catch(() => {});
-
+    // Stays in the app — Terry, 2026-09-21: submitting shouldn't bounce
+    // the customer out to WhatsApp. (A version of this briefly did launch
+    // WhatsApp automatically here; reverted the same session.) The
+    // customer's info — including the documents code — reaches the
+    // salesperson through salesperson.tsx instead: that screen pre-fills
+    // the WhatsApp message box with the same summary, so it still goes
+    // out with one deliberate tap, just not as a surprise app-switch the
+    // instant Submit is pressed.
     router.replace('/salesperson');
   };
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
-      <ScreenHeader title={intake ? 'Edit Your Info' : 'Start Your Deal'} subtitle={carLabel} />
+      <ScreenHeader
+        title={intake ? 'Edit Your Info' : 'Start Your Deal'}
+        subtitle={carLabel}
+        badge={
+          intake ? (
+            <View style={styles.submittedBadge}>
+              <CheckCircleIcon size={11} color="#fff" />
+              <Text style={styles.submittedBadgeText}>Submitted</Text>
+            </View>
+          ) : undefined
+        }
+      />
 
       {car && car.images.length > 0 && (
         <View>
@@ -614,6 +595,16 @@ function SegOption({ label, active, onPress }: { label: string; active: boolean;
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: Colors.bg },
+  submittedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: Colors.green,
+    borderRadius: Radius.pill,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  submittedBadgeText: { fontFamily: Fonts.bodyBold, fontSize: 10.5, color: '#fff' },
   body: { flex: 1, paddingHorizontal: Spacing.xxl },
   bodyContent: { paddingTop: Spacing.md, paddingBottom: Spacing.xl },
   intro: { fontFamily: Fonts.body, fontSize: 13.5, color: Colors.textMuted, lineHeight: 20, marginBottom: 20 },

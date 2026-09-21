@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Keyboard, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -18,6 +18,7 @@ import { SUPPORT_WHATSAPP, ucgAssistant, whatsappChatUrl } from '@/constants/moc
 import { parseJsonResponse } from '@/lib/api-fetch';
 import { useDeal } from '@/lib/deal-context';
 import { useDealIntake } from '@/lib/deal-intake-context';
+import { getOwnerId } from '@/lib/document-storage';
 import { useWarranty } from '@/lib/warranty-context';
 
 interface ChatMessage {
@@ -58,6 +59,30 @@ export default function SalespersonScreen() {
     Keyboard.dismiss();
   };
 
+  // Pre-fills the WhatsApp message box with a real summary — name, base,
+  // payment, license status, and the documents code — instead of
+  // launching WhatsApp automatically the moment intake is submitted
+  // (Terry, 2026-09-21: submitting shouldn't bounce the customer out of
+  // the app). This still gets the same information to a salesperson,
+  // just via one deliberate tap of the (already-visible) send button
+  // instead of a surprise app-switch. A function declaration, not a
+  // const — needs to be usable both in `input`'s own useState initializer
+  // below AND in the effect after it, so it has to be hoisted.
+  function composeWhatsAppDraft(code: string | null) {
+    if (!intake || AI_CHAT_ENABLED) return '';
+    const licenseLine = intake.licenseStatus === 'have' ? 'Has a USAREUR license already' : 'Still needs a USAREUR license';
+    return [
+      `Hi! I'm starting a deal on the ${carLabel}.`,
+      `Name: ${intake.fullName}`,
+      `Base: ${intake.base}`,
+      `Payment: ${intake.paymentMethod === 'cash' ? 'Cash' : 'Financing'}`,
+      licenseLine,
+      code ? `Documents code: ${code}` : '',
+    ]
+      .filter(Boolean)
+      .join('\n');
+  }
+
   const [messages, setMessages] = useState<ChatMessage[]>(() => [
     {
       role: 'assistant',
@@ -74,8 +99,20 @@ export default function SalespersonScreen() {
           : `Hi! I'm your UCG specialist, here to help with ${carLabel}. Send a message below any time and it'll open WhatsApp so we can talk directly.`,
     },
   ]);
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState(() => composeWhatsAppDraft(null));
   const [isSending, setIsSending] = useState(false);
+
+  // Code loads async (AsyncStorage) — appended to the draft once ready,
+  // but only if the box still holds exactly what was auto-composed
+  // without it. If the customer already started typing over the draft,
+  // this leaves their edit alone rather than clobbering it.
+  useEffect(() => {
+    if (AI_CHAT_ENABLED) return;
+    getOwnerId().then((code) => {
+      setInput((current) => (current === composeWhatsAppDraft(null) ? composeWhatsAppDraft(code) : current));
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- composeWhatsAppDraft closes over intake/carLabel, which don't change mid-session; re-running this on every render would re-fight the customer's own edits
+  }, []);
 
   // Cost guard (src/constants/ai-chat.ts): past this many customer
   // messages, stop calling the API and hand off to a human instead —
