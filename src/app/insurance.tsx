@@ -6,10 +6,11 @@ import { CheckCircleIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { americanAutoNation as AAN } from '@/constants/american-auto-nation';
-import { SUPPORT_WHATSAPP, whatsappChatUrl } from '@/constants/mock-data';
+import { specialistWhatsapp, whatsappChatUrl } from '@/constants/mock-data';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { useDeal } from '@/lib/deal-context';
 import { useDealIntake } from '@/lib/deal-intake-context';
+import { useDealSync } from '@/lib/deal-sync';
 
 /**
  * American Auto Nation — UCG's own insurance. Pushed deliberately (see
@@ -21,13 +22,14 @@ import { useDealIntake } from '@/lib/deal-intake-context';
 export default function InsuranceScreen() {
   const { car } = useDeal();
   const { intake } = useDealIntake();
+  const { state: dealState } = useDealSync();
   const carLabel = car ? `${car.year} ${car.title}` : 'my car';
 
   const requestQuote = () => {
     const msg = `Hi UCG — I'd like an American Auto Nation insurance quote for ${carLabel}${
       intake?.base ? `, headed to ${intake.base}` : ''
     }.`;
-    Linking.openURL(whatsappChatUrl(SUPPORT_WHATSAPP, msg)).catch(() => {});
+    Linking.openURL(whatsappChatUrl(specialistWhatsapp(dealState.salesperson), msg)).catch(() => {});
   };
 
   return (

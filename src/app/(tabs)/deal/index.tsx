@@ -19,11 +19,34 @@ import {
   ucgLocations,
   waitingOnLabel,
   type DealStep,
+  type PaymentMethod,
 } from '@/constants/mock-data';
 import { useDeal } from '@/lib/deal-context';
 import { useDealIntake } from '@/lib/deal-intake-context';
 import { useDealSync, type PaymentStatus } from '@/lib/deal-sync';
 import { useDealDocuments } from '@/lib/documents-context';
+
+/** Cash and financing walk the same 7-step shape, but steps 2 and 4 mean
+ * different things depending on which — retitled here at render time
+ * rather than in mock-data.ts/mock-deal-sync.ts, so the underlying
+ * step id/status machinery stays generic. `waitingOn` for the cash
+ * "Funds Received" step also swaps between "you" (haven't sent the wire
+ * yet) and "ucg" (sent it, waiting on confirmation) since a single static
+ * value can't capture that step's actual two phases. */
+function displaySteps(steps: DealStep[], paymentMethod: PaymentMethod | undefined, paymentStatus: PaymentStatus): DealStep[] {
+  if (paymentMethod !== 'cash') return steps;
+  return steps.map((step) => {
+    if (step.id === 'application') return { ...step, title: 'Submitting Wire' };
+    if (step.id === 'financing') {
+      return {
+        ...step,
+        title: 'Funds Received',
+        waitingOn: paymentStatus === 'awaiting_payment' ? 'you' : 'ucg',
+      };
+    }
+    return step;
+  });
+}
 
 /** The camera/share action under "Picked Up" — its own component (not
  * inlined in the steps loop) since it needs its own local state for the
@@ -244,6 +267,28 @@ function StepDetailContent({ step, car }: { step: DealStep; car: ReturnType<type
   }
 
   if (step.id === 'financing') {
+    if (intake?.paymentMethod === 'cash') {
+      return (
+        <View style={[styles.detailCard, { flexDirection: 'column', alignItems: 'stretch', gap: 8 }]}>
+          <View style={styles.paymentStatusRow}>
+            <Text style={[styles.detailPlainText, { flex: 1 }]}>
+              {dealState.paymentStatus === 'funds_verified'
+                ? "UCG has confirmed your wire — you're all set here."
+                : 'Once UCG confirms your wire landed, this step marks itself complete.'}
+            </Text>
+            <StatusChip
+              status={paymentStatusChip[dealState.paymentStatus].status}
+              label={paymentStatusChip[dealState.paymentStatus].label}
+            />
+          </View>
+          <Pressable style={styles.detailLinkRow} onPress={() => router.push('/wire-instructions')}>
+            <DownloadIcon size={14} color={Colors.navy} />
+            <Text style={styles.detailLink}>View Wire Instructions</Text>
+          </Pressable>
+        </View>
+      );
+    }
+
     const terms = dealState.financingTerms;
     if (!terms) {
       return (
@@ -272,7 +317,9 @@ function StepDetailContent({ step, car }: { step: DealStep; car: ReturnType<type
     return (
       <View style={[styles.detailCard, { flexDirection: 'column', alignItems: 'stretch', gap: 8 }]}>
         <Text style={styles.detailPlainText}>
-          Signed electronically. A copy was emailed to you — print a copy for your records if you&apos;d like one.
+          {step.status === 'done'
+            ? 'Signed and on file — your salesperson has a copy.'
+            : "Print or share your Purchase Order, sign it with your salesperson, then scan or photograph it back in — that's what completes this step. No documents come from the bank into this app."}
         </Text>
         <Pressable style={styles.detailLinkRow} onPress={() => router.push('/deal-paperwork')}>
           <DownloadIcon size={14} color={Colors.navy} />
@@ -306,7 +353,10 @@ export default function TimelineScreen() {
   const { car } = useDeal();
   const { intake } = useDealIntake();
   const { state: dealState, jumpToStep } = useDealSync();
-  const dealSteps = dealState.steps;
+  const dealSteps = useMemo(
+    () => displaySteps(dealState.steps, intake?.paymentMethod, dealState.paymentStatus),
+    [dealState.steps, dealState.paymentStatus, intake?.paymentMethod],
+  );
 
   const targetIndex = useMemo(() => {
     let idx = 0;

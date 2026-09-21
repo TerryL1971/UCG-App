@@ -39,12 +39,20 @@ export function DocumentCard({
   description,
   buildHtml,
   context,
+  onSigned,
 }: {
   docId: string;
   title: string;
   description: string;
   buildHtml: () => string;
   context: DealDocumentContext;
+  /** Fires once the signed-copy upload actually succeeds — not on every
+   * tap of "Upload Signed Copy", and not on Replace of an already-signed
+   * copy (the caller already knows about it by then). Used by
+   * deal-paperwork.tsx to complete the timeline's 'contract' step: there's
+   * no e-sign/bank integration behind that step, this upload is the real
+   * completion event. */
+  onSigned?: () => void;
 }) {
   const [isWorking, setIsWorking] = useState(false);
   const [signedUri, setSignedUri] = useState<string | null>(null);
@@ -90,11 +98,13 @@ export function DocumentCard({
     const result = await launch({ mediaTypes: ['images'], quality: 0.8 });
     if (result.canceled || !result.assets[0]) return;
 
+    const isFirstUpload = signedUri == null;
     setIsUploadingSigned(true);
     try {
       const compressed = await compressPhoto(result.assets[0].uri);
       setSignedUri(compressed);
       await uploadSignedDocument(docId, compressed, context);
+      if (isFirstUpload) onSigned?.();
     } finally {
       setIsUploadingSigned(false);
     }

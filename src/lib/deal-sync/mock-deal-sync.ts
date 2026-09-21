@@ -4,6 +4,7 @@ import {
   freshDealSteps,
   salesperson,
   type DealStep,
+  type PaymentMethod,
 } from '@/constants/mock-data';
 
 import type { DealServerState, DealSignal, DealSyncBackend, PaymentStatus } from './types';
@@ -54,6 +55,7 @@ const SIGNAL_COMPLETES: Record<DealSignal['type'], (step: DealStep) => boolean> 
   'deposit-paid': (s) => s.id === 'matched',
   'documents-updated': (s) => s.id === 'documents',
   'payment-submitted': () => false,
+  'contract-signed': (s) => s.id === 'contract',
 };
 
 export class MockDealSync implements DealSyncBackend {
@@ -68,6 +70,11 @@ export class MockDealSync implements DealSyncBackend {
   // cash wire is already in flight — it only becomes visible/relevant once
   // the customer is actually on the cash path.
   private paymentStatus: PaymentStatus = 'awaiting_payment';
+  // Unknown until the customer's intake actually says otherwise — defaults
+  // to 'financing' to match the demo-start state above (financingTerms
+  // already populated, 'financing' step already 'done'). Only 'intake-
+  // submitted' ever changes this — see `send()`.
+  private paymentMethod: PaymentMethod = 'financing';
   private listeners = new Set<() => void>();
   private timer: ReturnType<typeof setTimeout> | null = null;
   private paymentTimer: ReturnType<typeof setTimeout> | null = null;
@@ -77,7 +84,12 @@ export class MockDealSync implements DealSyncBackend {
 
   getState(): DealServerState {
     if (!this.cachedState) {
-      const financingApproved = this.steps.find((s) => s.id === 'financing')?.status === 'done';
+      // A cash deal never goes to a bank for approval, so it never gets
+      // real financing terms even once the 'financing' step itself
+      // (relabeled "Funds Received" for cash — see deal/index.tsx) reaches
+      // 'done'.
+      const financingApproved =
+        this.paymentMethod !== 'cash' && this.steps.find((s) => s.id === 'financing')?.status === 'done';
       this.cachedState = {
         steps: this.steps,
         financingTerms: financingApproved ? demoFinancingTerms : null,
@@ -98,6 +110,11 @@ export class MockDealSync implements DealSyncBackend {
   send(signal: DealSignal): void {
     // A confirmed deposit is what gets a real salesperson assigned.
     if (signal.type === 'deposit-paid') this.assigned = true;
+
+    // The back office only learns cash-vs-financing when the customer
+    // actually submits their intake — same moment `paymentMethod` is
+    // captured in deal-intake-context locally.
+    if (signal.type === 'intake-submitted') this.paymentMethod = signal.paymentMethod;
 
     if (signal.type === 'payment-submitted') {
       // "I sent the wire" — moves to 'payment_submitted' immediately, then
@@ -127,6 +144,7 @@ export class MockDealSync implements DealSyncBackend {
     this.steps = freshDealSteps;
     this.assigned = false; // fresh deal — no salesperson until a deposit
     this.paymentStatus = 'awaiting_payment';
+    this.paymentMethod = 'financing'; // unknown again until intake is submitted
     this.emit();
     this.scheduleAutoAdvance();
   }
@@ -161,7 +179,13 @@ export class MockDealSync implements DealSyncBackend {
   private scheduleAutoAdvance(): void {
     this.clearTimer();
     const step = this.steps[currentIndex(this.steps)];
-    if (step && (step.waitingOn === 'ucg' || step.waitingOn === 'bank')) {
+    if (!step) return;
+    // A cash deal's 'financing' step isn't a bank approval to fake a wait
+    // for — it's UCG confirming wire funds landed, which
+    // `schedulePaymentVerification()` already drives off `paymentStatus`.
+    // Let that be the only thing advancing this step for cash.
+    if (step.id === 'financing' && this.paymentMethod === 'cash') return;
+    if (step.waitingOn === 'ucg' || step.waitingOn === 'bank') {
       this.timer = setTimeout(() => this.advance(), AUTO_ADVANCE_MS);
     }
   }
@@ -177,6 +201,15 @@ export class MockDealSync implements DealSyncBackend {
     this.clearPaymentTimer();
     this.paymentTimer = setTimeout(() => {
       this.paymentStatus = 'funds_verified';
+      // For cash, this *is* the "someone at UCG confirms the wire landed"
+      // moment `scheduleAutoAdvance()` deliberately stepped aside for — so
+      // it's what completes the 'financing' ("Funds Received") step too,
+      // if that's still where the timeline is sitting.
+      const idx = currentIndex(this.steps);
+      if (this.paymentMethod === 'cash' && this.steps[idx]?.id === 'financing' && idx < this.steps.length - 1) {
+        this.steps = stepsAtIndex(idx + 1);
+        this.scheduleAutoAdvance();
+      }
       this.emit();
     }, AUTO_ADVANCE_MS);
   }

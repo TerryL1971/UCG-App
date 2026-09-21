@@ -233,7 +233,7 @@ export default function DealIntakeScreen() {
     // Tell the deal-sync backend a customer action happened — in the mock
     // this nudges the timeline off "Matched"/"Application"; with a real
     // DealerTeam integration it'd create/update the Sales Up record.
-    sendDealSignal({ type: 'intake-submitted' });
+    sendDealSignal({ type: 'intake-submitted', paymentMethod });
 
     // Stays in the app — Terry, 2026-09-21: submitting shouldn't bounce
     // the customer out to WhatsApp. (A version of this briefly did launch

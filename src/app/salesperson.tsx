@@ -14,10 +14,11 @@ import {
   AI_CHAT_MAX_USER_MESSAGES,
 } from '@/constants/ai-chat';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
-import { SUPPORT_WHATSAPP, ucgAssistant, whatsappChatUrl } from '@/constants/mock-data';
+import { specialistWhatsapp, ucgAssistant, whatsappChatUrl } from '@/constants/mock-data';
 import { parseJsonResponse } from '@/lib/api-fetch';
 import { useDeal } from '@/lib/deal-context';
 import { useDealIntake } from '@/lib/deal-intake-context';
+import { useDealSync } from '@/lib/deal-sync';
 import { getOwnerId } from '@/lib/document-storage';
 import { useWarranty } from '@/lib/warranty-context';
 
@@ -36,14 +37,18 @@ interface ChatMessage {
  *
  * The "can't move forward?" link at the bottom is the last-resort escape
  * hatch to a real UCG agent over WhatsApp — meant for a genuinely stuck
- * customer, not a primary path. It points at `SUPPORT_WHATSAPP`
- * (mock-data.ts), which is still a stand-in until Terry provides the
- * Trengo-connected number.
+ * customer, not a primary path. Before a deposit (no assigned salesperson
+ * yet), it opens `SUPPORT_WHATSAPP` (mock-data.ts), the shared Trengo
+ * inbox — still a stand-in until Terry provides the Trengo-connected
+ * number. Once `dealState.salesperson` is populated, `specialistWhatsapp()`
+ * switches this to that person's own number instead — there's a real
+ * person to message directly by then, not a shared inbox.
  */
 export default function SalespersonScreen() {
   const { car } = useDeal();
   const { intake } = useDealIntake();
   const { choice: warrantyChoice } = useWarranty();
+  const { state: dealState } = useDealSync();
   const carLabel = car ? `${car.year} ${car.title}` : 'your next car';
   const scrollViewRef = useRef<ScrollView>(null);
   const inputRef = useRef<TextInput>(null);
@@ -168,7 +173,10 @@ export default function SalespersonScreen() {
 
   const messageASpecialist = () =>
     Linking.openURL(
-      whatsappChatUrl(SUPPORT_WHATSAPP, `Hi UCG — I'm stuck in the app on ${carLabel} and need a hand.`),
+      whatsappChatUrl(
+        specialistWhatsapp(dealState.salesperson),
+        `Hi UCG — I'm stuck in the app on ${carLabel} and need a hand.`,
+      ),
     ).catch(() => {});
 
   // The owner's kill switch (src/constants/ai-chat.ts) — flip
@@ -187,7 +195,7 @@ export default function SalespersonScreen() {
       setMessages((prev) => [...prev, { role: 'user', content: text }]);
       setInput('');
       dismissKeyboard();
-      Linking.openURL(whatsappChatUrl(SUPPORT_WHATSAPP, text)).catch(() => {});
+      Linking.openURL(whatsappChatUrl(specialistWhatsapp(dealState.salesperson), text)).catch(() => {});
     };
 
     return (

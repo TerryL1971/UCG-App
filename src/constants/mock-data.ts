@@ -83,6 +83,16 @@ export function whatsappChatUrl(phoneDigits: string, message?: string): string {
   return message ? `${base}?text=${encodeURIComponent(message)}` : base;
 }
 
+/** Which number a "message UCG" action should actually open — the shared
+ * Trengo inbox before a real human is assigned to the deal, that person's
+ * own WhatsApp afterward (`DealServerState.salesperson`, populated once a
+ * deposit is in). Before then, several possible agents could pick up a
+ * Trengo-routed message, so there's no one "your salesperson" yet to
+ * message directly. */
+export function specialistWhatsapp(assigned: Salesperson | null): string {
+  return assigned?.whatsapp ?? SUPPORT_WHATSAPP;
+}
+
 export interface UcgLocation {
   name: string;
   reviewUrl: string;

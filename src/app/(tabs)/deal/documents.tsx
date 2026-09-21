@@ -9,9 +9,10 @@ import { DocumentIcon, IdCardIcon, MapPinIcon, PlusIcon } from '@/components/ico
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { StatusChip } from '@/components/ui/chip';
 import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
-import { SUPPORT_WHATSAPP, whatsappChatUrl, type DealDocument } from '@/constants/mock-data';
+import { specialistWhatsapp, whatsappChatUrl, type DealDocument } from '@/constants/mock-data';
 import { useDeal } from '@/lib/deal-context';
 import { useDealIntake } from '@/lib/deal-intake-context';
+import { useDealSync } from '@/lib/deal-sync';
 import { useDealDocuments, type DocumentState } from '@/lib/documents-context';
 import { getOwnerId, lookupDealDocuments, type LookedUpDocument } from '@/lib/document-storage';
 import { compressPhoto } from '@/lib/image';
@@ -136,6 +137,7 @@ export default function DocumentsScreen() {
   const { lastCapturedLicensePhoto, clearLastCapturedLicensePhoto } = useLicenseCapture();
   const { car } = useDeal();
   const { intake } = useDealIntake();
+  const { state: dealState } = useDealSync();
 
   // The customer's own retrieval code (document-storage.ts's getOwnerId)
   // — shown so they can give it to a salesperson or type it back in on
@@ -290,7 +292,7 @@ export default function DocumentsScreen() {
             onPress={() =>
               myCode &&
               Linking.openURL(
-                whatsappChatUrl(SUPPORT_WHATSAPP, `Hi! Here's my UCG documents code: ${myCode}`),
+                whatsappChatUrl(specialistWhatsapp(dealState.salesperson), `Hi! Here's my UCG documents code: ${myCode}`),
               ).catch(() => {})
             }>
             <Text style={styles.shareCodeButtonLabel}>Share via WhatsApp</Text>

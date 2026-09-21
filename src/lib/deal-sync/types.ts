@@ -1,4 +1,4 @@
-import type { DealStep, FinancingTerms, Salesperson } from '@/constants/mock-data';
+import type { DealStep, FinancingTerms, PaymentMethod, Salesperson } from '@/constants/mock-data';
 
 /**
  * The slice of a deal's state that, in production, comes from UCG's back
@@ -47,10 +47,19 @@ export interface DealServerState {
  * through the backend proxy (create/update a Sales Up or Deal record).
  */
 export type DealSignal =
-  | { type: 'intake-submitted' }
+  // Carries paymentMethod because the back office needs to know cash vs.
+  // financing to make sense of the 'financing' step at all — cash never
+  // goes to a bank for approval, it goes to `paymentStatus` instead (see
+  // that field's comment above and mock-deal-sync.ts).
+  | { type: 'intake-submitted'; paymentMethod: PaymentMethod }
   | { type: 'deposit-paid' }
   | { type: 'documents-updated' }
-  | { type: 'payment-submitted' };
+  | { type: 'payment-submitted' }
+  // The customer uploaded a photo of their signed Purchase Order (or Cost
+  // Estimate, for DEN-stock cars) via DocumentCard — see deal-paperwork.tsx.
+  // There's no bank/e-sign integration behind this; the upload itself is
+  // the completion signal.
+  | { type: 'contract-signed' };
 
 /**
  * The one interface the whole app talks to for deal state. Screens never

@@ -43,7 +43,7 @@ function Row({ label, value, bold, red }: { label: string; value: string; bold?:
 export default function DealPaperworkScreen() {
   const { car } = useDeal();
   const { intake } = useDealIntake();
-  const { state: dealState } = useDealSync();
+  const { state: dealState, send: sendDealSignal } = useDealSync();
   const { choice: warrantyChoice } = useWarranty();
 
   const hasPpp = warrantyChoice?.decision === 'accepted';
@@ -97,6 +97,7 @@ export default function DealPaperworkScreen() {
             description="Price + German VAT — take 3–5 copies to the VAT Office and your bank for a Cashier's Check."
             buildHtml={() => buildCostEstimateHtml(car, intake, hasPpp)}
             context={docContext}
+            onSigned={() => sendDealSignal({ type: 'contract-signed' })}
           />
         ) : (
           <>
@@ -106,6 +107,7 @@ export default function DealPaperworkScreen() {
               description="Finalizes your price and payment method."
               buildHtml={() => buildPurchaseOrderHtml(car, intake, dealState.financingTerms, hasPpp)}
               context={docContext}
+              onSigned={() => sendDealSignal({ type: 'contract-signed' })}
             />
             <DocumentCard
               docId="bill-of-sale"

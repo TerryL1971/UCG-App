@@ -6,8 +6,9 @@ import { CheckCircleIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
-import { SUPPORT_WHATSAPP, whatsappChatUrl } from '@/constants/mock-data';
+import { specialistWhatsapp, whatsappChatUrl } from '@/constants/mock-data';
 import { useDeal } from '@/lib/deal-context';
+import { useDealSync } from '@/lib/deal-sync';
 
 /**
  * The other add-on flagged as an empty row (docs/deal-flow-roadmap.md's
@@ -20,11 +21,12 @@ import { useDeal } from '@/lib/deal-context';
  */
 export default function PaintProtectionScreen() {
   const { car } = useDeal();
+  const { state: dealState } = useDealSync();
   const carLabel = car ? `${car.year} ${car.title}` : 'your car';
 
   const askAboutPpf = () => {
     const msg = `Hi UCG — I'd like to ask about Paint Protection Film (PPF) for ${carLabel}.`;
-    Linking.openURL(whatsappChatUrl(SUPPORT_WHATSAPP, msg)).catch(() => {});
+    Linking.openURL(whatsappChatUrl(specialistWhatsapp(dealState.salesperson), msg)).catch(() => {});
   };
 
   return (
