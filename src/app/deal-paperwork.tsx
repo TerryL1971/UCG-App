@@ -1,3 +1,5 @@
+import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import * as Print from 'expo-print';
 import { router } from 'expo-router';
 import * as Sharing from 'expo-sharing';
@@ -5,6 +7,7 @@ import { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { CheckCircleIcon, PlusIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
@@ -19,6 +22,8 @@ import {
 import { useDeal } from '@/lib/deal-context';
 import { useDealIntake } from '@/lib/deal-intake-context';
 import { useDealSync } from '@/lib/deal-sync';
+import { uploadGeneratedDocument, uploadSignedDocument, type DealDocumentContext } from '@/lib/document-storage';
+import { compressPhoto } from '@/lib/image';
 import { useWarranty } from '@/lib/warranty-context';
 
 /**
@@ -29,17 +34,44 @@ import { useWarranty } from '@/lib/warranty-context';
  * approach as wire-instructions.tsx. See docs/purchase-paperwork.md for
  * the two real paths this mirrors, and src/lib/deal-documents.ts for the
  * document content itself.
+ *
+ * Each card also does two things past just generating the PDF (Terry,
+ * 2026-09-21 — "when documents are produced, they need to be loaded to
+ * the app," and "a salesperson needs to sign and scan the document back
+ * into the app"):
+ *  - Saving/sharing a PDF also uploads that exact file to Storage
+ *    (document-storage.ts) — a real, retrievable copy of what the
+ *    customer actually saw, not just something regenerated live from
+ *    whatever today's numbers are.
+ *  - "Upload Signed Copy" captures a photo of the physically-signed
+ *    paperwork and uploads it too. There's no separate salesperson-
+ *    facing screen in this app (see docs/backend-and-ai-agent-plan.md) —
+ *    this is captured from the same screen/device the customer already
+ *    has the app open on, on the understanding that signing happens with
+ *    both people present. The signed photo stays viewable/shareable for
+ *    the rest of THIS app session (same as any other locally-captured
+ *    photo elsewhere in the app) — reopening the app later won't show it
+ *    again from here, since retrieving it back from Storage would need
+ *    real per-customer auth this app doesn't have yet (see that file's
+ *    comment on the anon-key/RLS tradeoff). Retrievable meanwhile from
+ *    the Supabase dashboard, same as every other document in this bucket.
  */
 function DocumentCard({
+  docId,
   title,
   description,
   buildHtml,
+  context,
 }: {
+  docId: string;
   title: string;
   description: string;
   buildHtml: () => string;
+  context: DealDocumentContext;
 }) {
   const [isWorking, setIsWorking] = useState(false);
+  const [signedUri, setSignedUri] = useState<string | null>(null);
+  const [isUploadingSigned, setIsUploadingSigned] = useState(false);
 
   const handlePrint = async () => {
     try {
@@ -59,10 +91,50 @@ function DocumentCard({
       } else {
         Alert.alert('Saved', 'The PDF was created, but sharing isn’t available on this device.');
       }
+      // Fire-and-forget: the real, durable copy of what was just shown/
+      // shared, not a regeneration — see the file comment above.
+      uploadGeneratedDocument(docId, uri, context).catch(() => {});
     } catch {
       Alert.alert('Something went wrong', 'Could not create the PDF — try Print instead.');
     } finally {
       setIsWorking(false);
+    }
+  };
+
+  const captureSignedCopy = async (useCamera: boolean) => {
+    const permission = useCamera
+      ? await ImagePicker.requestCameraPermissionsAsync()
+      : await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permission needed', `Allow ${useCamera ? 'camera' : 'photo library'} access to add the signed copy.`);
+      return;
+    }
+    const launch = useCamera ? ImagePicker.launchCameraAsync : ImagePicker.launchImageLibraryAsync;
+    const result = await launch({ mediaTypes: ['images'], quality: 0.8 });
+    if (result.canceled || !result.assets[0]) return;
+
+    setIsUploadingSigned(true);
+    try {
+      const compressed = await compressPhoto(result.assets[0].uri);
+      setSignedUri(compressed);
+      await uploadSignedDocument(docId, compressed, context);
+    } finally {
+      setIsUploadingSigned(false);
+    }
+  };
+
+  const promptUploadSigned = () => {
+    Alert.alert('Add Signed Copy', undefined, [
+      { text: 'Take Photo', onPress: () => captureSignedCopy(true) },
+      { text: 'Choose from Library', onPress: () => captureSignedCopy(false) },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
+  const shareSignedCopy = async () => {
+    if (!signedUri) return;
+    if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(signedUri);
     }
   };
 
@@ -78,6 +150,27 @@ function DocumentCard({
           <Text style={styles.docBtnPrimaryLabel}>{isWorking ? 'Preparing…' : 'Save / Share PDF'}</Text>
         </Pressable>
       </View>
+
+      {signedUri ? (
+        <Pressable style={styles.signedRow} onPress={shareSignedCopy}>
+          <Image source={{ uri: signedUri }} style={styles.signedThumb} contentFit="cover" />
+          <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+              <CheckCircleIcon size={13} />
+              <Text style={styles.signedLabel}>Signed copy on file</Text>
+            </View>
+            <Text style={styles.signedSub}>Tap to share · Replace</Text>
+          </View>
+          <Pressable hitSlop={8} onPress={promptUploadSigned}>
+            <Text style={styles.signedReplace}>Replace</Text>
+          </Pressable>
+        </Pressable>
+      ) : (
+        <Pressable style={styles.addSignedButton} onPress={promptUploadSigned} disabled={isUploadingSigned}>
+          <PlusIcon size={14} color={Colors.navy} />
+          <Text style={styles.addSignedLabel}>{isUploadingSigned ? 'Adding…' : 'Upload Signed Copy'}</Text>
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -101,6 +194,17 @@ export default function DealPaperworkScreen() {
   const isDen = isDenStock(car?.stockNumber);
   const pricing = computeDealPricing(car, hasPpp);
   const carLabel = car ? `${car.year} ${car.title}` : 'your car';
+
+  // Same context shape deal/documents.tsx sends with a license page —
+  // whatever the app already knows about who/what this document is for,
+  // attached at upload time so a salesperson can actually find it later.
+  const docContext: DealDocumentContext = {
+    customerName: intake?.fullName,
+    customerContact: intake?.contact,
+    carStockNumber: car?.stockNumber,
+    carTitle: car ? `${car.year} ${car.title}` : undefined,
+    base: intake?.base,
+  };
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
@@ -132,21 +236,27 @@ export default function DealPaperworkScreen() {
 
         {isDen ? (
           <DocumentCard
+            docId="cost-estimate"
             title="Cost Estimate"
             description="Price + German VAT — take 3–5 copies to the VAT Office and your bank for a Cashier's Check."
             buildHtml={() => buildCostEstimateHtml(car, intake, hasPpp)}
+            context={docContext}
           />
         ) : (
           <>
             <DocumentCard
+              docId="purchase-order"
               title="Purchase Order / Kaufvertrag"
               description="Finalizes your price and payment method."
               buildHtml={() => buildPurchaseOrderHtml(car, intake, dealState.financingTerms, hasPpp)}
+              context={docContext}
             />
             <DocumentCard
+              docId="bill-of-sale"
               title="Bill of Sale"
               description="Print 5 signed copies — these go to the base Customs Office next."
               buildHtml={() => buildBillOfSaleHtml(car, intake, hasPpp)}
+              context={docContext}
             />
           </>
         )}
@@ -219,6 +329,32 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   docBtnPrimaryLabel: { fontFamily: Fonts.bodySemibold, fontSize: 13, color: '#fff' },
+  addSignedButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    height: 38,
+    borderRadius: Radius.md,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    borderStyle: 'dashed',
+    marginTop: 10,
+  },
+  addSignedLabel: { fontFamily: Fonts.bodySemibold, fontSize: 12.5, color: Colors.navy },
+  signedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 10,
+    padding: 8,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.greenTint,
+  },
+  signedThumb: { width: 40, height: 40, borderRadius: 8, backgroundColor: Colors.navyTint },
+  signedLabel: { fontFamily: Fonts.bodySemibold, fontSize: 12.5, color: Colors.text },
+  signedSub: { fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted, marginTop: 1 },
+  signedReplace: { fontFamily: Fonts.bodySemibold, fontSize: 11.5, color: Colors.red },
   roadCard: {
     backgroundColor: '#fff',
     borderRadius: Radius.lg,

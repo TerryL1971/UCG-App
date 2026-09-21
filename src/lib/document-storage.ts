@@ -76,27 +76,32 @@ export interface DealDocumentContext {
   base?: string | null;
 }
 
+export type DealDocumentKind = 'scan' | 'generated' | 'signed';
+
 /**
- * Uploads one already-captured, already-compressed photo (a local file://
- * uri from compressPhoto) to the private `documents` bucket, then records
- * a row for it in `deal_documents` with whatever context was passed in.
- * Fire-and-forget by design — the caller (documents-context.tsx) already
- * has what it needs for the UI (the local uri); this just makes a second,
+ * Uploads one local file (a `file://` uri — a compressed photo, or a PDF
+ * expo-print just wrote to disk) to the private `documents` bucket, then
+ * records a row for it in `deal_documents` with whatever context was
+ * passed in. Fire-and-forget by design — the caller already has what it
+ * needs for its own UI (the local uri); this just makes a second,
  * durable, findable copy. Returns the storage path on success, null on
  * any failure (Supabase not configured, bucket doesn't exist yet,
  * network, etc.) — callers should treat null as "fine, nothing to do,"
  * not an error to surface to the customer.
  */
-export async function uploadDocumentPhoto(
+async function uploadDealDocument(
   docId: string,
   localUri: string,
+  kind: DealDocumentKind,
+  contentType: string,
+  extension: string,
   context: DealDocumentContext = {},
 ): Promise<string | null> {
   if (!isSupabaseConfigured || !supabase) return null;
 
   try {
     const ownerId = await getOwnerId();
-    const path = `${ownerId}/${docId}-${Date.now()}.jpg`;
+    const path = `${ownerId}/${docId}-${kind}-${Date.now()}.${extension}`;
 
     // React Native's fetch(uri) → arrayBuffer() is the documented way to
     // read a local file:// uri into something Storage's upload() accepts
@@ -105,7 +110,7 @@ export async function uploadDocumentPhoto(
     const arrayBuffer = await response.arrayBuffer();
 
     const { error } = await supabase.storage.from(BUCKET).upload(path, arrayBuffer, {
-      contentType: 'image/jpeg',
+      contentType,
       upsert: false,
     });
     if (error) {
@@ -122,6 +127,7 @@ export async function uploadDocumentPhoto(
     const { error: rowError } = await supabase.from('deal_documents').insert({
       owner_id: ownerId,
       doc_id: docId,
+      kind,
       storage_path: path,
       customer_name: context.customerName ?? null,
       customer_contact: context.customerContact ?? null,
@@ -138,4 +144,33 @@ export async function uploadDocumentPhoto(
     console.error('Document upload to Supabase Storage failed:', err);
     return null;
   }
+}
+
+/** A photographed identity document — the license front/back flow
+ * (deal/documents.tsx). Unchanged behavior/signature from before `kind`
+ * existed; just routes through the shared uploader now. */
+export function uploadDocumentPhoto(docId: string, localUri: string, context: DealDocumentContext = {}) {
+  return uploadDealDocument(docId, localUri, 'scan', 'image/jpeg', 'jpg', context);
+}
+
+/** An app-generated sample PDF (Cost Estimate, Purchase Order, Bill of
+ * Sale — deal-paperwork.tsx), uploaded the moment a customer actually
+ * saves/shares it — not proactively on every screen view, since that
+ * would upload a fresh duplicate every time the pricing hasn't even
+ * changed. This is what makes "the document a customer looked at" a real,
+ * retrievable artifact instead of something only ever regenerated live
+ * from whatever the deal's numbers happen to be today (Terry, 2026-09-21:
+ * "when documents are produced, they need to be loaded to the app"). */
+export function uploadGeneratedDocument(docId: string, localPdfUri: string, context: DealDocumentContext = {}) {
+  return uploadDealDocument(docId, localPdfUri, 'generated', 'application/pdf', 'pdf', context);
+}
+
+/** A photographed/scanned copy of the actual signed physical paperwork
+ * (Terry, 2026-09-21: "a salesperson needs to sign and scan the document
+ * back into the app"). Captured from the same screen/device the customer
+ * already has the app open on — there's no separate salesperson-facing
+ * screen in this app, see the migration comment this shipped with for
+ * why that's a deliberate scope choice, not an oversight. */
+export function uploadSignedDocument(docId: string, localImageUri: string, context: DealDocumentContext = {}) {
+  return uploadDealDocument(docId, localImageUri, 'signed', 'image/jpeg', 'jpg', context);
 }
