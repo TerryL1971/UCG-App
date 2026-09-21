@@ -2,10 +2,10 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { IdCardIcon, MapPinIcon, PlusIcon } from '@/components/icons';
+import { DocumentIcon, IdCardIcon, MapPinIcon, PlusIcon } from '@/components/icons';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { StatusChip } from '@/components/ui/chip';
 import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
@@ -13,6 +13,7 @@ import { type DealDocument } from '@/constants/mock-data';
 import { useDeal } from '@/lib/deal-context';
 import { useDealIntake } from '@/lib/deal-intake-context';
 import { useDealDocuments, type DocumentState } from '@/lib/documents-context';
+import { getOwnerId, lookupDealDocuments, type LookedUpDocument } from '@/lib/document-storage';
 import { compressPhoto } from '@/lib/image';
 import { useLicenseCapture, type LicenseSide } from '@/lib/license-capture-context';
 
@@ -136,6 +137,35 @@ export default function DocumentsScreen() {
   const { car } = useDeal();
   const { intake } = useDealIntake();
 
+  // The customer's own retrieval code (document-storage.ts's getOwnerId)
+  // — shown so they can give it to a salesperson or type it back in on
+  // another device/reinstall to pull their generated/signed paperwork
+  // back (Terry, 2026-09-21: "print any and all documents on demand").
+  // Fetched once; it's the same value for the life of this install.
+  const [myCode, setMyCode] = useState<string | null>(null);
+  useEffect(() => {
+    getOwnerId().then(setMyCode);
+  }, []);
+
+  const [retrieveCodeInput, setRetrieveCodeInput] = useState('');
+  const [retrievedDocs, setRetrievedDocs] = useState<LookedUpDocument[] | null>(null);
+  const [isRetrieving, setIsRetrieving] = useState(false);
+
+  const handleRetrieve = async () => {
+    if (!retrieveCodeInput.trim()) return;
+    setIsRetrieving(true);
+    setRetrievedDocs(null);
+    try {
+      const docs = await lookupDealDocuments(retrieveCodeInput);
+      setRetrievedDocs(docs);
+      if (docs.length === 0) {
+        Alert.alert('Nothing found', "That code didn't match any paperwork yet — double-check it with your specialist.");
+      }
+    } finally {
+      setIsRetrieving(false);
+    }
+  };
+
   // Whatever the app already knows about who/what this upload is for,
   // right now — passed through to addDocumentPage so the real backend
   // row (document-storage.ts's deal_documents table) actually says
@@ -246,6 +276,55 @@ export default function DocumentsScreen() {
           moment your license is ready for review.
         </Text>
 
+        <View style={[styles.codeCard, Shadow.card]}>
+          <Text style={styles.codeCardTitle}>Your Documents Code</Text>
+          <Text style={styles.codeCardBody}>
+            Give this to your specialist, or use it to get your generated/signed paperwork back on another device.
+          </Text>
+          <Text style={styles.codeText}>{myCode ?? '········'}</Text>
+        </View>
+
+        <View style={[styles.codeCard, Shadow.card]}>
+          <Text style={styles.codeCardTitle}>Have a Code?</Text>
+          <Text style={styles.codeCardBody}>
+            Enter a documents code — yours from before, or one your specialist gave you — to pull up that paperwork.
+          </Text>
+          <View style={styles.retrieveRow}>
+            <TextInput
+              value={retrieveCodeInput}
+              onChangeText={(t) => setRetrieveCodeInput(t.toUpperCase())}
+              placeholder="e.g. AB3D9XZK"
+              placeholderTextColor={Colors.textFaint}
+              autoCapitalize="characters"
+              maxLength={8}
+              style={styles.retrieveInput}
+            />
+            <Pressable style={styles.retrieveButton} onPress={handleRetrieve} disabled={isRetrieving}>
+              <Text style={styles.retrieveButtonLabel}>{isRetrieving ? 'Looking…' : 'Retrieve'}</Text>
+            </Pressable>
+          </View>
+
+          {retrievedDocs && retrievedDocs.length > 0 && (
+            <View style={{ gap: 8, marginTop: 12 }}>
+              {retrievedDocs.map((doc) => (
+                <Pressable
+                  key={doc.docId + doc.kind + doc.createdAt}
+                  style={styles.retrievedRow}
+                  onPress={() => Linking.openURL(doc.url).catch(() => {})}>
+                  <DocumentIcon size={17} color={Colors.navy} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.retrievedTitle}>
+                      {doc.docId} · {doc.kind === 'signed' ? 'Signed copy' : 'Generated'}
+                    </Text>
+                    <Text style={styles.retrievedSub}>{new Date(doc.createdAt).toLocaleDateString()}</Text>
+                  </View>
+                  <Text style={styles.retrievedOpen}>Open  ›</Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
+        </View>
+
         <Pressable style={styles.vroCard} onPress={() => router.push('/vro-checklist')}>
           <MapPinIcon size={18} color={Colors.navy} />
           <View style={{ flex: 1 }}>
@@ -274,6 +353,59 @@ const styles = StyleSheet.create({
     padding: 14,
     marginTop: 4,
   },
+  codeCard: {
+    backgroundColor: '#fff',
+    borderRadius: Radius.lg,
+    padding: 14,
+    marginTop: 4,
+  },
+  codeCardTitle: { fontFamily: Fonts.bodyBold, fontSize: 13.5, color: Colors.navy },
+  codeCardBody: { fontFamily: Fonts.body, fontSize: 11.5, color: Colors.textMuted, marginTop: 3, lineHeight: 16 },
+  codeText: {
+    fontFamily: Fonts.display,
+    fontSize: 24,
+    letterSpacing: 3,
+    color: Colors.text,
+    marginTop: 8,
+    textAlign: 'center',
+    backgroundColor: Colors.navyTint,
+    borderRadius: Radius.md,
+    paddingVertical: 10,
+  },
+  retrieveRow: { flexDirection: 'row', gap: 8, marginTop: 10 },
+  retrieveInput: {
+    flex: 1,
+    height: 44,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    borderRadius: Radius.md,
+    backgroundColor: '#fff',
+    paddingHorizontal: 12,
+    fontFamily: Fonts.bodySemibold,
+    fontSize: 15,
+    letterSpacing: 1.5,
+    color: Colors.text,
+  },
+  retrieveButton: {
+    height: 44,
+    paddingHorizontal: 16,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.navy,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  retrieveButtonLabel: { fontFamily: Fonts.bodySemibold, fontSize: 13, color: '#fff' },
+  retrievedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 10,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.bg,
+  },
+  retrievedTitle: { fontFamily: Fonts.bodySemibold, fontSize: 13, color: Colors.text, textTransform: 'capitalize' },
+  retrievedSub: { fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted, marginTop: 1 },
+  retrievedOpen: { fontFamily: Fonts.bodySemibold, fontSize: 12, color: Colors.red },
   vroTitle: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.text },
   vroSub: { fontFamily: Fonts.body, fontSize: 11.5, color: Colors.textMuted, marginTop: 1, lineHeight: 15 },
   vroChevron: { fontFamily: Fonts.bodyBold, fontSize: 20, color: Colors.textFaint },

@@ -18,10 +18,19 @@ import { isSupabaseConfigured, supabase } from '@/lib/supabase';
  * genuinely live for real customers. Safe for Terry's own testing; treat
  * that checklist item as more urgent, not less, now that this exists.
  *
- * No admin/salesperson-facing screen exists in this app yet — retrieval
- * for now means opening this bucket directly in the Supabase dashboard's
- * Storage browser, grouped by the ownerId folder below. A real internal
- * dashboard is future work (see docs/backend-and-ai-agent-plan.md).
+ * There's still no salesperson-facing screen in this app (Terry,
+ * 2026-09-21, correcting an earlier assumption of mine: salespeople work
+ * from WhatsApp/Genius Scan/whatever they already use, not a custom tool
+ * bolted onto the customer app) — a scanned identity document (`kind:
+ * 'scan'`) is retrievable from the Supabase dashboard's Storage browser,
+ * grouped by the ownerId/deal-code folder below. Generated and signed
+ * paperwork (`kind: 'generated'` / `'signed'`) has a real customer-facing
+ * retrieval path now — `lookupDealDocuments` below, backed by the
+ * lookup-deal-documents Edge Function — using the short deal code this
+ * file generates instead of real per-customer auth (Terry's explicit,
+ * accepted tradeoff, not an oversight). A real internal dashboard, and a
+ * real inbound channel for a salesperson's own scans (email — see
+ * docs/document-retrieval-plan.md), are both still separate, larger work.
  *
  * Requires one-time setup Terry has to do himself in the Supabase
  * dashboard (no service-role key lives in this app, so nothing here can
@@ -31,15 +40,35 @@ import { isSupabaseConfigured, supabase } from '@/lib/supabase';
  */
 const BUCKET = 'documents';
 const ANON_ID_KEY = 'ucg.document-storage.anon-owner-id';
+// Excludes 0/O/1/I/L — characters people misread or mistype when copying
+// a code off a screen or reading it aloud over the phone.
+const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const CODE_LENGTH = 8;
 
 let cachedOwnerId: string | null = null;
+
+function generateDealCode(): string {
+  let code = '';
+  for (let i = 0; i < CODE_LENGTH; i++) {
+    code += CODE_ALPHABET[Math.floor(Math.random() * CODE_ALPHABET.length)];
+  }
+  return code;
+}
 
 /** A stable per-install id to group a customer's uploads under in the
  * bucket, independent of whether they ever create a real account —
  * "Browse without an account" is a normal, supported path through this
  * app (see auth-context.tsx), so this can't require a real Supabase Auth
  * session to work. Not a security boundary — see the file comment on
- * what that tradeoff means with the anon key. */
+ * what that tradeoff means with the anon key.
+ *
+ * Short and human-typeable on purpose (2026-09-21) — this doubles as the
+ * "deal code" a customer can hand a salesperson or re-enter on another
+ * device to pull their own documents back (see lookup-deal-documents,
+ * the Edge Function this pairs with). It started as an ugly
+ * `anon-<timestamp>-<random>` string good only for a Storage folder
+ * name; nobody could read that aloud. Old installs keep whatever they
+ * already had cached — only fresh ones get the new short format. */
 async function getOwnerId(): Promise<string> {
   if (cachedOwnerId) return cachedOwnerId;
   try {
@@ -48,16 +77,34 @@ async function getOwnerId(): Promise<string> {
       cachedOwnerId = stored;
       return stored;
     }
-    const fresh = `anon-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+    const fresh = generateDealCode();
     await AsyncStorage.setItem(ANON_ID_KEY, fresh);
     cachedOwnerId = fresh;
     return fresh;
   } catch {
     // AsyncStorage unavailable for some reason — fall back to a
     // per-session-only id rather than failing the upload outright.
-    return `anon-${Date.now().toString(36)}`;
+    return generateDealCode();
   }
 }
+
+/** Exposed for the Documents screen to show the code + let someone
+ * "restore" access on a different device by typing in a code they were
+ * given elsewhere (their own, from before a reinstall, or one texted by
+ * a salesperson). Overwrites the cached/stored id — from that point on,
+ * new uploads from this device also group under the adopted code. */
+export async function setOwnerCode(code: string): Promise<void> {
+  const normalized = code.trim().toUpperCase();
+  cachedOwnerId = normalized;
+  try {
+    await AsyncStorage.setItem(ANON_ID_KEY, normalized);
+  } catch {
+    // Falls back to in-memory only for this session — same graceful
+    // degradation as getOwnerId() above.
+  }
+}
+
+export { getOwnerId };
 
 /** Whatever the app already knows about who/what this document belongs
  * to at the moment it's captured — from deal-intake and the chosen car.
@@ -173,4 +220,43 @@ export function uploadGeneratedDocument(docId: string, localPdfUri: string, cont
  * why that's a deliberate scope choice, not an oversight. */
 export function uploadSignedDocument(docId: string, localImageUri: string, context: DealDocumentContext = {}) {
   return uploadDealDocument(docId, localImageUri, 'signed', 'image/jpeg', 'jpg', context);
+}
+
+export interface LookedUpDocument {
+  docId: string;
+  kind: 'generated' | 'signed';
+  createdAt: string;
+  url: string;
+}
+
+/**
+ * Pulls back generated/signed paperwork for a deal code via the
+ * lookup-deal-documents Edge Function — the customer-retrieval half of
+ * "print any and all documents on demand" (Terry, 2026-09-21). Never
+ * queries `deal_documents` or Storage directly with the anon key for
+ * this; the function runs with elevated access server-side and hands
+ * back short-lived signed URLs, which is what makes this safe without
+ * real per-customer auth. Returns an empty array on any failure — same
+ * "fail quiet, don't alarm the customer" shape as the upload functions
+ * above, except here the caller DOES need to show something (there's a
+ * real user action waiting on this), so callers should show their own
+ * "couldn't reach that / try again" message on an empty/failed result
+ * rather than silently doing nothing.
+ */
+export async function lookupDealDocuments(code: string): Promise<LookedUpDocument[]> {
+  if (!isSupabaseConfigured || !supabase) return [];
+  try {
+    const { data, error } = await supabase.functions.invoke<{ documents: LookedUpDocument[] }>(
+      'lookup-deal-documents',
+      { body: { code: code.trim().toUpperCase() } },
+    );
+    if (error || !data) {
+      console.error('lookup-deal-documents failed:', error?.message);
+      return [];
+    }
+    return data.documents;
+  } catch (err) {
+    console.error('lookup-deal-documents failed:', err);
+    return [];
+  }
 }
