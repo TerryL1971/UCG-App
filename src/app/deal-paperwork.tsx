@@ -124,8 +124,8 @@ export default function DealPaperworkScreen() {
             </>
           ) : (
             <>
-              <Row label="Deposit Paid" value={`-${money(pricing.holdAmount)}`} />
-              <Row label="Balance Due" value={money(pricing.balanceAfterHold)} bold red />
+              <Row label="Down Payment" value={`-${money(pricing.holdAmount)}`} />
+              <Row label="Amount Due Upon Delivery" value={money(pricing.balanceAfterHold)} bold red />
             </>
           )}
         </View>
@@ -139,7 +139,7 @@ export default function DealPaperworkScreen() {
         ) : (
           <>
             <DocumentCard
-              title="Purchase Order"
+              title="Purchase Order / Kaufvertrag"
               description="Finalizes your price and payment method."
               buildHtml={() => buildPurchaseOrderHtml(car, intake, dealState.financingTerms, hasPpp)}
             />
