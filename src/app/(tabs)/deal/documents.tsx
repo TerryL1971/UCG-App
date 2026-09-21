@@ -9,7 +9,7 @@ import { DocumentIcon, IdCardIcon, MapPinIcon, PlusIcon } from '@/components/ico
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { StatusChip } from '@/components/ui/chip';
 import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
-import { type DealDocument } from '@/constants/mock-data';
+import { SUPPORT_WHATSAPP, whatsappChatUrl, type DealDocument } from '@/constants/mock-data';
 import { useDeal } from '@/lib/deal-context';
 import { useDealIntake } from '@/lib/deal-intake-context';
 import { useDealDocuments, type DocumentState } from '@/lib/documents-context';
@@ -280,8 +280,21 @@ export default function DocumentsScreen() {
           <Text style={styles.codeCardTitle}>Your Documents Code</Text>
           <Text style={styles.codeCardBody}>
             Give this to your specialist, or use it to get your generated/signed paperwork back on another device.
+            {/* Automatically sent with your first message when you submitted your deal — this is for sharing it
+                again, any other time it's needed (Sell It Back doesn't go through that same first message). */}
           </Text>
           <Text style={styles.codeText}>{myCode ?? '········'}</Text>
+          <Pressable
+            style={styles.shareCodeButton}
+            disabled={!myCode}
+            onPress={() =>
+              myCode &&
+              Linking.openURL(
+                whatsappChatUrl(SUPPORT_WHATSAPP, `Hi! Here's my UCG documents code: ${myCode}`),
+              ).catch(() => {})
+            }>
+            <Text style={styles.shareCodeButtonLabel}>Share via WhatsApp</Text>
+          </Pressable>
         </View>
 
         <View style={[styles.codeCard, Shadow.card]}>
@@ -372,6 +385,16 @@ const styles = StyleSheet.create({
     borderRadius: Radius.md,
     paddingVertical: 10,
   },
+  shareCodeButton: {
+    height: 40,
+    borderRadius: Radius.md,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
+  },
+  shareCodeButtonLabel: { fontFamily: Fonts.bodySemibold, fontSize: 13, color: Colors.navy },
   retrieveRow: { flexDirection: 'row', gap: 8, marginTop: 10 },
   retrieveInput: {
     flex: 1,
