@@ -393,3 +393,177 @@ export function buildBillOfSaleHtml(car: InventoryDetail | null, intake: DealInt
     </html>
   `;
 }
+
+/**
+ * The SELL side — UCG buying a car FROM a customer (Sell It Back, curb
+ * purchases). Roles are reversed from every document above: UCG is the
+ * Purchaser, the customer is the Seller. Field set, the real 10-clause
+ * Terms and Conditions, and the footer are copied from a real DealerTeam
+ * "Bill of Sale / Kaufvertrag" (Terry, 2026-09-21) — a genuinely
+ * different document from the buy-side one above, not a relabeled copy
+ * (different terms entirely: condition/disclosure, deregistration,
+ * missing-title retention, cleanliness/fuel deductions — none of which
+ * apply when UCG is the one selling).
+ *
+ * Sell It Back has no year/make/model/color/engine data for a car it
+ * didn't sell — only whatever the customer typed (plate/VIN, mileage,
+ * condition) plus, if this happens to be a car they originally bought
+ * from UCG, whatever `useDeal()` still has cached. Fields with no real
+ * source are left out rather than guessed at, same rule as every other
+ * generator in this file.
+ */
+export interface SellBackDealInput {
+  car: InventoryDetail | null;
+  plateOrVin: string;
+  mileage: string;
+  mileageUnit: 'mi' | 'km';
+  condition: string;
+  sellerName: string;
+  sellerContact: string;
+  acceptedAmount: number;
+  hasLien: boolean;
+  lienHolder?: string;
+  lienAccountNumber?: string;
+  payoffAmount?: number;
+  payoffDate?: string;
+}
+
+function sellBackVehicleLines(input: SellBackDealInput): string {
+  const { car, plateOrVin, mileage, mileageUnit } = input;
+  const bits = [
+    'Used',
+    car ? `${car.year} ${car.title}` : '',
+    car?.exteriorColor ? `Color: ${car.exteriorColor}` : '',
+    `Plate / VIN: ${plateOrVin || '—'}`,
+    car?.vin && car.vin !== plateOrVin ? `VIN on file: ${car.vin}` : '',
+    mileage ? `Odometer: ${mileage} ${mileageUnit}` : '',
+    car?.engine ? `Engine: ${car.engine}` : '',
+    `Condition: ${input.condition}`,
+  ];
+  return bits.filter(Boolean).join('<br/>');
+}
+
+/**
+ * Verbatim from the real sell-side Bill of Sale (Terry, 2026-09-21) —
+ * entirely different legal text from the buy-side Terms and Conditions;
+ * this is what protects UCG when it's the one buying, not selling.
+ */
+function sellBackTermsAndConditionsHtml(): string {
+  const items: [string, string][] = [
+    [
+      'Vehicle Condition and Disclosure',
+      'The seller (I/We) confirms that all information provided to The Used Car Guys GmbH ("UCG") regarding the vehicle is complete and accurate and that the vehicle is free from any accidents, damage, defects or other material issues other than those previously disclosed to UCG in writing. Where the vehicle has been involved in an accident, the seller must provide UCG with all available documentation relating to the accident, including any insurance documentation, damage assessments and invoices or other evidence of repair work completed. If, within fourteen (14) days of handover, UCG discovers accident damage, defects or other material issues which existed prior to handover and were not previously disclosed in writing, UCG reserves the right to cancel the purchase. In such circumstances, UCG will return the vehicle to the seller and the seller will repay to UCG any purchase price or other amount already paid by UCG in connection with the purchase. Where UCG has made payment directly to a lienholder, the seller agrees to cooperate fully with UCG and the lienholder to reverse or otherwise resolve the transaction.',
+    ],
+    [
+      'Payment and Deregistration',
+      'The seller is responsible for deregistering the vehicle and providing UCG with satisfactory evidence of deregistration. Unless otherwise agreed in writing, any payment due to the seller will be made within thirty (30) days from the date of deregistration shown on the evidence provided to UCG, provided that UCG has received the vehicle, all required keys, documents and information necessary to complete the transaction. Where the vehicle is subject to finance or a lien, the seller must provide, or authorise the lienholder to provide, a valid 30-day payoff amount, a copy of the title or Certificate of Origin where applicable, and all necessary account information. The outstanding payoff amount must not exceed the agreed purchase price less any applicable holdback, retained funds or deductions. If the outstanding payoff amount exceeds this amount, the seller agrees to reduce the outstanding balance to the required amount before UCG is required to complete the purchase.',
+    ],
+    [
+      'Title and Transfer Documents',
+      'The seller is responsible for providing all title and ownership documents applicable to the vehicle and required to complete the transfer to UCG. Depending on the vehicle and its registration or finance status, these may include the applicable transfer title document, original Certificate of Title or Certificate of Origin, and original lien release. Where any required document is held by a lienholder, the seller agrees to cooperate with UCG in obtaining it.',
+    ],
+    [
+      'Missing Original Title or Lien Release',
+      'If a required original title and/or original lien release cannot be provided at the point of handover, UCG will retain a minimum of $1,000 from the purchase price, or the full amount of positive equity due to the seller where this is greater than $1,000. The retained amount will remain withheld until UCG has received and verified the required original title and/or original lien release. Once the required original documents have been received and verified by UCG, the retained amount will be released to the seller.',
+    ],
+    [
+      'Lienholder Authorisation – Payoff Information',
+      'By signing this Bill of Sale, the seller authorises their lienholder to provide UCG with a valid 30-day payoff amount and a copy of the title or Certificate of Origin for the vehicle, where applicable, and authorises the relevant documents and information to be sent directly to UCG.',
+    ],
+    [
+      'Lienholder Authorisation – Original Documents',
+      "By signing this Bill of Sale, the seller authorises their lienholder to provide UCG with the original Certificate of Title or original Certificate of Origin for the vehicle, as applicable, together with a notarised lien release confirming that the lien has been satisfied.",
+    ],
+    [
+      'Vehicle Cleanliness at Handover',
+      'The vehicle must be handed over in a reasonably clean condition. If the vehicle is handed over in a condition requiring significantly more cleaning than would normally be expected, including but not limited to excessive dirt, stains, rubbish, pet hair or strong odours, UCG reserves the right to deduct a fixed cleaning charge of $300 from the agreed purchase price.',
+    ],
+    [
+      'Fuel Level / State of Charge at Handover',
+      'The vehicle must be handed over with a minimum of one-third of a tank of fuel. Electric vehicles must be handed over with a minimum 33% state of charge. If the vehicle is handed over below the applicable minimum, UCG reserves the right to deduct a fixed charge of $100 from the agreed purchase price.',
+    ],
+    [
+      'Vehicle Condition Between Appraisal and Handover',
+      "The vehicle must be handed over in substantially the same condition as when it was inspected and/or appraised by UCG, allowing for reasonable additional mileage and normal wear. Any new accident damage, body damage, mechanical or electrical fault, warning light, missing equipment or other material change in the condition of the vehicle occurring between appraisal and handover must be disclosed to UCG before handover. Where there has been a material change in the vehicle's condition, UCG reserves the right to reassess the agreed purchase price or withdraw from the purchase before completion.",
+    ],
+    [
+      'Keys and Vehicle Equipment',
+      'The seller must provide all keys, remote controls and other vehicle equipment that were present or declared at the time the vehicle was appraised. If any declared key, remote control or material item of vehicle equipment is missing at handover, UCG reserves the right to deduct the reasonable replacement cost from the agreed purchase price.',
+    ],
+  ];
+  return `
+    <div class="terms">
+      <div class="label">Terms and Conditions</div>
+      <ol>${items.map(([heading, body]) => `<li><b>${heading}.</b> ${body}</li>`).join('')}</ol>
+    </div>
+  `;
+}
+
+function sellerSignatureBlock(): string {
+  return `
+    <div class="sig">
+      <div class="sig-line">Seller's Signature &amp; Date</div>
+      <div class="sig-line">Sales Consultant's Signature &amp; Date</div>
+    </div>
+    <div class="sig" style="max-width: 48%;">
+      <div class="sig-line">Co-Seller's Signature &amp; Date</div>
+    </div>
+  `;
+}
+
+export function buildSellBackBillOfSaleHtml(input: SellBackDealInput): string {
+  const { adminOffice } = wireInstructions;
+  const payoff = input.hasLien ? (input.payoffAmount ?? 0) : 0;
+  const tradeEquity = input.acceptedAmount - payoff;
+
+  return `
+    <html>
+      <head><meta charset="utf-8" /><style>${docStyleBlock()}</style></head>
+      <body>
+        ${docHeader('Bill of Sale / Kaufvertrag', 'UCG purchasing this vehicle from you', [
+          ['Deal #', '(assigned by UCG)'],
+          ['Purchase Date', todayShort()],
+        ])}
+
+        <div class="grid">
+          <div class="col">
+            <div class="label">Purchaser</div>
+            <div class="box">The Used Car Guys GmbH<br/>${adminOffice.address}</div>
+          </div>
+          <div class="col">
+            <div class="label">Seller</div>
+            <div class="box">${input.sellerName || '—'}${input.sellerContact ? `<br/>WhatsApp: ${input.sellerContact}` : ''}</div>
+          </div>
+        </div>
+
+        <div class="grid" style="margin-top: 6px;">
+          <div class="col">
+            <div class="label">Vehicle</div>
+            <div class="box">${sellBackVehicleLines(input)}</div>
+          </div>
+        </div>
+
+        <table class="totals">
+          <tr><td>Total Vehicle Price (AE550)</td><td>${money(input.acceptedAmount)}</td></tr>
+          <tr>
+            <td>Lien Holder</td>
+            <td>${input.hasLien ? input.lienHolder || 'On file' : 'No Lien'}</td>
+          </tr>
+          ${
+            input.hasLien
+              ? `<tr><td>Account Number</td><td>${input.lienAccountNumber || '—'}</td></tr>
+                 <tr><td>Payoff Date</td><td>${input.payoffDate || '—'}</td></tr>`
+              : ''
+          }
+          <tr><td>Trade Pay Off</td><td>${money(payoff)}</td></tr>
+          <tr class="total"><td>Trade Equity</td><td>${money(tradeEquity)}</td></tr>
+        </table>
+
+        ${sellBackTermsAndConditionsHtml()}
+        ${sellerSignatureBlock()}
+        ${sampleDisclaimer()}
+        ${companyLegalFooterHtml()}
+      </body>
+    </html>
+  `;
+}

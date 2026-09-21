@@ -6,10 +6,12 @@ import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, Vie
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CameraIcon, CheckCircleIcon, ClockIcon, MapPinIcon, PlusIcon, ShieldIcon } from '@/components/icons';
+import { DocumentCard } from '@/components/document-card';
 import { Button } from '@/components/ui/button';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { ucgLocations } from '@/constants/mock-data';
 import { useDeal } from '@/lib/deal-context';
+import { buildSellBackBillOfSaleHtml, type SellBackDealInput } from '@/lib/deal-documents';
 import { compressPhoto } from '@/lib/image';
 import { useVinScan } from '@/lib/vin-scan-context';
 
@@ -28,12 +30,30 @@ const MAX_PHOTOS = 15;
 // far; see ucgLocations in mock-data.ts.
 const preBuyInspectionLocation = ucgLocations.find((l) => l.bookingUrl);
 
-type OfferStatus = 'form' | 'awaitingAccept' | 'accepted';
+// 'enteringAmount' — added 2026-09-21 (Terry: a real sell-side Bill of
+// Sale needs a real accepted-offer amount, not a fabricated one). Sits
+// between "we've asked, waiting on a text" and "confirmed" so the
+// customer types in the actual number their specialist texted them
+// before anything gets generated from it.
+type OfferStatus = 'form' | 'awaitingAccept' | 'enteringAmount' | 'accepted';
 
 export default function SellBackScreen() {
   const { car } = useDeal();
   const { lastScannedVin, clearLastScannedVin } = useVinScan();
   const [offerStatus, setOfferStatus] = useState<OfferStatus>('form');
+
+  // Captured once an offer's accepted — real inputs for the real
+  // sell-side Bill of Sale (buildSellBackBillOfSaleHtml), not fabricated
+  // figures. Sell It Back never asked for a name/contact before this;
+  // it does now, since a Bill of Sale naming no one is close to useless.
+  const [sellerName, setSellerName] = useState('');
+  const [sellerContact, setSellerContact] = useState('');
+  const [acceptedAmountText, setAcceptedAmountText] = useState('');
+  const [hasLien, setHasLien] = useState(false);
+  const [lienHolder, setLienHolder] = useState('');
+  const [lienAccountNumber, setLienAccountNumber] = useState('');
+  const [payoffAmountText, setPayoffAmountText] = useState('');
+  const [payoffDate, setPayoffDate] = useState('');
 
   // If they chose this car from our own inventory earlier in the app, we
   // already know its VIN — no reason to make them type it again. If they
@@ -131,8 +151,46 @@ export default function SellBackScreen() {
       {offerStatus !== 'form' ? (
         <OfferStatusView
           status={offerStatus}
-          onAccept={() => setOfferStatus('accepted')}
+          onAccept={() => setOfferStatus('enteringAmount')}
           onStartOver={() => setOfferStatus('form')}
+          sellerName={sellerName}
+          setSellerName={setSellerName}
+          sellerContact={sellerContact}
+          setSellerContact={setSellerContact}
+          acceptedAmountText={acceptedAmountText}
+          setAcceptedAmountText={setAcceptedAmountText}
+          hasLien={hasLien}
+          setHasLien={setHasLien}
+          lienHolder={lienHolder}
+          setLienHolder={setLienHolder}
+          lienAccountNumber={lienAccountNumber}
+          setLienAccountNumber={setLienAccountNumber}
+          payoffAmountText={payoffAmountText}
+          setPayoffAmountText={setPayoffAmountText}
+          payoffDate={payoffDate}
+          setPayoffDate={setPayoffDate}
+          onConfirmAccept={() => {
+            if (!sellerName.trim() || !sellerContact.trim() || !acceptedAmountText.trim()) {
+              Alert.alert('Almost there', 'Add your name, a way to reach you, and the offer amount you accepted.');
+              return;
+            }
+            setOfferStatus('accepted');
+          }}
+          sellBackInput={{
+            car,
+            plateOrVin: plate,
+            mileage,
+            mileageUnit,
+            condition,
+            sellerName,
+            sellerContact,
+            acceptedAmount: Number(acceptedAmountText.replace(/[^0-9.]/g, '')) || 0,
+            hasLien,
+            lienHolder: hasLien ? lienHolder : undefined,
+            lienAccountNumber: hasLien ? lienAccountNumber : undefined,
+            payoffAmount: hasLien ? Number(payoffAmountText.replace(/[^0-9.]/g, '')) || 0 : undefined,
+            payoffDate: hasLien ? payoffDate : undefined,
+          }}
         />
       ) : (
         <>
@@ -251,11 +309,151 @@ function OfferStatusView({
   status,
   onAccept,
   onStartOver,
+  sellerName,
+  setSellerName,
+  sellerContact,
+  setSellerContact,
+  acceptedAmountText,
+  setAcceptedAmountText,
+  hasLien,
+  setHasLien,
+  lienHolder,
+  setLienHolder,
+  lienAccountNumber,
+  setLienAccountNumber,
+  payoffAmountText,
+  setPayoffAmountText,
+  payoffDate,
+  setPayoffDate,
+  onConfirmAccept,
+  sellBackInput,
 }: {
   status: Exclude<OfferStatus, 'form'>;
   onAccept: () => void;
   onStartOver: () => void;
+  sellerName: string;
+  setSellerName: (v: string) => void;
+  sellerContact: string;
+  setSellerContact: (v: string) => void;
+  acceptedAmountText: string;
+  setAcceptedAmountText: (v: string) => void;
+  hasLien: boolean;
+  setHasLien: (v: boolean) => void;
+  lienHolder: string;
+  setLienHolder: (v: string) => void;
+  lienAccountNumber: string;
+  setLienAccountNumber: (v: string) => void;
+  payoffAmountText: string;
+  setPayoffAmountText: (v: string) => void;
+  payoffDate: string;
+  setPayoffDate: (v: string) => void;
+  onConfirmAccept: () => void;
+  sellBackInput: SellBackDealInput;
 }) {
+  // The one status with real inputs to fill in gets its own scrollable
+  // form instead of the centered "here's what happened" layout the other
+  // two statuses use — there's meaningfully more to type here (name,
+  // contact, the real accepted amount, optionally lien details).
+  if (status === 'enteringAmount') {
+    return (
+      <SafeAreaView style={{ flex: 1 }} edges={[]}>
+        <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent}>
+          <Text style={styles.intro}>
+            What did your specialist actually offer, and who should UCG make it out to? This fills in your real Bill
+            of Sale — nothing here is guessed.
+          </Text>
+
+          <Field label="Your Name">
+            <TextInput
+              value={sellerName}
+              onChangeText={setSellerName}
+              placeholder="Full name"
+              placeholderTextColor={Colors.textFaint}
+              style={styles.input}
+            />
+          </Field>
+
+          <Field label="WhatsApp / Contact">
+            <TextInput
+              value={sellerContact}
+              onChangeText={setSellerContact}
+              placeholder="e.g. 4915154991777"
+              placeholderTextColor={Colors.textFaint}
+              keyboardType="phone-pad"
+              style={styles.input}
+            />
+          </Field>
+
+          <Field label="Accepted Offer Amount ($)">
+            <TextInput
+              value={acceptedAmountText}
+              onChangeText={setAcceptedAmountText}
+              placeholder="e.g. 5000"
+              placeholderTextColor={Colors.textFaint}
+              keyboardType="decimal-pad"
+              style={styles.input}
+            />
+          </Field>
+
+          <Pressable style={styles.lienToggleRow} onPress={() => setHasLien(!hasLien)}>
+            <View style={[styles.checkbox, hasLien && styles.checkboxChecked]}>
+              {hasLien && <CheckCircleIcon size={14} color="#fff" />}
+            </View>
+            <Text style={styles.lienToggleLabel}>I still owe money on this car (there&apos;s a lien/loan)</Text>
+          </Pressable>
+
+          {hasLien && (
+            <>
+              <Field label="Lien Holder (Bank/Lender)">
+                <TextInput
+                  value={lienHolder}
+                  onChangeText={setLienHolder}
+                  placeholder="e.g. Service Federal Credit Union"
+                  placeholderTextColor={Colors.textFaint}
+                  style={styles.input}
+                />
+              </Field>
+              <Field label="Account Number">
+                <TextInput
+                  value={lienAccountNumber}
+                  onChangeText={setLienAccountNumber}
+                  placeholder="Loan account number"
+                  placeholderTextColor={Colors.textFaint}
+                  style={styles.input}
+                />
+              </Field>
+              <Field label="Payoff Amount ($)">
+                <TextInput
+                  value={payoffAmountText}
+                  onChangeText={setPayoffAmountText}
+                  placeholder="e.g. 1200"
+                  placeholderTextColor={Colors.textFaint}
+                  keyboardType="decimal-pad"
+                  style={styles.input}
+                />
+              </Field>
+              <Field label="Payoff Date">
+                <TextInput
+                  value={payoffDate}
+                  onChangeText={setPayoffDate}
+                  placeholder="MM/DD/YYYY"
+                  placeholderTextColor={Colors.textFaint}
+                  style={styles.input}
+                />
+              </Field>
+            </>
+          )}
+        </ScrollView>
+        <View style={styles.footer}>
+          <Button label="Confirm" onPress={onConfirmAccept} />
+          <Text style={styles.statusStartOver} onPress={onStartOver}>
+            Start Over
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <View style={styles.statusScreen}>
       <View style={styles.statusIconWrap}>
@@ -292,6 +490,21 @@ function OfferStatusView({
           <Pressable style={styles.clearLinkRow} onPress={() => router.push('/vro-checklist?mode=sell')}>
             <Text style={styles.clearLink}>What to bring to clear the car at the VRO  →</Text>
           </Pressable>
+
+          <View style={{ width: '100%' }}>
+            <DocumentCard
+              docId="sell-back-bill-of-sale"
+              title="Bill of Sale / Kaufvertrag"
+              description="UCG purchasing this vehicle from you — print or share to sign with your specialist."
+              buildHtml={() => buildSellBackBillOfSaleHtml(sellBackInput)}
+              context={{
+                customerName: sellBackInput.sellerName,
+                customerContact: sellBackInput.sellerContact,
+                carStockNumber: sellBackInput.car?.stockNumber,
+                carTitle: sellBackInput.car ? `${sellBackInput.car.year} ${sellBackInput.car.title}` : sellBackInput.plateOrVin,
+              }}
+            />
+          </View>
         </>
       )}
 
@@ -341,6 +554,19 @@ const styles = StyleSheet.create({
   },
   recognizedTitle: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.navy },
   recognizedBody: { fontFamily: Fonts.body, fontSize: 12.5, color: Colors.navy, marginTop: 2, opacity: 0.8 },
+  lienToggleRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16, paddingVertical: 4 },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: { backgroundColor: Colors.navy, borderColor: Colors.navy },
+  lienToggleLabel: { flex: 1, fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.text },
   field: { marginBottom: 16 },
   fieldLabel: {
     fontFamily: Fonts.bodyBold,
