@@ -292,7 +292,7 @@ export default function DocumentsScreen() {
             onPress={() =>
               myCode &&
               Linking.openURL(
-                whatsappChatUrl(specialistWhatsapp(dealState.salesperson), `Hi! Here's my UCG documents code: ${myCode}`),
+                whatsappChatUrl(specialistWhatsapp(dealState.salesperson, dealState.onPersonalWhatsapp), `Hi! Here's my UCG documents code: ${myCode}`),
               ).catch(() => {})
             }>
             <Text style={styles.shareCodeButtonLabel}>Share via WhatsApp</Text>

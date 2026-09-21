@@ -38,4 +38,6 @@ export class SalesforceDealSync implements DealSyncBackend {
   jumpToStep(_index: number): void {}
 
   setPaymentStatus(_status: PaymentStatus): void {}
+
+  setPersonalWhatsapp(_active: boolean): void {}
 }

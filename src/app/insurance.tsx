@@ -29,7 +29,7 @@ export default function InsuranceScreen() {
     const msg = `Hi UCG — I'd like an American Auto Nation insurance quote for ${carLabel}${
       intake?.base ? `, headed to ${intake.base}` : ''
     }.`;
-    Linking.openURL(whatsappChatUrl(specialistWhatsapp(dealState.salesperson), msg)).catch(() => {});
+    Linking.openURL(whatsappChatUrl(specialistWhatsapp(dealState.salesperson, dealState.onPersonalWhatsapp), msg)).catch(() => {});
   };
 
   return (

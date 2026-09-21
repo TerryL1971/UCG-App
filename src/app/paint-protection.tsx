@@ -26,7 +26,7 @@ export default function PaintProtectionScreen() {
 
   const askAboutPpf = () => {
     const msg = `Hi UCG — I'd like to ask about Paint Protection Film (PPF) for ${carLabel}.`;
-    Linking.openURL(whatsappChatUrl(specialistWhatsapp(dealState.salesperson), msg)).catch(() => {});
+    Linking.openURL(whatsappChatUrl(specialistWhatsapp(dealState.salesperson, dealState.onPersonalWhatsapp), msg)).catch(() => {});
   };
 
   return (

@@ -27,6 +27,40 @@ interface ChatMessage {
   content: string;
 }
 
+/** Dev/test only — same rationale as My Deal's "Jump to Step" row and
+ * wire-instructions.tsx's "Payment Status" row: lets `onPersonalWhatsapp`
+ * be flipped directly without a real trigger to drive it yet (see
+ * DealServerState's doc comment). __DEV__ is false in a real release
+ * build, so this can't reach a real customer. Forces a specialist to be
+ * assigned when flipping to "Specialist's Personal #" — same override
+ * behavior as Jump to Step, works from any state without first walking
+ * through the deposit flow. */
+function WhatsAppRoutingTestRow() {
+  const { state: dealState, setPersonalWhatsapp } = useDealSync();
+  if (!__DEV__) return null;
+  return (
+    <View style={styles.testingRow}>
+      <Text style={styles.testingLabel}>TESTING — WhatsApp Routing:</Text>
+      <View style={styles.testingChips}>
+        <Pressable
+          onPress={() => setPersonalWhatsapp(false)}
+          style={[styles.testingChip, !dealState.onPersonalWhatsapp && styles.testingChipActive]}>
+          <Text style={[styles.testingChipText, !dealState.onPersonalWhatsapp && styles.testingChipTextActive]}>
+            Trengo
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={() => setPersonalWhatsapp(true)}
+          style={[styles.testingChip, dealState.onPersonalWhatsapp && styles.testingChipActive]}>
+          <Text style={[styles.testingChipText, dealState.onPersonalWhatsapp && styles.testingChipTextActive]}>
+            Specialist&apos;s Personal #
+          </Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
 /**
  * The AI assistant chat — the "UCG Assistant" guides the customer through
  * buying or selling, start to finish (Terry, Sept 3). It is NOT a person
@@ -37,12 +71,14 @@ interface ChatMessage {
  *
  * The "can't move forward?" link at the bottom is the last-resort escape
  * hatch to a real UCG agent over WhatsApp — meant for a genuinely stuck
- * customer, not a primary path. Before a deposit (no assigned salesperson
- * yet), it opens `SUPPORT_WHATSAPP` (mock-data.ts), the shared Trengo
- * inbox — still a stand-in until Terry provides the Trengo-connected
- * number. Once `dealState.salesperson` is populated, `specialistWhatsapp()`
- * switches this to that person's own number instead — there's a real
- * person to message directly by then, not a shared inbox.
+ * customer, not a primary path. It opens `SUPPORT_WHATSAPP` (mock-data.ts),
+ * the shared Trengo inbox — still a stand-in until Terry provides the
+ * Trengo-connected number — unless the assigned specialist has actually
+ * asked to move this deal to their own personal WhatsApp
+ * (`dealState.onPersonalWhatsapp`), in which case `specialistWhatsapp()`
+ * switches this to that number instead, invisibly to the customer. Being
+ * assigned a specialist and being on their personal WhatsApp are two
+ * separate facts — a deposit alone doesn't imply the second one.
  */
 export default function SalespersonScreen() {
   const { car } = useDeal();
@@ -174,7 +210,7 @@ export default function SalespersonScreen() {
   const messageASpecialist = () =>
     Linking.openURL(
       whatsappChatUrl(
-        specialistWhatsapp(dealState.salesperson),
+        specialistWhatsapp(dealState.salesperson, dealState.onPersonalWhatsapp),
         `Hi UCG — I'm stuck in the app on ${carLabel} and need a hand.`,
       ),
     ).catch(() => {});
@@ -195,7 +231,7 @@ export default function SalespersonScreen() {
       setMessages((prev) => [...prev, { role: 'user', content: text }]);
       setInput('');
       dismissKeyboard();
-      Linking.openURL(whatsappChatUrl(specialistWhatsapp(dealState.salesperson), text)).catch(() => {});
+      Linking.openURL(whatsappChatUrl(specialistWhatsapp(dealState.salesperson, dealState.onPersonalWhatsapp), text)).catch(() => {});
     };
 
     return (
@@ -297,6 +333,8 @@ export default function SalespersonScreen() {
             />
             <Button label="View My Timeline  →" onPress={() => router.push('/(tabs)/deal')} />
           </View>
+
+          <WhatsAppRoutingTestRow />
         </KeyboardAvoidingView>
       </SafeAreaView>
     );
@@ -428,6 +466,8 @@ export default function SalespersonScreen() {
           />
           <Button label="View My Timeline  →" onPress={() => router.push('/(tabs)/deal')} />
         </View>
+
+        <WhatsAppRoutingTestRow />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -535,4 +575,35 @@ const styles = StyleSheet.create({
   },
   limitText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.textMuted, textAlign: 'center', lineHeight: 19 },
   limitButton: { marginBottom: 0 },
+  testingRow: {
+    marginHorizontal: Spacing.xxl,
+    marginTop: 10,
+    marginBottom: 4,
+    padding: 8,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: '#C9CDD9',
+  },
+  testingLabel: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: 9.5,
+    color: Colors.textFaint,
+    letterSpacing: 0.4,
+    marginBottom: 6,
+  },
+  testingChips: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
+  testingChip: {
+    paddingHorizontal: 9,
+    height: 26,
+    borderRadius: 13,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  testingChipActive: { backgroundColor: Colors.navy, borderColor: Colors.navy },
+  testingChipText: { fontFamily: Fonts.bodySemibold, fontSize: 10.5, color: Colors.textMuted },
+  testingChipTextActive: { color: '#fff' },
 });

@@ -38,6 +38,16 @@ export interface DealServerState {
   /** Cash-payment status only — a financed deal's progress is the
    * 'financing' step above instead. See `PaymentStatus`. */
   paymentStatus: PaymentStatus;
+  /** Whether every "message UCG" action for this deal should go straight
+   * to the assigned specialist's own WhatsApp instead of the shared
+   * Trengo inbox. `false` by default even once `salesperson` is assigned
+   * — a deposit alone doesn't mean the specialist has asked to move off
+   * Trengo yet; this flips independently, whenever they actually do. See
+   * `specialistWhatsapp()` in mock-data.ts and `setPersonalWhatsapp`
+   * below for how (there's no real trigger for this yet — Terry, 2026-09-
+   * 21: "keep it simulated for now," same call as `paymentStatus`'s PIF
+   * timer). Meaningless (and never true) while `salesperson` is null. */
+  onPersonalWhatsapp: boolean;
 }
 
 /**
@@ -84,4 +94,9 @@ export interface DealSyncBackend {
   /** Dev/test only — jump straight to a payment status, same rationale as
    * `jumpToStep`. `SalesforceDealSync` no-ops this too. */
   setPaymentStatus(status: PaymentStatus): void;
+  /** Dev/test only — flips `onPersonalWhatsapp` directly, standing in for
+   * "the assigned specialist asked to move this deal off Trengo." No real
+   * trigger exists yet (see that field's doc comment); `SalesforceDealSync`
+   * no-ops this too, same as the other dev-only setters. */
+  setPersonalWhatsapp(active: boolean): void;
 }

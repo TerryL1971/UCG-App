@@ -27,7 +27,7 @@ export default function WinterTiresScreen() {
 
   const askAboutTires = () => {
     const msg = `Hi UCG — I'd like to ask about the Winter Tire Program for ${carLabel}.`;
-    Linking.openURL(whatsappChatUrl(specialistWhatsapp(dealState.salesperson), msg)).catch(() => {});
+    Linking.openURL(whatsappChatUrl(specialistWhatsapp(dealState.salesperson, dealState.onPersonalWhatsapp), msg)).catch(() => {});
   };
 
   return (

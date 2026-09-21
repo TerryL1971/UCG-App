@@ -83,14 +83,16 @@ export function whatsappChatUrl(phoneDigits: string, message?: string): string {
   return message ? `${base}?text=${encodeURIComponent(message)}` : base;
 }
 
-/** Which number a "message UCG" action should actually open — the shared
- * Trengo inbox before a real human is assigned to the deal, that person's
- * own WhatsApp afterward (`DealServerState.salesperson`, populated once a
- * deposit is in). Before then, several possible agents could pick up a
- * Trengo-routed message, so there's no one "your salesperson" yet to
- * message directly. */
-export function specialistWhatsapp(assigned: Salesperson | null): string {
-  return assigned?.whatsapp ?? SUPPORT_WHATSAPP;
+/** Which number a "message UCG" action should actually open. Defaults to
+ * the shared Trengo inbox — including after a deposit, while the customer
+ * is still just "assigned" to a specialist (`DealServerState.salesperson`)
+ * — and only switches to that specialist's own WhatsApp once they've
+ * actually asked to move the conversation there
+ * (`DealServerState.onPersonalWhatsapp`). Being assigned and being on
+ * their personal WhatsApp are two separate, independent facts; this is
+ * deliberately an AND, not just a null-check on `assigned`. */
+export function specialistWhatsapp(assigned: Salesperson | null, onPersonalWhatsapp: boolean): string {
+  return onPersonalWhatsapp && assigned ? assigned.whatsapp : SUPPORT_WHATSAPP;
 }
 
 export interface UcgLocation {

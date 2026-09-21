@@ -75,6 +75,11 @@ export class MockDealSync implements DealSyncBackend {
   // already populated, 'financing' step already 'done'). Only 'intake-
   // submitted' ever changes this — see `send()`.
   private paymentMethod: PaymentMethod = 'financing';
+  // Off by default even on the demo-start "further along" deal — see this
+  // field's doc comment on DealServerState for why a deposit alone doesn't
+  // imply it. Only `setPersonalWhatsapp()` (dev/test only for now) changes
+  // this.
+  private onPersonalWhatsapp = false;
   private listeners = new Set<() => void>();
   private timer: ReturnType<typeof setTimeout> | null = null;
   private paymentTimer: ReturnType<typeof setTimeout> | null = null;
@@ -95,6 +100,10 @@ export class MockDealSync implements DealSyncBackend {
         financingTerms: financingApproved ? demoFinancingTerms : null,
         salesperson: this.assigned ? salesperson : null,
         paymentStatus: this.paymentStatus,
+        // Can't be on someone's personal WhatsApp if no one's assigned —
+        // defensive even though the only setter (`setPersonalWhatsapp`) is
+        // meant to be gated the same way at the call site.
+        onPersonalWhatsapp: this.assigned && this.onPersonalWhatsapp,
       };
     }
     return this.cachedState;
@@ -145,6 +154,7 @@ export class MockDealSync implements DealSyncBackend {
     this.assigned = false; // fresh deal — no salesperson until a deposit
     this.paymentStatus = 'awaiting_payment';
     this.paymentMethod = 'financing'; // unknown again until intake is submitted
+    this.onPersonalWhatsapp = false;
     this.emit();
     this.scheduleAutoAdvance();
   }
@@ -156,6 +166,7 @@ export class MockDealSync implements DealSyncBackend {
     this.clearTimer();
     this.steps = stepsAtIndex(index);
     this.assigned = index >= 1;
+    if (!this.assigned) this.onPersonalWhatsapp = false; // can't be assigned nowhere
     this.emit();
   }
 
@@ -166,6 +177,18 @@ export class MockDealSync implements DealSyncBackend {
     this.paymentStatus = status;
     this.emit();
     if (status === 'payment_submitted') this.schedulePaymentVerification();
+  }
+
+  setPersonalWhatsapp(active: boolean): void {
+    // Dev/test only (see the interface doc comment) — stands in for the
+    // assigned specialist actually asking to move off Trengo. Force-
+    // assigns a specialist when flipping this on, same as jumpToStep's
+    // `assigned = index >= 1` — a dev override should work from any state
+    // without first walking through the deposit flow, not silently no-op
+    // because nothing's assigned yet.
+    if (active) this.assigned = true;
+    this.onPersonalWhatsapp = active;
+    this.emit();
   }
 
   private advance(): void {
