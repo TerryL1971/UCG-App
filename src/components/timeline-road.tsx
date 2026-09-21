@@ -30,6 +30,12 @@ const START_PAD = 40;
 const END_PAD = 70;
 const SIGN_SIZE = 40;
 const CAR_SIZE = 52;
+/** How much already-driven road stays visible directly behind the car
+ * once the crop below kicks in — just enough that the car and its sign
+ * (CAR_SIZE/2 + a little padding) never get clipped by the crop's own
+ * `overflow: hidden` edge. See the crop/shift comment below for why this
+ * exists at all. */
+const CROP_LOOKBEHIND = 56;
 /** How much of a full step's travel it takes for a passed stop/segment to
  * fully fade out — 1 = fully gone exactly one step behind the car. */
 const FADE_TRAIL = 1;
@@ -274,17 +280,32 @@ export function TimelineRoad({ steps, car, viewedIndex, onStepPress, horizontal 
   // whatever's been driven past, animated off the same `progress` value
   // that already drives the car — so the crop line and the car always
   // move in lockstep.
+  //
+  // First version of this crop stopped at the *previous* waypoint
+  // (`alongs[i - 1]`), not the car's own position — which left a full
+  // STEP_SPACING's worth of already-fully-faded (opacity 0, per
+  // RoadSegment's FADE_TRAIL) road still reserving blank space in front
+  // of the car on every step except the very first (Terry, screenshots,
+  // 2026-09-21: "the car should scroll up to eliminate this blank
+  // area"). Tracking the car's own interpolated position instead — the
+  // exact same `alongs`/`inputRange` pair `carStyle` below already uses —
+  // keeps the crop line and the car in the same lockstep the comment
+  // above always intended, just without the off-by-one. `CROP_LOOKBEHIND`
+  // is the only slack: enough that the car and its sign (positioned by
+  // their own center, extending CAR_SIZE/2 or SIGN_SIZE/2 above it)
+  // never get clipped by this View's `overflow: hidden` edge.
   const alongs = horizontal ? xs : ys;
-  const windowStarts = alongs.map((_, i) => (i > 0 ? alongs[i - 1] : 0));
 
   const cropStyle = useAnimatedStyle(() => {
-    const startAlong = interpolate(progress.value, inputRange, windowStarts, 'clamp');
+    const carAlong = interpolate(progress.value, inputRange, alongs, 'clamp');
+    const startAlong = Math.max(0, carAlong - CROP_LOOKBEHIND);
     const along = alongTotal - startAlong;
     return horizontal ? { width: along } : { height: along };
   });
 
   const shiftStyle = useAnimatedStyle(() => {
-    const startAlong = interpolate(progress.value, inputRange, windowStarts, 'clamp');
+    const carAlong = interpolate(progress.value, inputRange, alongs, 'clamp');
+    const startAlong = Math.max(0, carAlong - CROP_LOOKBEHIND);
     return { transform: [horizontal ? { translateX: -startAlong } : { translateY: -startAlong }] };
   });
 

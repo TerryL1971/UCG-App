@@ -10,12 +10,20 @@
  * someone hitting `/api/chat` directly):
  *
  *  1. `AI_CHAT_ENABLED` — the owner's kill switch. Flip to `false` and the
- *     chat screen stops calling the AI entirely (shows a plain
- *     "message a specialist instead" screen) and the server route refuses
- *     to call Anthropic even if hit directly. No other code changes
- *     needed, no API key removal required, and it's just as easy to flip
- *     back on later. This is the one constant meant for that decision —
- *     everything else below is a safety limit that applies either way.
+ *     chat screen stops calling the AI entirely (shows the WhatsApp
+ *     hand-off screen instead) and the server route refuses to call
+ *     Anthropic even if hit directly. No other code changes needed, no API
+ *     key removal required, and it's just as easy to flip back on later.
+ *     This is the one constant meant for that decision — everything else
+ *     below is a safety limit that applies either way.
+ *
+ *     Flipped to `false` 2026-09: Terry's call — the AI chat "will cost
+ *     UCG a tremendous amount of money" and doesn't fit how the business
+ *     actually wants to reach customers (a real WhatsApp/Trengo hand-off).
+ *     `src/app/salesperson.tsx`'s disabled-branch UI is the real screen
+ *     now, not a fallback — WhatsApp icon, same bubble chat layout, "send"
+ *     opens WhatsApp instead of calling Anthropic. The AI code path is
+ *     left in place, untouched, in case this decision changes again.
  *
  *  2. The limits below. Anthropic bills by tokens actually sent and
  *     received. The single biggest cost driver in ANY chat UI is that
@@ -27,7 +35,7 @@
  *     abusive conversation/message.
  */
 
-export const AI_CHAT_ENABLED = true;
+export const AI_CHAT_ENABLED = false;
 
 /** Hard stop on a conversation — past this many customer messages, the
  * chat tells them to continue with a human instead of calling the API

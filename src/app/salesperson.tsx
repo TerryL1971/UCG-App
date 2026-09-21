@@ -3,7 +3,7 @@ import { useRef, useState } from 'react';
 import { ActivityIndicator, Keyboard, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { SendIcon, StarIcon } from '@/components/icons';
+import { SendIcon, StarIcon, WhatsAppIcon } from '@/components/icons';
 import { SalespersonAvatarFull } from '@/components/salesperson-avatar';
 import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/ui/screen-header';
@@ -61,11 +61,17 @@ export default function SalespersonScreen() {
   const [messages, setMessages] = useState<ChatMessage[]>(() => [
     {
       role: 'assistant',
-      content: intake
-        ? `Hi! I'm the UCG Assistant. I've got what you sent — ${intake.base}, ${
-            intake.paymentMethod === 'cash' ? 'paying cash' : 'financing'
-          } — for the ${carLabel}. I'll walk you through the whole process — ask me anything.`
-        : `Hi! I'm the UCG Assistant, here to walk you through ${carLabel} start to finish. What can I answer for you?`,
+      content: AI_CHAT_ENABLED
+        ? intake
+          ? `Hi! I'm the UCG Assistant. I've got what you sent — ${intake.base}, ${
+              intake.paymentMethod === 'cash' ? 'paying cash' : 'financing'
+            } — for the ${carLabel}. I'll walk you through the whole process — ask me anything.`
+          : `Hi! I'm the UCG Assistant, here to walk you through ${carLabel} start to finish. What can I answer for you?`
+        : intake
+          ? `Hi! I'm your UCG specialist. I've got what you sent — ${intake.base}, ${
+              intake.paymentMethod === 'cash' ? 'paying cash' : 'financing'
+            } — for the ${carLabel}. Send a message below any time and it'll open WhatsApp so we can talk directly.`
+          : `Hi! I'm your UCG specialist, here to help with ${carLabel}. Send a message below any time and it'll open WhatsApp so we can talk directly.`,
     },
   ]);
   const [input, setInput] = useState('');
@@ -130,31 +136,127 @@ export default function SalespersonScreen() {
 
   // The owner's kill switch (src/constants/ai-chat.ts) — flip
   // AI_CHAT_ENABLED to false and this screen stops calling the AI
-  // entirely, no other changes needed. Everything else the AI chat would
-  // otherwise gate (deposit, warranty, insurance, timeline) stays
-  // reachable — only the chat itself is replaced.
+  // entirely. This is the *real* screen now, not a bare fallback: same
+  // chat-bubble layout as the AI version, but "send" opens WhatsApp with
+  // whatever was typed instead of calling Anthropic — there's no real
+  // reply bubble because the actual conversation continues in WhatsApp,
+  // outside the app. Everything else the AI chat would otherwise gate
+  // (deposit, warranty, insurance, timeline) stays reachable exactly as
+  // before — only the chat mechanism changes.
   if (!AI_CHAT_ENABLED) {
+    const sendToWhatsApp = () => {
+      const text = input.trim();
+      if (!text) return;
+      setMessages((prev) => [...prev, { role: 'user', content: text }]);
+      setInput('');
+      dismissKeyboard();
+      Linking.openURL(whatsappChatUrl(SUPPORT_WHATSAPP, text)).catch(() => {});
+    };
+
     return (
       <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-        <ScreenHeader title="UCG Assistant" />
-        <View style={styles.disabledBody}>
-          <SalespersonAvatarFull size={64} />
-          <Text style={styles.disabledTitle}>Chat with a UCG specialist</Text>
-          <Text style={styles.disabledText}>
-            Our AI assistant isn&apos;t available right now — message a real UCG specialist on WhatsApp instead,
-            and they&apos;ll help you with {carLabel} directly.
-          </Text>
-          <Button label="Message a UCG Specialist" onPress={messageASpecialist} style={styles.disabledButton} />
-        </View>
-        <View style={styles.ctaWrap}>
-          <Button
-            label="Hold This Car — Make a Deposit"
-            variant="secondary"
-            style={styles.depositButton}
-            onPress={() => router.push('/deposit')}
-          />
-          <Button label="View My Timeline  →" onPress={() => router.push('/(tabs)/deal')} />
-        </View>
+        <ScreenHeader title="UCG Specialist" />
+
+        <Pressable style={styles.headerRow} onPress={dismissKeyboard}>
+          <View style={[styles.avatarWrap, styles.whatsappAvatarWrap]}>
+            <WhatsAppIcon size={28} color="#fff" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <View style={styles.nameRow}>
+              <Text style={styles.name}>Your UCG Specialist</Text>
+              <View style={styles.whatsappBadge}>
+                <WhatsAppIcon size={10} color="#fff" />
+                <Text style={styles.whatsappBadgeText}>WhatsApp</Text>
+              </View>
+            </View>
+            <Text style={styles.title}>
+              <StarIcon size={12} /> Used Car Guys
+            </Text>
+          </View>
+          {intake && (
+            <Pressable hitSlop={8} onPress={() => router.push('/deal-intake')} style={styles.editLink}>
+              <Text style={styles.editLinkText}>Edit My Info</Text>
+            </Pressable>
+          )}
+        </Pressable>
+
+        <KeyboardAvoidingView
+          style={styles.chatWrap}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={90}>
+          <ScrollView
+            ref={scrollViewRef}
+            style={styles.messageList}
+            contentContainerStyle={styles.messageListContent}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}>
+            {messages.map((m, i) => (
+              <View key={i} style={m.role === 'user' ? styles.bubbleWrapUser : styles.bubbleWrapAssistant}>
+                {m.role === 'assistant' && <Text style={styles.senderLabel}>Your UCG Specialist</Text>}
+                <View style={[styles.bubble, m.role === 'user' ? styles.bubbleUser : styles.bubbleAssistant]}>
+                  <Text style={[styles.bubbleText, m.role === 'user' && styles.bubbleTextUser]}>{m.content}</Text>
+                </View>
+                {m.role === 'user' && (
+                  <View style={styles.sentViaRow}>
+                    <WhatsAppIcon size={11} color={Colors.textFaint} />
+                    <Text style={styles.sentViaText}>Sent via WhatsApp</Text>
+                  </View>
+                )}
+              </View>
+            ))}
+          </ScrollView>
+
+          <View style={styles.inputRow}>
+            <TextInput
+              ref={inputRef}
+              value={input}
+              onChangeText={setInput}
+              placeholder="Type a message — opens WhatsApp to send"
+              placeholderTextColor={Colors.textFaint}
+              style={styles.input}
+              multiline
+              maxLength={AI_CHAT_MAX_MESSAGE_LENGTH}
+              blurOnSubmit={false}
+              onSubmitEditing={sendToWhatsApp}
+            />
+            <Pressable style={styles.whatsappSendButton} onPress={sendToWhatsApp} hitSlop={8}>
+              <WhatsAppIcon color="#fff" size={20} />
+            </Pressable>
+          </View>
+
+          <Pressable style={styles.doneRow} onPress={dismissKeyboard} hitSlop={8}>
+            <Text style={styles.doneRowText}>Done ⌄</Text>
+          </Pressable>
+
+          <View style={styles.ctaWrap}>
+            <Button
+              label="Hold This Car — Make a Deposit"
+              variant="secondary"
+              style={styles.depositButton}
+              onPress={() => router.push('/deposit')}
+            />
+            <Button
+              label={
+                warrantyChoice
+                  ? warrantyChoice.decision === 'accepted'
+                    ? 'Premium Protection — Added ✓'
+                    : 'Premium Protection — Declined'
+                  : 'Premium Protection Plan'
+              }
+              variant="secondary"
+              style={styles.depositButton}
+              onPress={() => router.push('/warranty')}
+            />
+            <Button
+              label="Insurance — First Month Paid"
+              variant="secondary"
+              style={styles.depositButton}
+              onPress={() => router.push('/insurance')}
+            />
+            <Button label="View My Timeline  →" onPress={() => router.push('/(tabs)/deal')} />
+          </View>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     );
   }
@@ -370,22 +472,27 @@ const styles = StyleSheet.create({
   },
   ctaWrap: { paddingHorizontal: Spacing.xxl, paddingTop: 4, paddingBottom: 8, gap: 10 },
   depositButton: { marginBottom: 0 },
-  disabledBody: {
-    flex: 1,
+  whatsappAvatarWrap: { backgroundColor: '#25D366', alignItems: 'center', justifyContent: 'center' },
+  whatsappBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#25D366',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  whatsappBadgeText: { fontFamily: Fonts.bodyBold, fontSize: 9.5, color: '#fff', letterSpacing: 0.3 },
+  whatsappSendButton: {
+    width: 44,
+    height: 44,
+    borderRadius: Radius.md,
+    backgroundColor: '#25D366',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: Spacing.xxl,
-    gap: 6,
   },
-  disabledTitle: { fontFamily: Fonts.display, fontSize: 20, color: Colors.text, textAlign: 'center', marginTop: 8 },
-  disabledText: {
-    fontFamily: Fonts.body,
-    fontSize: 14,
-    color: Colors.textMuted,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  disabledButton: { width: '100%', marginTop: 16 },
+  sentViaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3, marginRight: 4, alignSelf: 'flex-end' },
+  sentViaText: { fontFamily: Fonts.bodyMedium, fontSize: 10.5, color: Colors.textFaint },
   limitRow: {
     backgroundColor: '#fff',
     borderRadius: Radius.lg,
