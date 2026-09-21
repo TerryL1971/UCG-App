@@ -1,7 +1,7 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 
 import { dealDocuments, type DealDocument } from '@/constants/mock-data';
-import { uploadDocumentPhoto } from '@/lib/document-storage';
+import { uploadDocumentPhoto, type DealDocumentContext } from '@/lib/document-storage';
 
 /** `uris` holds every locally-captured page for this document, in order —
  * real capture via expo-image-picker/expo-camera (deal/documents.tsx).
@@ -28,8 +28,11 @@ interface DealDocumentsContextValue {
   documents: DocumentState[];
   /** Appends one more page to a document (the "1-x pages" flow — front
    * and back of a license, or anything else that ever needs more than
-   * one photo). */
-  addDocumentPage: (id: string, uri: string) => void;
+   * one photo). `context` is whatever the caller already knows about the
+   * customer/car (deal-intake, the chosen car) — passed through to the
+   * real backend row (document-storage.ts) so a salesperson can actually
+   * tell whose document this is; the local uri/UI update doesn't need it. */
+  addDocumentPage: (id: string, uri: string, context?: DealDocumentContext) => void;
   /** Drops one page by index — lets a customer remove a bad page without
    * losing the rest of an already multi-page upload. */
   removeDocumentPage: (id: string, pageIndex: number) => void;
@@ -63,7 +66,7 @@ export function DealDocumentsProvider({ children }: { children: ReactNode }) {
       // salesperson/backend would need to actually review the new file(s),
       // so leaving it marked "approved" after adding a page would be
       // dishonest about what's actually happened.
-      addDocumentPage: (id: string, uri: string) => {
+      addDocumentPage: (id: string, uri: string, context?: DealDocumentContext) => {
         setDocuments((docs) => docs.map((d) => (d.id === id ? { ...d, status: 'uploaded', uris: [...d.uris, uri] } : d)));
         // Fire-and-forget: the real, durable copy (Terry, 2026-09-21:
         // "how will a salesperson see and retrieve any of the scanned
@@ -72,7 +75,7 @@ export function DealDocumentsProvider({ children }: { children: ReactNode }) {
         // to work; it silently no-ops if Supabase isn't configured or
         // the bucket isn't set up yet, same as every other Supabase
         // integration point in this app.
-        uploadDocumentPhoto(id, uri).catch(() => {});
+        uploadDocumentPhoto(id, uri, context).catch(() => {});
       },
       // Same honesty rule as addDocumentPage, the other direction: removing
       // a page changes what's actually on file, so a prior "uploaded"/

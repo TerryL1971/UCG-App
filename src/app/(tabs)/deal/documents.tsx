@@ -10,6 +10,8 @@ import { ScreenHeader } from '@/components/ui/screen-header';
 import { StatusChip } from '@/components/ui/chip';
 import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
 import { type DealDocument } from '@/constants/mock-data';
+import { useDeal } from '@/lib/deal-context';
+import { useDealIntake } from '@/lib/deal-intake-context';
 import { useDealDocuments, type DocumentState } from '@/lib/documents-context';
 import { compressPhoto } from '@/lib/image';
 import { useLicenseCapture, type LicenseSide } from '@/lib/license-capture-context';
@@ -131,15 +133,32 @@ export default function DocumentsScreen() {
   const { documents, addDocumentPage, removeDocumentPage } = useDealDocuments();
   const [addingId, setAddingId] = useState<string | null>(null);
   const { lastCapturedLicensePhoto, clearLastCapturedLicensePhoto } = useLicenseCapture();
+  const { car } = useDeal();
+  const { intake } = useDealIntake();
+
+  // Whatever the app already knows about who/what this upload is for,
+  // right now — passed through to addDocumentPage so the real backend
+  // row (document-storage.ts's deal_documents table) actually says
+  // something (Terry, 2026-09-21: a file with no customer/car/deal
+  // attached told a salesperson nothing). Recomputed each render off
+  // intake/car, not memoized — this is cheap and only read at upload time.
+  const docContext = {
+    customerName: intake?.fullName,
+    customerContact: intake?.contact,
+    carStockNumber: car?.stockNumber,
+    carTitle: car ? `${car.year} ${car.title}` : undefined,
+    base: intake?.base,
+  };
 
   // Handoff from capture-license.tsx's overlay camera — `for` guards
   // against also picking up a capture meant for deal-intake.tsx's own
   // front/back slots (see the doc comment on LicenseCaptureTarget).
   useEffect(() => {
     if (lastCapturedLicensePhoto && lastCapturedLicensePhoto.for === 'documents') {
-      addDocumentPage(LICENSE_DOC_ID, lastCapturedLicensePhoto.uri);
+      addDocumentPage(LICENSE_DOC_ID, lastCapturedLicensePhoto.uri, docContext);
       clearLastCapturedLicensePhoto();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- docContext is a fresh object every render; including it would re-fire this on every intake/car change, not just a new capture
   }, [lastCapturedLicensePhoto, clearLastCapturedLicensePhoto, addDocumentPage]);
 
   const captureFor = async (id: string, useCamera: boolean) => {
@@ -158,7 +177,7 @@ export default function DocumentsScreen() {
     setAddingId(id);
     try {
       const compressed = await compressPhoto(result.assets[0].uri);
-      addDocumentPage(id, compressed);
+      addDocumentPage(id, compressed, docContext);
     } finally {
       setAddingId(null);
     }
@@ -187,7 +206,7 @@ export default function DocumentsScreen() {
     setAddingId(LICENSE_DOC_ID);
     try {
       const compressed = await compressPhoto(result.assets[0].uri);
-      addDocumentPage(LICENSE_DOC_ID, compressed);
+      addDocumentPage(LICENSE_DOC_ID, compressed, docContext);
     } finally {
       setAddingId(null);
     }

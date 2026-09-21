@@ -59,17 +59,39 @@ async function getOwnerId(): Promise<string> {
   }
 }
 
+/** Whatever the app already knows about who/what this document belongs
+ * to at the moment it's captured — from deal-intake and the chosen car.
+ * Recorded alongside the file (see `deal_documents`, the migration this
+ * shipped with) since a file sitting alone in a Storage folder named
+ * after an anonymous id told a salesperson nothing (Terry, 2026-09-21:
+ * "There is no table for the documents to match them with a customer,
+ * car, deal number, etc???"). All optional — an intake-less/car-less
+ * upload (shouldn't normally happen, but nothing here assumes it can't)
+ * still uploads the file, just with less context attached. */
+export interface DealDocumentContext {
+  customerName?: string | null;
+  customerContact?: string | null;
+  carStockNumber?: string | null;
+  carTitle?: string | null;
+  base?: string | null;
+}
+
 /**
  * Uploads one already-captured, already-compressed photo (a local file://
- * uri from compressPhoto) to the private `documents` bucket. Fire-and-
- * forget by design — the caller (documents-context.tsx) already has what
- * it needs for the UI (the local uri); this just makes a second, durable
- * copy. Returns the storage path on success, null on any failure
- * (Supabase not configured, bucket doesn't exist yet, network, etc.) —
- * callers should treat null as "fine, nothing to do," not an error to
- * surface to the customer.
+ * uri from compressPhoto) to the private `documents` bucket, then records
+ * a row for it in `deal_documents` with whatever context was passed in.
+ * Fire-and-forget by design — the caller (documents-context.tsx) already
+ * has what it needs for the UI (the local uri); this just makes a second,
+ * durable, findable copy. Returns the storage path on success, null on
+ * any failure (Supabase not configured, bucket doesn't exist yet,
+ * network, etc.) — callers should treat null as "fine, nothing to do,"
+ * not an error to surface to the customer.
  */
-export async function uploadDocumentPhoto(docId: string, localUri: string): Promise<string | null> {
+export async function uploadDocumentPhoto(
+  docId: string,
+  localUri: string,
+  context: DealDocumentContext = {},
+): Promise<string | null> {
   if (!isSupabaseConfigured || !supabase) return null;
 
   try {
@@ -90,6 +112,27 @@ export async function uploadDocumentPhoto(docId: string, localUri: string): Prom
       console.error('Document upload to Supabase Storage failed:', error.message);
       return null;
     }
+
+    // The file itself is the part that can't be redone if this fails
+    // (re-running the upload would just create a duplicate) — a failed
+    // row insert here is logged, not retried, and doesn't undo the
+    // upload above. Worth revisiting once this matters enough to need
+    // real reliability (a queue, a retry, a backend job) rather than a
+    // best-effort fire-and-forget call from the client.
+    const { error: rowError } = await supabase.from('deal_documents').insert({
+      owner_id: ownerId,
+      doc_id: docId,
+      storage_path: path,
+      customer_name: context.customerName ?? null,
+      customer_contact: context.customerContact ?? null,
+      car_stock_number: context.carStockNumber ?? null,
+      car_title: context.carTitle ?? null,
+      base: context.base ?? null,
+    });
+    if (rowError) {
+      console.error('deal_documents row insert failed (file still uploaded):', rowError.message);
+    }
+
     return path;
   } catch (err) {
     console.error('Document upload to Supabase Storage failed:', err);
