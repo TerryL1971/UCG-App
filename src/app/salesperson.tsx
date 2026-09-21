@@ -164,10 +164,6 @@ export default function SalespersonScreen() {
           <View style={{ flex: 1 }}>
             <View style={styles.nameRow}>
               <Text style={styles.name}>Your UCG Specialist</Text>
-              <View style={styles.whatsappBadge}>
-                <WhatsAppIcon size={10} color="#fff" />
-                <Text style={styles.whatsappBadgeText}>WhatsApp</Text>
-              </View>
             </View>
             <Text style={styles.title}>
               <StarIcon size={12} /> Used Car Guys
@@ -221,7 +217,7 @@ export default function SalespersonScreen() {
               onSubmitEditing={sendToWhatsApp}
             />
             <Pressable style={styles.whatsappSendButton} onPress={sendToWhatsApp} hitSlop={8}>
-              <WhatsAppIcon color="#fff" size={20} />
+              <WhatsAppIcon color="#fff" size={26} />
             </Pressable>
           </View>
 
@@ -473,20 +469,10 @@ const styles = StyleSheet.create({
   ctaWrap: { paddingHorizontal: Spacing.xxl, paddingTop: 4, paddingBottom: 8, gap: 10 },
   depositButton: { marginBottom: 0 },
   whatsappAvatarWrap: { backgroundColor: '#25D366', alignItems: 'center', justifyContent: 'center' },
-  whatsappBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#25D366',
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  whatsappBadgeText: { fontFamily: Fonts.bodyBold, fontSize: 9.5, color: '#fff', letterSpacing: 0.3 },
   whatsappSendButton: {
-    width: 44,
-    height: 44,
-    borderRadius: Radius.md,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     backgroundColor: '#25D366',
     alignItems: 'center',
     justifyContent: 'center',
