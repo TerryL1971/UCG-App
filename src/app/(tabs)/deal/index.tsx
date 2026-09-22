@@ -10,6 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeftIcon, CameraIcon, DownloadIcon, MessageIcon, StarIcon } from '@/components/icons';
 import { SalespersonAvatarMini } from '@/components/salesperson-avatar';
 import { StatusChip } from '@/components/ui/chip';
+import { Button } from '@/components/ui/button';
 import { TimelineRoad } from '@/components/timeline-road';
 import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
 import {
@@ -174,8 +175,9 @@ function StepDetailContent({ step, car }: { step: DealStep; car: ReturnType<type
   // Same rule — only the 'application' branch actually reads this (to
   // decide financing vs. cash copy), but it has to be called every render.
   const { intake } = useDealIntake();
-  // Only the 'financing' branch reads this, but Rules of Hooks — every render.
-  const { state: dealState } = useDealSync();
+  // Only the 'financing' branch reads dealState alone; 'application'
+  // (DEN cash only) also needs `send`, but Rules of Hooks — every render.
+  const { state: dealState, send: sendDealSignal } = useDealSync();
 
   if (step.id === 'ready') {
     return car ? (
@@ -218,20 +220,37 @@ function StepDetailContent({ step, car }: { step: DealStep; car: ReturnType<type
   }
 
   if (step.id === 'application') {
-    const carLabel = car ? `${car.year} ${car.title}` : 'your chosen car';
+    const carLabel = car ? `your ${car.year} ${car.title}` : 'your chosen car';
 
     if (intake?.paymentMethod === 'cash') {
       // A DEN car never wires money — no wire-instructions link, no
       // paymentStatus chip (that's `PaymentStatus`'s wire-transfer
-      // tracking, which doesn't apply here). The Cashier's-Check/VAT
-      // process this car actually goes through lives at step 4 instead.
+      // tracking, which doesn't apply here). There's also no financing
+      // application to "submit" at all for a DEN cash payer, unlike
+      // every other cash/financing × DEN/non-DEN combination — so this
+      // step needs a real action of its own rather than just auto-
+      // completing on intake submission (mock-deal-sync.ts's `send()`
+      // specifically excludes DEN+cash from that). Confirming the
+      // Cashier's Check is that action.
       if (isDenStock(car?.stockNumber)) {
         return (
-          <View style={styles.detailCard}>
+          <View style={[styles.detailCard, { flexDirection: 'column', alignItems: 'stretch', gap: 8 }]}>
             <Text style={styles.detailPlainText}>
-              Paying cash for {carLabel} — no financing application needed. Your Cashier&apos;s Check and VAT
-              paperwork come together at the next step.
+              {step.status === 'done'
+                ? "Cashier's Check confirmed — your VAT Form and registration paperwork come together next."
+                : `Paying cash for ${carLabel} — no financing application needed. Take your Cost Estimate to Service Federal Credit Union or Community Bank for an Official Cashier's Check.`}
             </Text>
+            <Pressable style={styles.detailLinkRow} onPress={() => router.push('/deal-paperwork')}>
+              <DownloadIcon size={14} color={Colors.navy} />
+              <Text style={styles.detailLink}>View Your Cost Estimate</Text>
+            </Pressable>
+            {step.status !== 'done' && (
+              <Button
+                label="I've Obtained My Cashier's Check"
+                onPress={() => sendDealSignal({ type: 'cashiers-check-obtained' })}
+                style={{ marginTop: 4 }}
+              />
+            )}
           </View>
         );
       }

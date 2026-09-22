@@ -76,7 +76,15 @@ export type DealSignal =
   // the Cost Estimate for a DEN-stock car (never signed — see
   // isDenStock's doc comment, VAT-Form cars don't get a signed contract
   // through this app). Neither path involves a bank or e-sign integration.
-  | { type: 'paperwork-complete' };
+  | { type: 'paperwork-complete' }
+  // A DEN-stock cash customer confirming they've been to the bank and
+  // actually have the Cashier's Check in hand — see deal/index.tsx's
+  // 'application' step. There's no financing application to submit for a
+  // DEN cash payer (unlike every other combination of cash/financing ×
+  // DEN/non-DEN, which all have a real thing to submit at this step), so
+  // this is what completes step 2 for that one case instead of
+  // 'intake-submitted' (see mock-deal-sync.ts's `send()`).
+  | { type: 'cashiers-check-obtained' };
 
 /**
  * The one interface the whole app talks to for deal state. Screens never

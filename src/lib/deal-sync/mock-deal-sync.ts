@@ -56,6 +56,7 @@ const SIGNAL_COMPLETES: Record<DealSignal['type'], (step: DealStep) => boolean> 
   'documents-updated': (s) => s.id === 'documents',
   'payment-submitted': () => false,
   'paperwork-complete': (s) => s.id === 'contract',
+  'cashiers-check-obtained': (s) => s.id === 'application',
 };
 
 export class MockDealSync implements DealSyncBackend {
@@ -155,7 +156,14 @@ export class MockDealSync implements DealSyncBackend {
     }
 
     const step = this.steps[currentIndex(this.steps)];
-    if (step && step.waitingOn === 'you' && SIGNAL_COMPLETES[signal.type]?.(step)) {
+    // A DEN cash payer has no financing application to submit, so
+    // 'intake-submitted' shouldn't complete 'application' for them the
+    // way it does for every other cash/financing × DEN/non-DEN
+    // combination — only the explicit 'cashiers-check-obtained' signal
+    // does, once they've actually confirmed they have the check in hand.
+    const isDenCashApplication =
+      step?.id === 'application' && signal.type === 'intake-submitted' && this.isDen && this.paymentMethod === 'cash';
+    if (!isDenCashApplication && step && step.waitingOn === 'you' && SIGNAL_COMPLETES[signal.type]?.(step)) {
       this.advance();
     } else if (signal.type === 'deposit-paid') {
       this.emit(); // assignment changed even if no step advanced
