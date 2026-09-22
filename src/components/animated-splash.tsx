@@ -14,14 +14,18 @@ import Animated, {
 import { StarIcon } from '@/components/icons';
 import { Colors } from '@/constants/theme';
 
+// The full "UCG" mark — white letters (not the brand's usual navy, which
+// would vanish against this screen's own navy background), extracted from
+// the real app icon (assets/images/icon.png), which already uses this
+// exact white-on-navy coloring for the same reason. Was briefly just the
+// red star/swoosh alone (2026-09-22), after a from-scratch PDF extraction
+// went wrong — see this file's git history — but Terry's own reference
+// screenshots asked for the full mark, in the app icon's coloring.
 const mark = require('@/assets/images/splash-icon.png');
 // The real "USED CAR GUYS" wordmark, cropped from the brand PDF Terry
 // provided (2026-09-22) — replaces a locally re-styled Text approximation
-// with the actual typeface/color. Red-only (like `mark` above), which is
-// why it still reads fine against this screen's navy background — the
-// full navy+red "UCG" lettermark (assets/brand/ucg-icon.png) would not:
-// its navy letters would vanish against this same navy, which is exactly
-// why `mark` here was always just the red star/swoosh, not the full mark.
+// with the actual typeface/color. Red-only, which reads fine against navy
+// on its own.
 const wordmarkImage = require('@/assets/brand/ucg-wordmark-text.png');
 
 /**
@@ -119,27 +123,33 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     zIndex: 10,
   },
+  // The mark is the full "UCG" lockup now (source ~2.42:1, wide rather
+  // than square — see this file's top-of-file comment), not the small
+  // near-square star fragment this box was originally sized for.
   markWrap: {
-    width: 100,
-    height: 100,
+    width: 230,
+    height: 95,
     marginBottom: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
   mark: {
-    width: 100,
-    height: 100,
+    width: 230,
+    height: 95,
   },
   twinkle: {
     position: 'absolute',
   },
+  // Positioned near the star/swoosh cluster, which sits roughly a third
+  // of the way across the mark (above/between the "U" and "C"), not
+  // centered on the whole wide lockup.
   twinkleTopRight: {
-    top: -4,
-    right: -6,
+    top: -6,
+    left: 95,
   },
   twinkleBottomLeft: {
-    bottom: 6,
-    left: -10,
+    top: 34,
+    left: 55,
   },
   wordmarkImage: {
     // Explicit width+height rather than `aspectRatio` — on web,
