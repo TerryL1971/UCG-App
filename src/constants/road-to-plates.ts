@@ -18,19 +18,41 @@ export interface RoadStep {
 }
 
 /** Path A — DEN***** (EU-spec, never USAREUR-registered). See
- * docs/purchase-paperwork.md's Path A. */
+ * docs/purchase-paperwork.md's Path A. Two separate customer stops
+ * (bank, then VAT Office), not one combined trip — corrected per Terry,
+ * 2026-09-21: the earlier single "Cashier's Check to the VAT Office" step
+ * conflated them, and was missing the admin-release step before TÜV. */
 export const roadToPlatesDen: RoadStep[] = [
   {
     id: 'cashiers-check',
-    title: "Cashier's Check to the VAT Office",
+    title: "Cashier's Check",
     detail:
-      "You took your Cost Estimate to the VAT Office and to Service Federal Credit Union or Community Bank for an Official Cashier's Check — that check is your payment for the car.",
+      "You take your Cost Estimate to Service Federal Credit Union or Community Bank for an Official Cashier's Check in the total amount — that check is your payment for the car.",
     waitingOn: 'you',
   },
   {
-    id: 'vat-form',
-    title: 'VAT Form issued & stamped',
-    detail: 'The VAT Office issues your VAT Form. You bring it back to UCG, who stamps it and completes the packet.',
+    id: 'vat-office',
+    title: 'Super VAT Form',
+    detail: "You take the Cashier's Check and your Cost Estimate to the VAT Office for a Super VAT Form.",
+    waitingOn: 'you',
+  },
+  {
+    id: 'paperwork-to-ucg',
+    title: 'Paperwork back to UCG',
+    detail:
+      "You bring the VAT Form, any other paperwork from the VAT Office, the Cashier's Check, and your Cost Estimate back to the dealership.",
+    waitingOn: 'you',
+  },
+  {
+    id: 'vat-stamped',
+    title: 'VAT Form stamped',
+    detail: 'Your salesperson stamps the VAT Form.',
+    waitingOn: 'ucg',
+  },
+  {
+    id: 'admin-release',
+    title: 'Release from admin',
+    detail: 'Your salesperson gets a release from admin before moving forward.',
     waitingOn: 'ucg',
   },
   {

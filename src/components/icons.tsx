@@ -346,6 +346,33 @@ export function PackageIcon({ size = 15, color = '#B7BBCB', strokeWidth = 2.3 }:
  * call (Terry, Sept: the AI chat costs too much to run; replace it with a
  * real WhatsApp hand-off). Path is the standard Simple Icons "WhatsApp"
  * mark (24x24, CC0) — recognizable rather than a generic chat bubble. */
+/** A padlock — "hold/reserve this car," next to the deposit button on
+ * salesperson.tsx. The keyhole dot is a small filled accent, same "mostly
+ * stroked, one filled detail" approach StarIcon already uses elsewhere. */
+export function LockIcon({ size = 20, color = '#273368', strokeWidth = 2 }: IconProps) {
+  return (
+    <Svg {...base(size)}>
+      <Rect x={5} y={11} width={14} height={9} rx={2} {...strokeProps(color, strokeWidth)} />
+      <Path d="M8 11V7a4 4 0 0 1 8 0v4" {...strokeProps(color, strokeWidth)} />
+      <Circle cx={12} cy={15.5} r={1.3} fill={color} />
+    </Svg>
+  );
+}
+
+/** Standard umbrella glyph — insurance, next to the Insurance button on
+ * salesperson.tsx. Generic/in-house styled rather than any real insurer's
+ * mark (American Auto Nation's own site has no simple logomark to borrow,
+ * just a wordmark). */
+export function UmbrellaIcon({ size = 20, color = '#273368', strokeWidth = 2 }: IconProps) {
+  return (
+    <Svg {...base(size)}>
+      <Path d="M3 12a9 9 0 0 1 18 0Z" {...strokeProps(color, strokeWidth)} />
+      <Line x1={12} y1={12} x2={12} y2={2} {...strokeProps(color, strokeWidth)} />
+      <Path d="M12 19a2 2 0 0 0 4 0v-7" {...strokeProps(color, strokeWidth)} />
+    </Svg>
+  );
+}
+
 export function WhatsAppIcon({ size = 20, color = '#fff' }: Pick<IconProps, 'size' | 'color'>) {
   return (
     <Svg {...base(size)}>

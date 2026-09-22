@@ -60,16 +60,23 @@ export type DealSignal =
   // Carries paymentMethod because the back office needs to know cash vs.
   // financing to make sense of the 'financing' step at all — cash never
   // goes to a bank for approval, it goes to `paymentStatus` instead (see
-  // that field's comment above and mock-deal-sync.ts).
-  | { type: 'intake-submitted'; paymentMethod: PaymentMethod }
+  // that field's comment above and mock-deal-sync.ts). Also carries isDen
+  // (from the *car*, not the intake form — deal-intake.tsx reads it off
+  // `useDeal()`) because a DEN-stock car's 'financing' step is the
+  // Cashier's-Check/VAT-Office process regardless of cash vs financing —
+  // it needs the generic per-step timer either way, not paymentStatus's
+  // wire-transfer gating, which doesn't apply to a DEN car at all.
+  | { type: 'intake-submitted'; paymentMethod: PaymentMethod; isDen: boolean }
   | { type: 'deposit-paid' }
   | { type: 'documents-updated' }
   | { type: 'payment-submitted' }
-  // The customer uploaded a photo of their signed Purchase Order (or Cost
-  // Estimate, for DEN-stock cars) via DocumentCard — see deal-paperwork.tsx.
-  // There's no bank/e-sign integration behind this; the upload itself is
-  // the completion signal.
-  | { type: 'contract-signed' };
+  // The step-5 paperwork is done — see deal-paperwork.tsx. Two different
+  // real actions fire this, depending on the car: a signed-copy photo
+  // upload for a Purchase Order (non-DEN stock), or just printing/sharing
+  // the Cost Estimate for a DEN-stock car (never signed — see
+  // isDenStock's doc comment, VAT-Form cars don't get a signed contract
+  // through this app). Neither path involves a bank or e-sign integration.
+  | { type: 'paperwork-complete' };
 
 /**
  * The one interface the whole app talks to for deal state. Screens never

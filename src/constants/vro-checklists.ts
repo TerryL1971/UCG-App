@@ -201,3 +201,15 @@ export function isDenStock(stockNumber: string | undefined | null): boolean {
 export function guessVehicleSpec(stockNumber: string | undefined | null): VehicleSpec {
   return isDenStock(stockNumber) ? 'eu' : 'us';
 }
+
+/** The word for the $300 hold payment, anywhere it's mentioned outside
+ * deposit.tsx itself (which has its own local `feeNoun`/`feeNounTitle` —
+ * this is the same wording, centralized for the other screens that also
+ * need it). Never "deposit"/"Deposit" on a DEN-stock car — see
+ * isDenStock's doc comment and docs/purchase-paperwork.md's "The deposit
+ * is not a deposit". */
+export function holdFeeNoun(stockNumber: string | undefined | null, capitalized = false): string {
+  const isFee = isDenStock(stockNumber);
+  if (capitalized) return isFee ? 'Reservation Fee' : 'Deposit';
+  return isFee ? 'reservation fee' : 'deposit';
+}

@@ -273,11 +273,12 @@ export function buildCostEstimateHtml(
 
         <h3>What this number is for</h3>
         <ol>
-          <li>Take 3–5 copies of this Cost Estimate to the VAT Office, and to Service Federal Credit Union or
-            Community Bank for an Official Cashier's Check in the amount above.</li>
-          <li>The Cashier's Check goes to the VAT Office — that's your payment for the car.</li>
-          <li>The VAT Office issues your VAT Form.</li>
-          <li>Bring the VAT Form back to UCG — we stamp it and complete the paperwork for the VRO.</li>
+          <li>Take 3–5 copies of this Cost Estimate to Service Federal Credit Union or Community Bank for an
+            Official Cashier's Check in the amount above.</li>
+          <li>Take the Cashier's Check and this Cost Estimate to the VAT Office for a Super VAT Form.</li>
+          <li>Bring the VAT Form, any other paperwork from the VAT Office, the Cashier's Check, and this Cost
+            Estimate back to us — we stamp the VAT Form and get a release from admin.</li>
+          <li>We get the TÜV done and ready your registration paperwork for the VRO.</li>
         </ol>
         <p style="font-size:13px;">
           Once your VAT Form is stamped, the VAT is credited back — your net price returns to

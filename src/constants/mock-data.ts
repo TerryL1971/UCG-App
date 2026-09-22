@@ -170,7 +170,12 @@ export const dealSteps: DealStep[] = [
   { id: 'application', title: 'Application Submitted', status: 'done', detail: 'Completed · Aug 14', waitingOn: 'you' },
   { id: 'documents', title: 'Documents Uploaded', status: 'done', detail: 'Completed · Aug 16', waitingOn: 'you' },
   { id: 'financing', title: 'Financing Approved', status: 'done', detail: 'Completed · Aug 19', waitingOn: 'bank' },
-  { id: 'contract', title: 'Contract Signed', status: 'done', detail: 'Completed · Aug 21', waitingOn: 'you' },
+  // "Purchase Order" is the non-DEN default — deal/index.tsx's
+  // displaySteps() overrides this to "Cost Estimate" for a DEN-stock car
+  // (see isDenStock in vro-checklists.ts). Neither title is ever
+  // "Contract Signed" anymore — there's no e-sign/bank integration behind
+  // this step for either document; see that step's detail copy.
+  { id: 'contract', title: 'Purchase Order', status: 'done', detail: 'Completed · Aug 21', waitingOn: 'you' },
   { id: 'ready', title: 'Car Ready', status: 'done', detail: 'Completed · Aug 22', waitingOn: 'ucg' },
   { id: 'pickup', title: 'Picked Up', status: 'current', waitingOn: 'you' },
 ];
@@ -186,7 +191,7 @@ export const freshDealSteps: DealStep[] = [
   { id: 'application', title: 'Application Submitted', status: 'upcoming', waitingOn: 'you' },
   { id: 'documents', title: 'Documents Uploaded', status: 'upcoming', waitingOn: 'you' },
   { id: 'financing', title: 'Financing Approved', status: 'upcoming', waitingOn: 'bank' },
-  { id: 'contract', title: 'Contract Signed', status: 'upcoming', waitingOn: 'you' },
+  { id: 'contract', title: 'Purchase Order', status: 'upcoming', waitingOn: 'you' },
   { id: 'ready', title: 'Car Ready', status: 'upcoming', waitingOn: 'ucg' },
   { id: 'pickup', title: 'Picked Up', status: 'upcoming', waitingOn: 'you' },
 ];

@@ -29,6 +29,20 @@ export default function CarDetailScreen() {
   useEffect(() => {
     if (!id) return;
     let cancelled = false;
+    // Reset before fetching — this screen instance is reused when
+    // navigating from one car's detail page straight to another's (same
+    // route pattern, different `id`), so without this the PREVIOUS car's
+    // data — and its now-enabled "Choose This Car" button — stayed on
+    // screen until the new fetch resolved. Tapping Choose in that window
+    // acted on the stale car, compared it against itself, and silently
+    // re-picked it instead of switching — which is what made the "Switch
+    // to this car?" warning seem to skip itself (Terry, 2026-09-21).
+    // Resetting local state for a new `id` before the fetch starts, not
+    // mirroring a prop into state — the exact pattern React's own docs
+    // show for a data fetch keyed on a changing id.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setCar(null);
+    setError(false);
     fetchInventoryDetail(id)
       .then((d) => {
         if (!cancelled) setCar(d);

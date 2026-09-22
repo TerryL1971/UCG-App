@@ -55,7 +55,7 @@ const SIGNAL_COMPLETES: Record<DealSignal['type'], (step: DealStep) => boolean> 
   'deposit-paid': (s) => s.id === 'matched',
   'documents-updated': (s) => s.id === 'documents',
   'payment-submitted': () => false,
-  'contract-signed': (s) => s.id === 'contract',
+  'paperwork-complete': (s) => s.id === 'contract',
 };
 
 export class MockDealSync implements DealSyncBackend {
@@ -75,6 +75,13 @@ export class MockDealSync implements DealSyncBackend {
   // already populated, 'financing' step already 'done'). Only 'intake-
   // submitted' ever changes this — see `send()`.
   private paymentMethod: PaymentMethod = 'financing';
+  // Whether the chosen car is DEN-stock (from `car`, via deal-intake.tsx —
+  // see the 'intake-submitted' signal's doc comment). A DEN car's
+  // 'financing' step is always the Cashier's-Check/VAT-Office process
+  // regardless of cash vs financing, so it needs the generic per-step
+  // timer either way — see scheduleAutoAdvance()'s cash exclusion below,
+  // which this also has to override.
+  private isDen = false;
   // Off by default even on the demo-start "further along" deal — see this
   // field's doc comment on DealServerState for why a deposit alone doesn't
   // imply it. Only `setPersonalWhatsapp()` (dev/test only for now) changes
@@ -92,9 +99,13 @@ export class MockDealSync implements DealSyncBackend {
       // A cash deal never goes to a bank for approval, so it never gets
       // real financing terms even once the 'financing' step itself
       // (relabeled "Funds Received" for cash — see deal/index.tsx) reaches
-      // 'done'.
+      // 'done'. Neither does a DEN-stock deal — it pays via Cashier's
+      // Check + VAT Office regardless of cash vs financing, never a bank
+      // loan against UCG (see deal/index.tsx's DEN branch for that step).
       const financingApproved =
-        this.paymentMethod !== 'cash' && this.steps.find((s) => s.id === 'financing')?.status === 'done';
+        this.paymentMethod !== 'cash' &&
+        !this.isDen &&
+        this.steps.find((s) => s.id === 'financing')?.status === 'done';
       this.cachedState = {
         steps: this.steps,
         financingTerms: financingApproved ? demoFinancingTerms : null,
@@ -120,10 +131,14 @@ export class MockDealSync implements DealSyncBackend {
     // A confirmed deposit is what gets a real salesperson assigned.
     if (signal.type === 'deposit-paid') this.assigned = true;
 
-    // The back office only learns cash-vs-financing when the customer
-    // actually submits their intake — same moment `paymentMethod` is
-    // captured in deal-intake-context locally.
-    if (signal.type === 'intake-submitted') this.paymentMethod = signal.paymentMethod;
+    // The back office only learns cash-vs-financing (and DEN-ness, from
+    // the chosen car) when the customer actually submits their intake —
+    // same moment `paymentMethod` is captured in deal-intake-context
+    // locally.
+    if (signal.type === 'intake-submitted') {
+      this.paymentMethod = signal.paymentMethod;
+      this.isDen = signal.isDen;
+    }
 
     if (signal.type === 'payment-submitted') {
       // "I sent the wire" — moves to 'payment_submitted' immediately, then
@@ -154,6 +169,7 @@ export class MockDealSync implements DealSyncBackend {
     this.assigned = false; // fresh deal — no salesperson until a deposit
     this.paymentStatus = 'awaiting_payment';
     this.paymentMethod = 'financing'; // unknown again until intake is submitted
+    this.isDen = false;
     this.onPersonalWhatsapp = false;
     this.emit();
     this.scheduleAutoAdvance();
@@ -206,8 +222,12 @@ export class MockDealSync implements DealSyncBackend {
     // A cash deal's 'financing' step isn't a bank approval to fake a wait
     // for — it's UCG confirming wire funds landed, which
     // `schedulePaymentVerification()` already drives off `paymentStatus`.
-    // Let that be the only thing advancing this step for cash.
-    if (step.id === 'financing' && this.paymentMethod === 'cash') return;
+    // Let that be the only thing advancing this step for cash. Doesn't
+    // apply to a DEN-stock deal though, even a cash one — DEN never goes
+    // through the wire-transfer/paymentStatus flow at all (Cashier's
+    // Check instead), so it always needs this generic timer regardless of
+    // payment method.
+    if (step.id === 'financing' && this.paymentMethod === 'cash' && !this.isDen) return;
     if (step.waitingOn === 'ucg' || step.waitingOn === 'bank') {
       this.timer = setTimeout(() => this.advance(), AUTO_ADVANCE_MS);
     }

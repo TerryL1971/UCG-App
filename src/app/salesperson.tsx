@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Keyboard, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { SendIcon, StarIcon, WhatsAppIcon } from '@/components/icons';
+import { LockIcon, SendIcon, ShieldIcon, StarIcon, UmbrellaIcon, WhatsAppIcon } from '@/components/icons';
 import { SalespersonAvatarFull } from '@/components/salesperson-avatar';
 import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/ui/screen-header';
@@ -15,6 +15,7 @@ import {
 } from '@/constants/ai-chat';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { specialistWhatsapp, ucgAssistant, whatsappChatUrl } from '@/constants/mock-data';
+import { isDenStock } from '@/constants/vro-checklists';
 import { parseJsonResponse } from '@/lib/api-fetch';
 import { useDeal } from '@/lib/deal-context';
 import { useDealIntake } from '@/lib/deal-intake-context';
@@ -86,6 +87,11 @@ export default function SalespersonScreen() {
   const { choice: warrantyChoice } = useWarranty();
   const { state: dealState } = useDealSync();
   const carLabel = car ? `${car.year} ${car.title}` : 'your next car';
+  // Never "Deposit" on a DEN-stock car — see isDenStock's doc comment
+  // (vro-checklists.ts). Matches deposit.tsx's own "Pay Reservation Fee
+  // with PayPal" wording rather than inventing a new phrase for the same
+  // concept.
+  const holdButtonLabel = isDenStock(car?.stockNumber) ? 'Hold This Car — Pay Reservation Fee' : 'Hold This Car — Make a Deposit';
   const scrollViewRef = useRef<ScrollView>(null);
   const inputRef = useRef<TextInput>(null);
 
@@ -308,9 +314,10 @@ export default function SalespersonScreen() {
 
           <View style={styles.ctaWrap}>
             <Button
-              label="Hold This Car — Make a Deposit"
+              label={holdButtonLabel}
               variant="secondary"
               style={styles.depositButton}
+              icon={<LockIcon color={Colors.navy} />}
               onPress={() => router.push('/deposit')}
             />
             <Button
@@ -323,12 +330,14 @@ export default function SalespersonScreen() {
               }
               variant="secondary"
               style={styles.depositButton}
+              icon={<ShieldIcon color={Colors.navy} />}
               onPress={() => router.push('/warranty')}
             />
             <Button
               label="Insurance — First Month Paid"
               variant="secondary"
               style={styles.depositButton}
+              icon={<UmbrellaIcon color={Colors.navy} />}
               onPress={() => router.push('/insurance')}
             />
             <Button label="View My Timeline  →" onPress={() => router.push('/(tabs)/deal')} />
@@ -441,9 +450,10 @@ export default function SalespersonScreen() {
 
         <View style={styles.ctaWrap}>
           <Button
-            label="Hold This Car — Make a Deposit"
+            label={holdButtonLabel}
             variant="secondary"
             style={styles.depositButton}
+            icon={<LockIcon color={Colors.navy} />}
             onPress={() => router.push('/deposit')}
           />
           <Button
@@ -456,12 +466,14 @@ export default function SalespersonScreen() {
             }
             variant="secondary"
             style={styles.depositButton}
+            icon={<ShieldIcon color={Colors.navy} />}
             onPress={() => router.push('/warranty')}
           />
           <Button
             label="Insurance — First Month Paid"
             variant="secondary"
             style={styles.depositButton}
+            icon={<UmbrellaIcon color={Colors.navy} />}
             onPress={() => router.push('/insurance')}
           />
           <Button label="View My Timeline  →" onPress={() => router.push('/(tabs)/deal')} />

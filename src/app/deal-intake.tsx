@@ -22,6 +22,7 @@ import {
   type LicenseStatus,
   type PaymentMethod,
 } from '@/constants/mock-data';
+import { isDenStock } from '@/constants/vro-checklists';
 import { useAuth } from '@/lib/auth-context';
 import { useDeal } from '@/lib/deal-context';
 import { useDealIntake } from '@/lib/deal-intake-context';
@@ -233,7 +234,7 @@ export default function DealIntakeScreen() {
     // Tell the deal-sync backend a customer action happened — in the mock
     // this nudges the timeline off "Matched"/"Application"; with a real
     // DealerTeam integration it'd create/update the Sales Up record.
-    sendDealSignal({ type: 'intake-submitted', paymentMethod });
+    sendDealSignal({ type: 'intake-submitted', paymentMethod, isDen: isDenStock(car?.stockNumber) });
 
     // Stays in the app — Terry, 2026-09-21: submitting shouldn't bounce
     // the customer out to WhatsApp. (A version of this briefly did launch

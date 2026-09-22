@@ -379,6 +379,15 @@ export function TimelineRoad({ steps, car, viewedIndex, onStepPress, horizontal 
 
         <Animated.View style={[styles.carShadow, carStyle, { pointerEvents: 'none' }]} />
         <Animated.View style={[styles.carWrap, carStyle, { pointerEvents: 'none' }]}>
+          {/* A plain red car silhouette read fine gliding over the gray
+              road, but came to rest sitting almost exactly on top of a
+              stop's own circular sign — same red as a "done" sign's face,
+              so the two blended into one blob right when the car stopped
+              (Terry, 2026-09-22: "hard to see... when stopped"). This
+              white badge behind the car guarantees contrast against
+              whatever's underneath — road, red, navy, or white sign —
+              the same fix map-pin/vehicle markers use for exactly this. */}
+          <View style={styles.carHalo} />
           <CarSideIcon size={CAR_SIZE} />
         </Animated.View>
       </Animated.View>
@@ -429,6 +438,21 @@ const styles = StyleSheet.create({
     height: CAR_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  // Sized a few px past the actual car silhouette on every side (the car
+  // itself renders CAR_SIZE wide × CAR_SIZE/2 tall, per CarSideIcon's own
+  // 2:1 viewBox) so it reads as a deliberate padded badge, not a stray
+  // white box. Centered within carWrap's CAR_SIZE-square box via
+  // top/left, since the halo isn't the same shape as its parent.
+  carHalo: {
+    position: 'absolute',
+    width: CAR_SIZE + 4,
+    height: CAR_SIZE / 2 + 6,
+    borderRadius: (CAR_SIZE / 2 + 6) / 2,
+    backgroundColor: '#fff',
+    top: (CAR_SIZE - (CAR_SIZE / 2 + 6)) / 2,
+    left: (CAR_SIZE - (CAR_SIZE + 4)) / 2,
+    ...Shadow.card,
   },
   carShadow: {
     position: 'absolute',

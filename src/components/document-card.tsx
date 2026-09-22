@@ -23,15 +23,19 @@ import { compressPhoto } from '@/lib/image';
  * (document-storage.ts) — a real, retrievable copy of what the customer
  * actually saw, not just something regenerated live from whatever
  * today's numbers are. "Upload Signed Copy" captures a photo of the
- * physically-signed paperwork and uploads it too. There's no separate
- * salesperson-facing screen in this app — this is captured from the same
- * screen/device the customer already has open, on the understanding that
- * signing happens with both people present. The signed photo stays
- * viewable/shareable for the rest of THIS app session only — retrieving
- * it back from Storage on a later visit would need real per-customer
- * auth this app doesn't have yet (see document-storage.ts's comment on
- * the anon-key/RLS tradeoff). Retrievable meanwhile from the Supabase
- * dashboard, same as every other document in that bucket.
+ * physically-signed paperwork and uploads it too — but only when
+ * `signable` (the default), since a Cost Estimate is never signed at all
+ * (VAT-Form cars don't get a signed contract through this app — see
+ * isDenStock's doc comment) and showing that button there would imply a
+ * step that doesn't exist. There's no separate salesperson-facing screen
+ * in this app — signing is captured from the same screen/device the
+ * customer already has open, on the understanding that signing happens
+ * with both people present. The signed photo stays viewable/shareable for
+ * the rest of THIS app session only — retrieving it back from Storage on
+ * a later visit would need real per-customer auth this app doesn't have
+ * yet (see document-storage.ts's comment on the anon-key/RLS tradeoff).
+ * Retrievable meanwhile from the Supabase dashboard, same as every other
+ * document in that bucket.
  */
 export function DocumentCard({
   docId,
@@ -39,20 +43,33 @@ export function DocumentCard({
   description,
   buildHtml,
   context,
+  signable = true,
   onSigned,
+  onShared,
 }: {
   docId: string;
   title: string;
   description: string;
   buildHtml: () => string;
   context: DealDocumentContext;
+  /** false hides "Upload Signed Copy" entirely — for a document that's
+   * never signed (the Cost Estimate). */
+  signable?: boolean;
   /** Fires once the signed-copy upload actually succeeds — not on every
    * tap of "Upload Signed Copy", and not on Replace of an already-signed
    * copy (the caller already knows about it by then). Used by
-   * deal-paperwork.tsx to complete the timeline's 'contract' step: there's
-   * no e-sign/bank integration behind that step, this upload is the real
-   * completion event. */
+   * deal-paperwork.tsx to complete the timeline's 'contract' step for a
+   * signable document: there's no e-sign/bank integration behind that
+   * step, this upload is the real completion event. */
   onSigned?: () => void;
+  /** Fires every time "Save / Share PDF" succeeds (no first-time-only
+   * gating — unlike signing, sharing again later is a normal thing to do,
+   * and re-firing a signal for a step that's already past 'current' is a
+   * harmless no-op). Used for a non-`signable` document — the Cost
+   * Estimate — as the real completion event in its place, since printing/
+   * sharing it (to take to the VAT Office and bank) is the actual
+   * customer action that matters here. */
+  onShared?: () => void;
 }) {
   const [isWorking, setIsWorking] = useState(false);
   const [signedUri, setSignedUri] = useState<string | null>(null);
@@ -79,6 +96,7 @@ export function DocumentCard({
       // Fire-and-forget: the real, durable copy of what was just shown/
       // shared, not a regeneration — see the file comment above.
       uploadGeneratedDocument(docId, uri, context).catch(() => {});
+      onShared?.();
     } catch {
       Alert.alert('Something went wrong', 'Could not create the PDF — try Print instead.');
     } finally {
@@ -138,26 +156,27 @@ export function DocumentCard({
         </Pressable>
       </View>
 
-      {signedUri ? (
-        <Pressable style={styles.signedRow} onPress={shareSignedCopy}>
-          <Image source={{ uri: signedUri }} style={styles.signedThumb} contentFit="cover" />
-          <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-              <CheckCircleIcon size={13} />
-              <Text style={styles.signedLabel}>Signed copy on file</Text>
+      {signable &&
+        (signedUri ? (
+          <Pressable style={styles.signedRow} onPress={shareSignedCopy}>
+            <Image source={{ uri: signedUri }} style={styles.signedThumb} contentFit="cover" />
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                <CheckCircleIcon size={13} />
+                <Text style={styles.signedLabel}>Signed copy on file</Text>
+              </View>
+              <Text style={styles.signedSub}>Tap to share · Replace</Text>
             </View>
-            <Text style={styles.signedSub}>Tap to share · Replace</Text>
-          </View>
-          <Pressable hitSlop={8} onPress={promptUploadSigned}>
-            <Text style={styles.signedReplace}>Replace</Text>
+            <Pressable hitSlop={8} onPress={promptUploadSigned}>
+              <Text style={styles.signedReplace}>Replace</Text>
+            </Pressable>
           </Pressable>
-        </Pressable>
-      ) : (
-        <Pressable style={styles.addSignedButton} onPress={promptUploadSigned} disabled={isUploadingSigned}>
-          <PlusIcon size={14} color={Colors.navy} />
-          <Text style={styles.addSignedLabel}>{isUploadingSigned ? 'Adding…' : 'Upload Signed Copy'}</Text>
-        </Pressable>
-      )}
+        ) : (
+          <Pressable style={styles.addSignedButton} onPress={promptUploadSigned} disabled={isUploadingSigned}>
+            <PlusIcon size={14} color={Colors.navy} />
+            <Text style={styles.addSignedLabel}>{isUploadingSigned ? 'Adding…' : 'Upload Signed Copy'}</Text>
+          </Pressable>
+        ))}
     </View>
   );
 }

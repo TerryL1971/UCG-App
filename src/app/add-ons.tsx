@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
 import { FINANCE_APPLICATION_URL } from '@/constants/mock-data';
+import { isDenStock } from '@/constants/vro-checklists';
 import { computeDealPricing, money } from '@/lib/deal-documents';
 import { useDeal } from '@/lib/deal-context';
 import { useDealIntake } from '@/lib/deal-intake-context';
@@ -29,6 +30,13 @@ export default function AddOnsScreen() {
   const carLabel = car ? `${car.year} ${car.title}` : 'your car';
   const hasPpp = warrantyChoice?.decision === 'accepted';
   const pricing = computeDealPricing(car, hasPpp);
+  // A DEN-stock car's hold payment is a refundable reservation fee, not a
+  // deposit applied against the price — VAT-Form purchases can't take a
+  // deposit at all (see isDenStock's doc comment). Same branch
+  // deal-paperwork.tsx's Price Summary already uses, so this screen's
+  // total doesn't imply the wrong math (subtracting a fee that's actually
+  // separate and refundable).
+  const isDen = isDenStock(car?.stockNumber);
 
   const pppStatus =
     warrantyChoice?.decision === 'accepted'
@@ -84,8 +92,17 @@ export default function AddOnsScreen() {
           <Row label="Vehicle Price" value={money(pricing.vehiclePrice)} />
           {hasPpp && <Row label="2-Year Premium Protection Plan" value={money(pricing.pppAmount)} />}
           <Row label="Subtotal" value={money(pricing.subtotal)} bold />
-          <Row label="Deposit Paid" value={`-${money(pricing.holdAmount)}`} />
-          <Row label="Balance Due" value={money(pricing.balanceAfterHold)} bold red />
+          {isDen ? (
+            <>
+              <Row label="German VAT (19%)" value={money(pricing.vatAmount)} />
+              <Row label="Cashier's Check Amount" value={money(pricing.totalWithVat)} bold red />
+            </>
+          ) : (
+            <>
+              <Row label="Deposit Paid" value={`-${money(pricing.holdAmount)}`} />
+              <Row label="Balance Due" value={money(pricing.balanceAfterHold)} bold red />
+            </>
+          )}
         </View>
         <Text style={styles.totalsNote}>
           Insurance, Winter Tires, and PPF pricing isn&apos;t included above — your salesperson quotes those

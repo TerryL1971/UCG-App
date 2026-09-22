@@ -97,7 +97,8 @@ export default function DealPaperworkScreen() {
             description="Price + German VAT — take 3–5 copies to the VAT Office and your bank for a Cashier's Check."
             buildHtml={() => buildCostEstimateHtml(car, intake, hasPpp)}
             context={docContext}
-            onSigned={() => sendDealSignal({ type: 'contract-signed' })}
+            signable={false}
+            onShared={() => sendDealSignal({ type: 'paperwork-complete' })}
           />
         ) : (
           <>
@@ -107,7 +108,7 @@ export default function DealPaperworkScreen() {
               description="Finalizes your price and payment method."
               buildHtml={() => buildPurchaseOrderHtml(car, intake, dealState.financingTerms, hasPpp)}
               context={docContext}
-              onSigned={() => sendDealSignal({ type: 'contract-signed' })}
+              onSigned={() => sendDealSignal({ type: 'paperwork-complete' })}
             />
             <DocumentCard
               docId="bill-of-sale"

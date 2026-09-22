@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, Text, type StyleProp, type ViewStyle } from 'react-native';
+import type { ReactNode } from 'react';
+import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { Colors, Fonts, Radius, Shadow } from '@/constants/theme';
 
@@ -8,9 +9,13 @@ interface ButtonProps {
   variant?: 'primary' | 'secondary';
   style?: StyleProp<ViewStyle>;
   disabled?: boolean;
+  /** Optional leading icon, e.g. `<LockIcon />` — rendered to the left of
+   * the label as one centered group. Omitted entirely by default so every
+   * existing call site is unaffected. */
+  icon?: ReactNode;
 }
 
-export function Button({ label, onPress, variant = 'primary', style, disabled }: ButtonProps) {
+export function Button({ label, onPress, variant = 'primary', style, disabled, icon }: ButtonProps) {
   const isPrimary = variant === 'primary';
   return (
     <Pressable
@@ -24,11 +29,14 @@ export function Button({ label, onPress, variant = 'primary', style, disabled }:
         disabled && styles.disabled,
         style,
       ]}>
-      <Text
-        numberOfLines={2}
-        style={[styles.label, isPrimary ? styles.labelPrimary : styles.labelSecondary]}>
-        {label}
-      </Text>
+      <View style={styles.content}>
+        {icon}
+        <Text
+          numberOfLines={2}
+          style={[styles.label, isPrimary ? styles.labelPrimary : styles.labelSecondary]}>
+          {label}
+        </Text>
+      </View>
     </Pressable>
   );
 }
@@ -46,6 +54,13 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingHorizontal: 16,
     paddingVertical: 10,
+  },
+  content: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    width: '100%',
   },
   primary: {
     backgroundColor: Colors.red,
@@ -71,6 +86,9 @@ const styles = StyleSheet.create({
     // Android (includeFontPadding), which reads as the label sitting too
     // low / uneven padding inside the button. Off = optically centered.
     includeFontPadding: false,
+    // Lets a long label wrap/shrink to the space left over once a leading
+    // icon and its gap take some of the row, instead of overflowing it.
+    flexShrink: 1,
   },
   labelPrimary: {
     color: '#fff',

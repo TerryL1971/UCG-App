@@ -21,29 +21,50 @@ import {
   type DealStep,
   type PaymentMethod,
 } from '@/constants/mock-data';
+import { holdFeeNoun, isDenStock } from '@/constants/vro-checklists';
 import { useDeal } from '@/lib/deal-context';
 import { useDealIntake } from '@/lib/deal-intake-context';
 import { useDealSync, type PaymentStatus } from '@/lib/deal-sync';
 import { useDealDocuments } from '@/lib/documents-context';
 
-/** Cash and financing walk the same 7-step shape, but steps 2 and 4 mean
+/** Cash/financing (steps 2 and 4) and DEN/non-DEN stock (step 5) each mean
  * different things depending on which — retitled here at render time
- * rather than in mock-data.ts/mock-deal-sync.ts, so the underlying
- * step id/status machinery stays generic. `waitingOn` for the cash
- * "Funds Received" step also swaps between "you" (haven't sent the wire
- * yet) and "ucg" (sent it, waiting on confirmation) since a single static
- * value can't capture that step's actual two phases. */
-function displaySteps(steps: DealStep[], paymentMethod: PaymentMethod | undefined, paymentStatus: PaymentStatus): DealStep[] {
-  if (paymentMethod !== 'cash') return steps;
+ * rather than in mock-data.ts/mock-deal-sync.ts, so the underlying step
+ * id/status machinery stays generic. `waitingOn` for the cash "Funds
+ * Received" step also swaps between "you" (haven't sent the wire yet) and
+ * "ucg" (sent it, waiting on confirmation) since a single static value
+ * can't capture that step's actual two phases. */
+function displaySteps(
+  steps: DealStep[],
+  paymentMethod: PaymentMethod | undefined,
+  paymentStatus: PaymentStatus,
+  isDen: boolean,
+): DealStep[] {
   return steps.map((step) => {
-    if (step.id === 'application') return { ...step, title: 'Submitting Wire' };
-    if (step.id === 'financing') {
-      return {
-        ...step,
-        title: 'Funds Received',
-        waitingOn: paymentStatus === 'awaiting_payment' ? 'you' : 'ucg',
-      };
+    // Not for a DEN car — it never wires money regardless of cash vs
+    // financing (Cashier's Check instead, at step 4), so "Submitting
+    // Wire" would be wrong. Leave it as the default "Application
+    // Submitted," same as a DEN customer who picked financing already sees.
+    if (paymentMethod === 'cash' && step.id === 'application' && !isDen) {
+      return { ...step, title: 'Submitting Wire' };
     }
+    if (step.id === 'financing') {
+      // DEN always pays via Cashier's Check + VAT Office, never a bank
+      // loan or a wire — this takes priority over cash-vs-financing,
+      // which doesn't change what this step actually is for a DEN car.
+      if (isDen) return { ...step, title: 'VAT Form Stamped', waitingOn: 'ucg' };
+      if (paymentMethod === 'cash') {
+        return {
+          ...step,
+          title: 'Funds Received',
+          waitingOn: paymentStatus === 'awaiting_payment' ? 'you' : 'ucg',
+        };
+      }
+    }
+    // mock-data.ts's stored title ("Purchase Order") is the non-DEN
+    // default; DEN-stock cars get a Cost Estimate instead — see
+    // isDenStock's doc comment.
+    if (isDen && step.id === 'contract') return { ...step, title: 'Cost Estimate' };
     return step;
   });
 }
@@ -186,7 +207,7 @@ function StepDetailContent({ step, car }: { step: DealStep; car: ReturnType<type
         <View style={{ flex: 1 }}>
           <Text style={styles.detailTitle}>{assigned ? assigned.name : ucgAssistant.name}</Text>
           <Text style={styles.detailSubtitle}>
-            {assigned ? assigned.title : 'A UCG specialist is assigned once your deposit is in.'}
+            {assigned ? assigned.title : `A UCG specialist is assigned once your ${holdFeeNoun(car?.stockNumber)} is in.`}
           </Text>
         </View>
         <Pressable hitSlop={8} onPress={() => router.push('/salesperson')}>
@@ -200,6 +221,20 @@ function StepDetailContent({ step, car }: { step: DealStep; car: ReturnType<type
     const carLabel = car ? `${car.year} ${car.title}` : 'your chosen car';
 
     if (intake?.paymentMethod === 'cash') {
+      // A DEN car never wires money — no wire-instructions link, no
+      // paymentStatus chip (that's `PaymentStatus`'s wire-transfer
+      // tracking, which doesn't apply here). The Cashier's-Check/VAT
+      // process this car actually goes through lives at step 4 instead.
+      if (isDenStock(car?.stockNumber)) {
+        return (
+          <View style={styles.detailCard}>
+            <Text style={styles.detailPlainText}>
+              Paying cash for {carLabel} — no financing application needed. Your Cashier&apos;s Check and VAT
+              paperwork come together at the next step.
+            </Text>
+          </View>
+        );
+      }
       return (
         <View style={[styles.detailCard, { flexDirection: 'column', alignItems: 'stretch', gap: 8 }]}>
           <View style={styles.paymentStatusRow}>
@@ -267,6 +302,24 @@ function StepDetailContent({ step, car }: { step: DealStep; car: ReturnType<type
   }
 
   if (step.id === 'financing') {
+    if (isDenStock(car?.stockNumber)) {
+      return (
+        <View style={[styles.detailCard, { flexDirection: 'column', alignItems: 'stretch', gap: 8 }]}>
+          <Text style={styles.detailPlainText}>
+            Take your Cost Estimate to Service Federal Credit Union or Community Bank for an Official Cashier&apos;s
+            Check, then the check and the Cost Estimate to the VAT Office for a Super VAT Form. Bring the VAT Form,
+            any paperwork from the VAT Office, the Cashier&apos;s Check, and the Cost Estimate back to UCG — your
+            salesperson stamps the VAT Form, gets a release from admin, gets the TÜV done, and readies your
+            registration paperwork for the VRO.
+          </Text>
+          <Pressable style={styles.detailLinkRow} onPress={() => router.push('/road-to-plates')}>
+            <DownloadIcon size={14} color={Colors.navy} />
+            <Text style={styles.detailLink}>See the Full Road to Plates</Text>
+          </Pressable>
+        </View>
+      );
+    }
+
     if (intake?.paymentMethod === 'cash') {
       return (
         <View style={[styles.detailCard, { flexDirection: 'column', alignItems: 'stretch', gap: 8 }]}>
@@ -314,13 +367,21 @@ function StepDetailContent({ step, car }: { step: DealStep; car: ReturnType<type
   }
 
   if (step.id === 'contract') {
+    // A DEN-stock car (EU-spec, never USAREUR-registered) never gets a
+    // signed Purchase Order through this app — it gets a Cost Estimate
+    // instead, and that document is never signed at all (see
+    // isDenStock's doc comment). Printing/sharing it is what completes
+    // this step for that car; see document-card.tsx's `onShared`.
+    const isDen = isDenStock(car?.stockNumber);
+    const doneCopy = isDen
+      ? 'Shared — your VAT Office/bank copies are on the way to wherever you sent them.'
+      : 'Signed and on file — your salesperson has a copy.';
+    const upcomingCopy = isDen
+      ? "Print or share your Cost Estimate — that's what completes this step. Take copies to the VAT Office and your bank for a Cashier's Check; a Cost Estimate is never signed."
+      : "Print or share your Purchase Order, sign it with your salesperson, then scan or photograph it back in — that's what completes this step. No documents come from the bank into this app.";
     return (
       <View style={[styles.detailCard, { flexDirection: 'column', alignItems: 'stretch', gap: 8 }]}>
-        <Text style={styles.detailPlainText}>
-          {step.status === 'done'
-            ? 'Signed and on file — your salesperson has a copy.'
-            : "Print or share your Purchase Order, sign it with your salesperson, then scan or photograph it back in — that's what completes this step. No documents come from the bank into this app."}
-        </Text>
+        <Text style={styles.detailPlainText}>{step.status === 'done' ? doneCopy : upcomingCopy}</Text>
         <Pressable style={styles.detailLinkRow} onPress={() => router.push('/deal-paperwork')}>
           <DownloadIcon size={14} color={Colors.navy} />
           <Text style={styles.detailLink}>View Your Paperwork</Text>
@@ -353,9 +414,10 @@ export default function TimelineScreen() {
   const { car } = useDeal();
   const { intake } = useDealIntake();
   const { state: dealState, jumpToStep } = useDealSync();
+  const isDen = isDenStock(car?.stockNumber);
   const dealSteps = useMemo(
-    () => displaySteps(dealState.steps, intake?.paymentMethod, dealState.paymentStatus),
-    [dealState.steps, dealState.paymentStatus, intake?.paymentMethod],
+    () => displaySteps(dealState.steps, intake?.paymentMethod, dealState.paymentStatus, isDen),
+    [dealState.steps, dealState.paymentStatus, intake?.paymentMethod, isDen],
   );
 
   const targetIndex = useMemo(() => {

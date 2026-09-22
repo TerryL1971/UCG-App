@@ -38,7 +38,13 @@ export async function POST(request: Request) {
         intent: 'CAPTURE',
         purchase_units: [
           {
-            description: body.description ?? 'Used Car Guys — car hold deposit',
+            // Neutral fallback, no "deposit"/"down payment" — deposit.tsx
+            // always supplies its own correctly-worded description
+            // (reservation fee vs. deposit per isDenStock), so this only
+            // matters if some future caller omits `description` entirely,
+            // and it shouldn't default to a word that's illegal on a
+            // DEN-stock VAT-Form car.
+            description: body.description ?? 'Used Car Guys — car hold payment',
             amount: {
               currency_code: body.currency ?? 'USD',
               value: body.amount,
