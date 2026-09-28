@@ -1,11 +1,10 @@
 import { Image } from 'expo-image';
-import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Dimensions, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { CameraIcon, CheckCircleIcon, IdCardIcon } from '@/components/icons';
+import { CheckCircleIcon, IdCardIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
@@ -27,15 +26,11 @@ import { useAuth } from '@/lib/auth-context';
 import { useDeal } from '@/lib/deal-context';
 import { useDealIntake } from '@/lib/deal-intake-context';
 import { useDealSync } from '@/lib/deal-sync';
-import { compressPhoto } from '@/lib/image';
-import { useLicenseCapture } from '@/lib/license-capture-context';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const APO_OFFICES: ApoOffice[] = ['APO', 'FPO', 'DPO'];
 const APO_REGIONS: ApoRegion[] = ['AE', 'AA', 'AP'];
-
-type LicenseSide = 'front' | 'back';
 
 /**
  * The screen that replaces jumping straight from "Choose This Car" to a
@@ -52,7 +47,6 @@ export default function DealIntakeScreen() {
   const { intake, draft, saveDraft, submitIntake } = useDealIntake();
   const { send: sendDealSignal } = useDealSync();
   const { user } = useAuth();
-  const { lastCapturedLicensePhoto, clearLastCapturedLicensePhoto } = useLicenseCapture();
   const carLabel = car ? `${car.year} ${car.title}` : 'your next car';
 
   // Pre-fill order: a submitted intake wins, then the running draft
@@ -85,11 +79,6 @@ export default function DealIntakeScreen() {
   );
   const [financingDownPayment, setFinancingDownPayment] = useState(prefill?.financingDownPayment ?? '');
   const [licenseStatus, setLicenseStatus] = useState<LicenseStatus>(prefill?.licenseStatus ?? 'not_yet');
-  const [licensePhotoFrontUri, setLicensePhotoFrontUri] = useState<string | null>(
-    prefill?.licensePhotoFrontUri ?? null,
-  );
-  const [licensePhotoBackUri, setLicensePhotoBackUri] = useState<string | null>(prefill?.licensePhotoBackUri ?? null);
-  const [capturingSide, setCapturingSide] = useState<LicenseSide | null>(null);
 
   // APO/FPO address — the piece the VRO needs for registration/plates that
   // nothing else here captures. Often not assigned until in-processing, so
@@ -128,8 +117,6 @@ export default function DealIntakeScreen() {
       financingLenders: [...selectedLenders, ...(otherLenderText.trim() ? [otherLenderText.trim()] : [])],
       financingDownPayment: financingDownPayment.trim(),
       licenseStatus,
-      licensePhotoFrontUri,
-      licensePhotoBackUri,
       apoAddressStatus: apoAddress ? 'have' : 'not_yet',
       apoAddress,
       notes: notes.trim(),
@@ -145,8 +132,6 @@ export default function DealIntakeScreen() {
     otherLenderText,
     financingDownPayment,
     licenseStatus,
-    licensePhotoFrontUri,
-    licensePhotoBackUri,
     apoStatus,
     apoRecipient,
     apoUnitBox,
@@ -163,62 +148,6 @@ export default function DealIntakeScreen() {
     if (intake) return;
     saveDraft(buildIntake());
   }, [intake, saveDraft, buildIntake]);
-
-  // Handoff from capture-license.tsx (Terry, Sept 2: the license photo now
-  // goes through a real camera screen with an alignment rectangle, not
-  // ImagePicker.launchCameraAsync's native camera UI, which can't show a
-  // custom overlay). Same pattern as sell-back.tsx reading lastScannedVin.
-  //
-  // `for` guards against deal-intake.tsx's own useEffect firing on a
-  // capture meant for deal/documents.tsx's "Driver's License" card, which
-  // now uses this same overlay camera — Expo Router's native stack keeps
-  // a pushed screen mounted (just covered), so without this check a
-  // capture taken from Documents while this screen was still paused
-  // underneath it would silently land here too.
-  useEffect(() => {
-    if (lastCapturedLicensePhoto && lastCapturedLicensePhoto.for === 'intake') {
-      // Same reasoning as sell-back.tsx's lastScannedVin handoff: this
-      // also clears an external context signal, so it's a real effect,
-      // not the "mirroring a prop into state" anti-pattern the
-      // set-state-in-effect rule is meant to catch.
-      /* eslint-disable react-hooks/set-state-in-effect */
-      if (lastCapturedLicensePhoto.side === 'front') setLicensePhotoFrontUri(lastCapturedLicensePhoto.uri);
-      else setLicensePhotoBackUri(lastCapturedLicensePhoto.uri);
-      /* eslint-enable react-hooks/set-state-in-effect */
-      clearLastCapturedLicensePhoto();
-    }
-  }, [lastCapturedLicensePhoto, clearLastCapturedLicensePhoto]);
-
-  const pickLicenseFromLibrary = async (side: LicenseSide) => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert('Permission needed', 'Allow photo library access to add your license.');
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
-    if (result.canceled || !result.assets[0]) return;
-
-    setCapturingSide(side);
-    try {
-      const compressed = await compressPhoto(result.assets[0].uri);
-      if (side === 'front') setLicensePhotoFrontUri(compressed);
-      else setLicensePhotoBackUri(compressed);
-    } finally {
-      setCapturingSide(null);
-    }
-  };
-
-  const promptLicenseSource = (side: LicenseSide) => {
-    Alert.alert(`Add ${side === 'front' ? 'Front' : 'Back'} of License`, undefined, [
-      {
-        text: 'Take Photo',
-        onPress: () => router.push({ pathname: '/capture-license', params: { side, for: 'intake' } }),
-      },
-      { text: 'Choose from Library', onPress: () => pickLicenseFromLibrary(side) },
-      { text: 'Cancel', style: 'cancel' },
-    ]);
-  };
 
   const toggleLender = (lender: string) => {
     setSelectedLenders((prev) => (prev.includes(lender) ? prev.filter((l) => l !== lender) : [...prev, lender]));
@@ -501,26 +430,18 @@ export default function DealIntakeScreen() {
               </Text>
             </View>
           ) : (
+            // Used to offer Scan Front/Back right here — removed (Terry,
+            // 2026-09-28): a scan taken at intake, before any salesperson
+            // has even been matched, had nowhere real to go (it only ever
+            // reached this device's local Supabase Storage bucket, with
+            // no automatic path to SharePoint/the salesperson — see
+            // docs/document-retrieval-plan.md). The Documents tab's own
+            // license capture is the real one; this just points there.
             <View style={styles.licenseCard}>
+              <IdCardIcon />
               <Text style={styles.licenseCardText}>
-                Scan the front and back now so it&apos;s already on file &mdash; one less thing to bring in later.
-              </Text>
-              <View style={styles.licenseSideRow}>
-                <LicenseSideSlot
-                  label="Front"
-                  uri={licensePhotoFrontUri}
-                  isCapturing={capturingSide === 'front'}
-                  onPress={() => promptLicenseSource('front')}
-                />
-                <LicenseSideSlot
-                  label="Back"
-                  uri={licensePhotoBackUri}
-                  isCapturing={capturingSide === 'back'}
-                  onPress={() => promptLicenseSource('back')}
-                />
-              </View>
-              <Text style={styles.licenseHint}>
-                Saved in the app for your UCG team to review &mdash; one less thing to bring in later.
+                No need to scan it now &mdash; once your specialist reaches out and starts your file, you&apos;ll
+                scan the front and back from the Documents tab.
               </Text>
             </View>
           )}
@@ -544,36 +465,6 @@ export default function DealIntakeScreen() {
         <Text style={styles.footerHint}>Your salesperson sees all of this the moment they pick up your deal.</Text>
       </View>
     </SafeAreaView>
-  );
-}
-
-function LicenseSideSlot({
-  label,
-  uri,
-  isCapturing,
-  onPress,
-}: {
-  label: string;
-  uri: string | null;
-  isCapturing: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable style={styles.licenseSideSlot} disabled={isCapturing} onPress={onPress}>
-      {uri ? (
-        <>
-          <Image source={{ uri }} style={StyleSheet.absoluteFill} contentFit="cover" />
-          <View style={styles.licenseThumbBadge}>
-            <CheckCircleIcon />
-          </View>
-        </>
-      ) : (
-        <>
-          <CameraIcon color={Colors.textFaint} strokeWidth={2} />
-          <Text style={styles.licenseSideSlotLabel}>{isCapturing ? 'Saving...' : `Scan ${label}`}</Text>
-        </>
-      )}
-    </Pressable>
   );
 }
 
@@ -686,22 +577,6 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
     lineHeight: 18,
   },
-  licenseSideRow: { flexDirection: 'row', gap: 10 },
-  licenseSideSlot: {
-    width: 130,
-    height: 84,
-    borderRadius: Radius.md,
-    borderWidth: 1.5,
-    borderStyle: 'dashed',
-    borderColor: '#C9CDD9',
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    overflow: 'hidden',
-  },
-  licenseSideSlotLabel: { fontFamily: Fonts.bodySemibold, fontSize: 12, color: Colors.textMuted },
-  licenseThumbBadge: { position: 'absolute', top: 4, right: 4 },
   licenseHint: { fontFamily: Fonts.body, fontSize: 11.5, color: Colors.navy, opacity: 0.8, lineHeight: 16 },
   licenseHintBold: { fontFamily: Fonts.bodyBold, opacity: 1 },
   gallery: { backgroundColor: Colors.navyTint },

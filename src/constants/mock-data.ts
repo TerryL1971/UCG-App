@@ -530,12 +530,13 @@ export interface DealIntake {
    * an entry from `financingLenderOptions` or free text from "Other." */
   financingLenders: string[];
   financingDownPayment: string;
+  /** Whether the customer has a USAREUR license yet — the actual license
+   * scan doesn't happen here (see deal-intake.tsx's doc comment on the
+   * 'have' branch): it happens later, from the Documents tab, once a
+   * salesperson has actually started the customer's file. Nothing this
+   * app generates before that point has anywhere real for the scan to go
+   * — see docs/document-retrieval-plan.md. */
   licenseStatus: LicenseStatus;
-  /** Both sides, not one photo — a license needs its back read too
-   * (class/restrictions, and for a German-issued license, the reverse
-   * side carries data the front doesn't). */
-  licensePhotoFrontUri: string | null;
-  licensePhotoBackUri: string | null;
   /** 'not_yet' when the APO/FPO address hasn't been assigned yet (common
    * before in-processing) — `apoAddress` is null in that case and the
    * customer is expected to come back and add it. */
