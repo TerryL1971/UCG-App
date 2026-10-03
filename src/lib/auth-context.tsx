@@ -57,6 +57,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Safety net: index.tsx renders nothing at all while isLoading is
+    // true, so a startup auth check that never resolves (a slow or
+    // momentarily unreachable network on a real device — unlike the
+    // near-instant local storage read in stand-in mode below) leaves the
+    // whole app on a blank white screen with no error, indefinitely.
+    // Stop waiting after a few seconds and treat it as logged-out; a real
+    // session that resolves after that still updates `user` normally.
+    const timeoutId = setTimeout(() => setIsLoading(false), 4000);
+
     if (isSupabaseConfigured && supabase) {
       // onAuthStateChange fires once immediately with `INITIAL_SESSION`
       // (the current session, restored from AsyncStorage if one exists)
@@ -67,10 +76,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const {
         data: { subscription },
       } = supabase.auth.onAuthStateChange((_event, session) => {
+        clearTimeout(timeoutId);
         setUser(session?.user ? authUserFromSupabase(session.user) : null);
         setIsLoading(false);
       });
-      return () => subscription.unsubscribe();
+      return () => {
+        clearTimeout(timeoutId);
+        subscription.unsubscribe();
+      };
     }
 
     // Stand-in mode — unchanged from before Supabase existed.
@@ -82,7 +95,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Corrupt or inaccessible storage — fall back to logged-out rather
         // than crash on startup.
       })
-      .finally(() => setIsLoading(false));
+      .finally(() => {
+        clearTimeout(timeoutId);
+        setIsLoading(false);
+      });
+    return () => clearTimeout(timeoutId);
   }, []);
 
   const persistLocal = (next: AuthUser | null) => {
