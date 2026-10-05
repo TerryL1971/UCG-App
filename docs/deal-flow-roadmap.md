@@ -766,6 +766,34 @@ mock could keep representing whoever triages incoming submissions (a
 real, common small-business pattern — one shared intake number, humans
 sort it out from there) rather than needing to be replaced outright.
 
+**The specific risk Terry flagged (Oct 3): a customer getting moved to
+personal WhatsApp with the wrong person.** With ~20 people watching the
+shared Trengo inbox, salesperson A might answer first, then discover the
+customer actually belongs to salesperson E (base location). While the
+customer is still on the shared Trengo number, that handoff is invisible
+— same number throughout, no app involvement either way. The real
+discontinuity only happens if A has already invited the customer onto
+A's *personal* WhatsApp (`onPersonalWhatsapp` true) before the
+base-location mismatch is caught — the customer is left holding A's
+number, not E's.
+
+Terry's answer: **"most of the time" the team already avoids this** —
+staff mostly don't move a customer to personal WhatsApp until the
+correct person/base is confirmed, i.e. option 1 (stay on the shared
+Trengo number until assignment is right) is already the normal
+practice, not a new process to adopt. But "most of the time" isn't
+"always," so the gap above is accepted as a known, occasional edge
+case for now — not fixed, and deliberately not papered over with a fake
+"reassign" button that would need the same real multi-salesperson
+backend this whole section is already blocked on (see `onPersonalWhatsapp`
+in `src/lib/deal-sync/types.ts`, `specialistWhatsapp()` in
+`mock-data.ts`). If this starts happening often enough to matter, the
+real fix is the same one already named above: a real backend that knows
+who's actually assigned, so the app can proactively tell a customer
+"you're now with someone else" and hand them the right number — not
+buildable today, same DealerTeam-access blocker as everywhere else in
+this doc.
+
 ## Make A Deposit (new My Deal step, after "Matched with Salesperson")
 
 - A deposit puts a **5-day hold** on the car.
