@@ -29,7 +29,7 @@ function buildHtml(): string {
         <p style="font-size: 13px; color: #555;">
           Admin Office: ${adminOffice.phone}<br/>
           Email: ${adminOffice.email}<br/>
-          U.S.A fax number: ${adminOffice.usFax}<br/>
+          U.S.A. fax number: ${adminOffice.usFax}<br/>
           ${adminOffice.address}
         </p>
         <h3 style="color: #C33531;">WIRE INSTRUCTIONS FOR THE USED CAR GUYS US$ ACCOUNT</h3>
@@ -115,7 +115,7 @@ export default function WireInstructionsScreen() {
         <Text style={styles.companyMeta}>
           Admin Office: {adminOffice.phone}
           {'\n'}Email: {adminOffice.email}
-          {'\n'}U.S.A fax number: {adminOffice.usFax}
+          {'\n'}U.S.A. fax number: {adminOffice.usFax}
           {'\n'}
           {adminOffice.address}
         </Text>

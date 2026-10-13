@@ -120,7 +120,7 @@ export default function CarDetailScreen() {
       'Switch to this car?',
       `You already have the ${currentCar!.year} ${currentCar!.title} in progress. Switching to the ${car.year} ${
         car.title
-      } resets your 2-Year Protection Plan choice and deal timeline for the new car — your Driver's License stays ` +
+      } resets your 2-Year Premium Protection Plan choice and deal timeline for the new car — your Driver's License stays ` +
         `as it is. If you already paid a deposit or reservation fee on the other car, message your specialist ` +
         `about transferring or refunding it — that part isn't something this app can do on its own.`,
       [
