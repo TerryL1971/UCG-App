@@ -9,7 +9,7 @@ import { CameraIcon, CheckCircleIcon, ClockIcon, MapPinIcon, PlusIcon, ShieldIco
 import { DocumentCard } from '@/components/document-card';
 import { Button } from '@/components/ui/button';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
-import { ucgLocations } from '@/constants/mock-data';
+import { SUPPORT_WHATSAPP, ucgLocations, usareurBases, whatsappChatUrl } from '@/constants/mock-data';
 import { useDeal } from '@/lib/deal-context';
 import { buildSellBackBillOfSaleHtml, type SellBackDealInput } from '@/lib/deal-documents';
 import { compressPhoto } from '@/lib/image';
@@ -17,6 +17,7 @@ import { useVinScan } from '@/lib/vin-scan-context';
 
 const conditions = ['Fair', 'Good', 'Excellent'] as const;
 const mileageUnits = ['mi', 'km'] as const;
+const specs = ['US', 'EU'] as const;
 // Real dealership workflow here is more like 8-10+ photos per car, not 3 —
 // this is a soft ceiling to keep the screen from growing unbounded, not a
 // realistic limit anyone should actually hit.
@@ -42,12 +43,17 @@ export default function SellBackScreen() {
   const { lastScannedVin, clearLastScannedVin } = useVinScan();
   const [offerStatus, setOfferStatus] = useState<OfferStatus>('form');
 
-  // Captured once an offer's accepted — real inputs for the real
-  // sell-side Bill of Sale (buildSellBackBillOfSaleHtml), not fabricated
-  // figures. Sell It Back never asked for a name/contact before this;
-  // it does now, since a Bill of Sale naming no one is close to useless.
+  // Name/email/phone are mandatory and collected up front now (Terry,
+  // Oct 13) — right before "Get My Offer," matching usedcarguys.net's own
+  // 9-step flow, which asks for them right after the vehicle questions
+  // rather than only once an offer's been accepted. sellerName/
+  // sellerContact still double as the real inputs for the sell-side Bill
+  // of Sale (buildSellBackBillOfSaleHtml) later — collecting them earlier
+  // doesn't change that, it just means OfferStatusView no longer has to
+  // ask again.
   const [sellerName, setSellerName] = useState('');
   const [sellerContact, setSellerContact] = useState('');
+  const [sellerEmail, setSellerEmail] = useState('');
   const [acceptedAmountText, setAcceptedAmountText] = useState('');
   const [hasLien, setHasLien] = useState(false);
   const [lienHolder, setLienHolder] = useState('');
@@ -60,11 +66,19 @@ export default function SellBackScreen() {
   // never went through that flow (or came here for a car we didn't sell
   // them), this just stays blank and they fill it in like normal.
   const [plate, setPlate] = useState(() => car?.vin ?? '');
+  // Same idea as `plate` above — pre-filled when we already know the car.
+  const [vehicleYear, setVehicleYear] = useState(() => (car?.year ? String(car.year) : ''));
   const [mileage, setMileage] = useState('');
   const [mileageUnit, setMileageUnit] = useState<(typeof mileageUnits)[number]>('mi');
+  const [spec, setSpec] = useState<(typeof specs)[number]>('US');
   const [condition, setCondition] = useState<(typeof conditions)[number]>('Good');
   const [photos, setPhotos] = useState<string[]>([]);
   const [isAdding, setIsAdding] = useState(false);
+  const [dutyStation, setDutyStation] = useState<string | null>(null);
+  const [otherDutyStation, setOtherDutyStation] = useState('');
+  const [notes, setNotes] = useState('');
+  const isOtherDutyStation = dutyStation === 'Other';
+  const effectiveDutyStation = isOtherDutyStation ? otherDutyStation.trim() : dutyStation;
 
   /** index === null means "append a new photo" rather than replace one. */
   const captureInto = async (index: number | null, useCamera: boolean) => {
@@ -129,8 +143,12 @@ export default function SellBackScreen() {
   }, [lastScannedVin, clearLastScannedVin]);
 
   const handleSubmit = () => {
-    if (!plate.trim() || !mileage.trim()) {
-      Alert.alert('Almost there', 'Add your license plate/VIN and mileage so we can put together an offer.');
+    if (!plate.trim() || !vehicleYear.trim() || !mileage.trim() || !effectiveDutyStation) {
+      Alert.alert('Almost there', 'Add your VIN, model year, mileage, and duty station so we can put together an offer.');
+      return;
+    }
+    if (!sellerName.trim() || !sellerEmail.trim() || !sellerContact.trim()) {
+      Alert.alert('Almost there', 'Add your name, email, and phone number so we can actually reach you with an offer.');
       return;
     }
     // No real offer-generation backend yet, so there's no real dollar
@@ -139,6 +157,36 @@ export default function SellBackScreen() {
     // screen into "awaiting your accept" so the next real step (booking
     // a pre-buy inspection once you've accepted the offer texted to you)
     // is reachable without a backend to drive it yet.
+    //
+    // This now also actually tells someone (Terry, Oct 13) — it didn't
+    // before. usedcarguys.net's own "Sell Your Vehicle" page does the
+    // same thing: one tap straight into WhatsApp with the details, no
+    // in-app compose-and-review step first (unlike the main buying
+    // flow's salesperson.tsx, which deliberately doesn't auto-launch —
+    // there's no equivalent in-app chat screen here to review it in
+    // first, so matching the real site's own pattern is the honest
+    // option, not a shortcut). wa.me is text-only — it can't carry the
+    // photos above, so the message says so instead of pretending they're
+    // attached.
+    const message = [
+      "Hi! I'd like to sell my car back to UCG.",
+      `Name: ${sellerName.trim()}`,
+      `Email: ${sellerEmail.trim()}`,
+      `Phone: ${sellerContact.trim()}`,
+      car ? `Car: ${car.year} ${car.title}` : `Year: ${vehicleYear.trim()}`,
+      `VIN: ${plate.trim()}`,
+      `Mileage: ${mileage.trim()} ${mileageUnit}`,
+      `Spec: ${spec}`,
+      `Condition: ${condition}`,
+      `Duty station: ${effectiveDutyStation}`,
+      notes.trim() ? `Notes: ${notes.trim()}` : '',
+      photos.length
+        ? `I have ${photos.length} photo${photos.length > 1 ? 's' : ''} ready to send here in the chat.`
+        : '',
+    ]
+      .filter(Boolean)
+      .join('\n');
+    Linking.openURL(whatsappChatUrl(SUPPORT_WHATSAPP, message)).catch(() => {});
     setOfferStatus('awaitingAccept');
   };
 
@@ -153,10 +201,6 @@ export default function SellBackScreen() {
           status={offerStatus}
           onAccept={() => setOfferStatus('enteringAmount')}
           onStartOver={() => setOfferStatus('form')}
-          sellerName={sellerName}
-          setSellerName={setSellerName}
-          sellerContact={sellerContact}
-          setSellerContact={setSellerContact}
           acceptedAmountText={acceptedAmountText}
           setAcceptedAmountText={setAcceptedAmountText}
           hasLien={hasLien}
@@ -170,8 +214,8 @@ export default function SellBackScreen() {
           payoffDate={payoffDate}
           setPayoffDate={setPayoffDate}
           onConfirmAccept={() => {
-            if (!sellerName.trim() || !sellerContact.trim() || !acceptedAmountText.trim()) {
-              Alert.alert('Almost there', 'Add your name, a way to reach you, and the offer amount you accepted.');
+            if (!acceptedAmountText.trim()) {
+              Alert.alert('Almost there', 'Add the offer amount you accepted.');
               return;
             }
             setOfferStatus('accepted');
@@ -179,11 +223,14 @@ export default function SellBackScreen() {
           sellBackInput={{
             car,
             plateOrVin: plate,
+            vehicleYear,
             mileage,
             mileageUnit,
+            spec,
             condition,
             sellerName,
             sellerContact,
+            sellerEmail,
             acceptedAmount: Number(acceptedAmountText.replace(/[^0-9.]/g, '')) || 0,
             hasLien,
             lienHolder: hasLien ? lienHolder : undefined,
@@ -210,7 +257,7 @@ export default function SellBackScreen() {
               </View>
             )}
 
-            <Field label="License Plate or VIN">
+            <Field label="VIN">
               <View style={styles.plateRow}>
                 <TextInput
                   value={plate}
@@ -225,6 +272,18 @@ export default function SellBackScreen() {
                   <Text style={styles.scanButtonLabel}>Scan</Text>
                 </Pressable>
               </View>
+            </Field>
+
+            <Field label="Model Year">
+              <TextInput
+                value={vehicleYear}
+                onChangeText={setVehicleYear}
+                placeholder="e.g. 2019"
+                placeholderTextColor={Colors.textFaint}
+                keyboardType="number-pad"
+                maxLength={4}
+                style={styles.input}
+              />
             </Field>
 
             <Field label="Current Mileage / Kilometers">
@@ -252,6 +311,20 @@ export default function SellBackScreen() {
               <Text style={styles.mileageHint}>
                 US-spec cars in miles, EU-spec in kilometers — whichever&apos;s on the odometer.
               </Text>
+            </Field>
+
+            <Field label="Is Your Car US or EU Spec?">
+              <View style={styles.segRow}>
+                {specs.map((s) => (
+                  <Pressable
+                    key={s}
+                    onPress={() => setSpec(s)}
+                    style={[styles.segOption, spec === s && styles.segOptionActive]}
+                  >
+                    <Text style={[styles.segLabel, spec === s && styles.segLabelActive]}>{s} Spec</Text>
+                  </Pressable>
+                ))}
+              </View>
             </Field>
 
             <Field label="Overall Condition">
@@ -289,6 +362,75 @@ export default function SellBackScreen() {
                 Photos are automatically resized to keep things quick to send — take as many as you need.
               </Text>
             </Field>
+
+            <Field label="Current Duty Station">
+              <View style={styles.chipRow}>
+                {[...usareurBases, 'Other'].map((b) => (
+                  <Pressable
+                    key={b}
+                    onPress={() => setDutyStation(b)}
+                    style={[styles.chip, dutyStation === b && styles.chipActive]}
+                  >
+                    <Text style={[styles.chipLabel, dutyStation === b && styles.chipLabelActive]}>{b}</Text>
+                  </Pressable>
+                ))}
+              </View>
+              {isOtherDutyStation && (
+                <TextInput
+                  value={otherDutyStation}
+                  onChangeText={setOtherDutyStation}
+                  placeholder="Which base?"
+                  placeholderTextColor={Colors.textFaint}
+                  style={[styles.input, { marginTop: 10 }]}
+                />
+              )}
+            </Field>
+
+            <Field label="Anything Else We Should Know? (optional)">
+              <TextInput
+                value={notes}
+                onChangeText={setNotes}
+                placeholder="General condition, service history, damage, etc."
+                placeholderTextColor={Colors.textFaint}
+                multiline
+                style={[styles.input, styles.notesInput]}
+              />
+            </Field>
+
+            <Text style={styles.sectionHeading}>Last step — how should we reach you?</Text>
+
+            <Field label="Your Name">
+              <TextInput
+                value={sellerName}
+                onChangeText={setSellerName}
+                placeholder="Full name"
+                placeholderTextColor={Colors.textFaint}
+                style={styles.input}
+              />
+            </Field>
+
+            <Field label="Email Address">
+              <TextInput
+                value={sellerEmail}
+                onChangeText={setSellerEmail}
+                placeholder="you@example.com"
+                placeholderTextColor={Colors.textFaint}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                style={styles.input}
+              />
+            </Field>
+
+            <Field label="Phone / WhatsApp Number">
+              <TextInput
+                value={sellerContact}
+                onChangeText={setSellerContact}
+                placeholder="e.g. 4915154991777"
+                placeholderTextColor={Colors.textFaint}
+                keyboardType="phone-pad"
+                style={styles.input}
+              />
+            </Field>
           </ScrollView>
 
           <View style={styles.footer}>
@@ -309,10 +451,6 @@ function OfferStatusView({
   status,
   onAccept,
   onStartOver,
-  sellerName,
-  setSellerName,
-  sellerContact,
-  setSellerContact,
   acceptedAmountText,
   setAcceptedAmountText,
   hasLien,
@@ -331,10 +469,6 @@ function OfferStatusView({
   status: Exclude<OfferStatus, 'form'>;
   onAccept: () => void;
   onStartOver: () => void;
-  sellerName: string;
-  setSellerName: (v: string) => void;
-  sellerContact: string;
-  setSellerContact: (v: string) => void;
   acceptedAmountText: string;
   setAcceptedAmountText: (v: string) => void;
   hasLien: boolean;
@@ -359,30 +493,8 @@ function OfferStatusView({
       <SafeAreaView style={{ flex: 1 }} edges={[]}>
         <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent}>
           <Text style={styles.intro}>
-            What did your specialist actually offer, and who should UCG make it out to? This fills in your real Bill
-            of Sale — nothing here is guessed.
+            What did your specialist actually offer? This fills in your real Bill of Sale — nothing here is guessed.
           </Text>
-
-          <Field label="Your Name">
-            <TextInput
-              value={sellerName}
-              onChangeText={setSellerName}
-              placeholder="Full name"
-              placeholderTextColor={Colors.textFaint}
-              style={styles.input}
-            />
-          </Field>
-
-          <Field label="WhatsApp / Contact">
-            <TextInput
-              value={sellerContact}
-              onChangeText={setSellerContact}
-              placeholder="e.g. 4915154991777"
-              placeholderTextColor={Colors.textFaint}
-              keyboardType="phone-pad"
-              style={styles.input}
-            />
-          </Field>
 
           <Field label="Accepted Offer Amount ($)">
             <TextInput
@@ -629,6 +741,28 @@ const styles = StyleSheet.create({
   unitOptionActive: { backgroundColor: Colors.navy },
   unitLabel: { fontFamily: Fonts.bodySemibold, fontSize: 13, color: Colors.textMuted },
   unitLabelActive: { color: '#fff' },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 7 },
+  chip: {
+    height: 38,
+    paddingHorizontal: 14,
+    borderRadius: 19,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chipActive: { backgroundColor: Colors.navy, borderColor: Colors.navy },
+  chipLabel: { fontFamily: Fonts.bodySemibold, fontSize: 13, color: Colors.textMuted },
+  chipLabelActive: { color: '#fff' },
+  notesInput: { height: 84, paddingTop: 12, textAlignVertical: 'top' },
+  sectionHeading: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: 13.5,
+    color: Colors.text,
+    marginTop: 4,
+    marginBottom: 14,
+  },
   segRow: { flexDirection: 'row', gap: 8, marginTop: 7 },
   segOption: {
     flex: 1,

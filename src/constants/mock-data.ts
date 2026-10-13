@@ -61,14 +61,17 @@ export const salesperson: Salesperson = {
 /**
  * The "I'm stuck and can't move forward" escape hatch from the AI chat —
  * a last resort, not a primary path (Terry, Sept 3: "worst case
- * scenario"). Should be the WhatsApp number wired into UCG's Trengo inbox
- * so a real agent picks up. PLACEHOLDER: Terry doesn't have the Trengo
- * number yet — this reuses the real support number he already provided
- * for wire transfers (see `wireInstructions.supportWhatsapp` below,
- * 491604440011) as the least-wrong stand-in. Confirm it's Trengo-connected
- * before launch, or swap it.
+ * scenario"). Also the shared inbox Sell It Back's "Get My Offer" hands
+ * off to (Terry, Oct 13: reuse this rather than invent a separate
+ * buying-team number). Real, not a guess: Terry found this exact number
+ * (wa.me/491737656926) linked from TWO live pages on usedcarguys.net —
+ * the service-center page AND the sell-your-vehicle page — so this is
+ * UCG's actual general WhatsApp inbox, not the wire-transfer-support
+ * number this constant used to borrow as a stand-in. Still worth
+ * confirming it's the exact Trengo-connected inbox (vs. some other
+ * routing) before launch, but no longer a guess.
  */
-export const SUPPORT_WHATSAPP = '491604440011';
+export const SUPPORT_WHATSAPP = '491737656926';
 
 /**
  * wa.me is WhatsApp's official "click to chat" link format — reliable and

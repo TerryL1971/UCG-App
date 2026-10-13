@@ -124,6 +124,7 @@ export default function SalespersonScreen() {
       `Base: ${intake.base}`,
       `Payment: ${intake.paymentMethod === 'cash' ? 'Cash' : 'Financing'}`,
       licenseLine,
+      intake.notes.trim() ? `Notes: ${intake.notes.trim()}` : '',
       code ? `Documents code: ${code}` : '',
     ]
       .filter(Boolean)
@@ -193,6 +194,7 @@ export default function SalespersonScreen() {
             paymentMethod: intake?.paymentMethod,
             apoAddressStatus: intake?.apoAddressStatus,
             warranty: warrantyChoice?.decision,
+            notes: intake?.notes,
           },
         }),
       });

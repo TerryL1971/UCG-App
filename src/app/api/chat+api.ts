@@ -39,6 +39,10 @@ interface ChatRequestBody {
     apoAddressStatus?: string;
     /** 'accepted' | 'declined' | undefined — the 2-Year PPP decision. */
     warranty?: string;
+    /** The customer's free-text answer to deal-intake.tsx's "Anything Else
+     * We Should Know?" — previously captured into `DealIntake` and then
+     * never read anywhere, so it silently went nowhere. */
+    notes?: string;
   };
 }
 
@@ -156,7 +160,9 @@ export async function POST(request: Request) {
         body.context.base ?? 'not specified'
       }; payment — ${body.context.paymentMethod ?? 'not specified'}; APO/FPO address on file — ${
         body.context.apoAddressStatus === 'have' ? 'yes' : 'not yet'
-      }; 2-year Premium Protection Plan — ${body.context.warranty ?? 'not decided yet'}.`
+      }; 2-year Premium Protection Plan — ${body.context.warranty ?? 'not decided yet'}.${
+        body.context.notes?.trim() ? ` The customer also told us this up front: "${body.context.notes.trim()}"` : ''
+      }`
     : '';
 
   // Checked directly, not inferred from a caught error's message/type —

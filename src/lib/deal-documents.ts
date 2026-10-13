@@ -416,11 +416,16 @@ export function buildBillOfSaleHtml(car: InventoryDetail | null, intake: DealInt
 export interface SellBackDealInput {
   car: InventoryDetail | null;
   plateOrVin: string;
+  /** Only meaningful when `car` is null — an unrecognized VIN still has a
+   * real model year the customer typed in, unlike `car.year`. */
+  vehicleYear: string;
   mileage: string;
   mileageUnit: 'mi' | 'km';
+  spec: 'US' | 'EU';
   condition: string;
   sellerName: string;
   sellerContact: string;
+  sellerEmail: string;
   acceptedAmount: number;
   hasLien: boolean;
   lienHolder?: string;
@@ -430,15 +435,16 @@ export interface SellBackDealInput {
 }
 
 function sellBackVehicleLines(input: SellBackDealInput): string {
-  const { car, plateOrVin, mileage, mileageUnit } = input;
+  const { car, plateOrVin, vehicleYear, mileage, mileageUnit } = input;
   const bits = [
     'Used',
-    car ? `${car.year} ${car.title}` : '',
+    car ? `${car.year} ${car.title}` : vehicleYear ? `${vehicleYear} model year` : '',
     car?.exteriorColor ? `Color: ${car.exteriorColor}` : '',
-    `Plate / VIN: ${plateOrVin || '—'}`,
+    `VIN: ${plateOrVin || '—'}`,
     car?.vin && car.vin !== plateOrVin ? `VIN on file: ${car.vin}` : '',
     mileage ? `Odometer: ${mileage} ${mileageUnit}` : '',
     car?.engine ? `Engine: ${car.engine}` : '',
+    `Spec: ${input.spec}`,
     `Condition: ${input.condition}`,
   ];
   return bits.filter(Boolean).join('<br/>');
@@ -533,7 +539,7 @@ export function buildSellBackBillOfSaleHtml(input: SellBackDealInput): string {
           </div>
           <div class="col">
             <div class="label">Seller</div>
-            <div class="box">${input.sellerName || '—'}${input.sellerContact ? `<br/>WhatsApp: ${input.sellerContact}` : ''}</div>
+            <div class="box">${input.sellerName || '—'}${input.sellerContact ? `<br/>WhatsApp: ${input.sellerContact}` : ''}${input.sellerEmail ? `<br/>Email: ${input.sellerEmail}` : ''}</div>
           </div>
         </div>
 
