@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
+import * as Sharing from 'expo-sharing';
 import { useEffect, useState } from 'react';
 import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,7 +15,7 @@ import { useDeal } from '@/lib/deal-context';
 import { useDealIntake } from '@/lib/deal-intake-context';
 import { useDealSync } from '@/lib/deal-sync';
 import { useDealDocuments, type DocumentState } from '@/lib/documents-context';
-import { getOwnerId, lookupDealDocuments, type LookedUpDocument } from '@/lib/document-storage';
+import { getOwnerId, imagePageToPdf, lookupDealDocuments, type LookedUpDocument } from '@/lib/document-storage';
 import { compressPhoto } from '@/lib/image';
 import { useLicenseCapture, type LicenseSide } from '@/lib/license-capture-context';
 
@@ -54,6 +55,7 @@ function DocCard({
   onAddPage,
   onAddLicenseSide,
   onRemovePage,
+  onSharePage,
 }: {
   doc: DocumentState;
   isAdding: boolean;
@@ -61,14 +63,24 @@ function DocCard({
   /** Only passed for the license doc — see LICENSE_DOC_ID above. */
   onAddLicenseSide?: (side: LicenseSide) => void;
   onRemovePage: (pageIndex: number) => void;
+  /** Only passed for the license doc (see LICENSE_DOC_ID above) — the
+   * salesperson has no Supabase access (Terry, 2026-10-15), so this is
+   * the real way a captured side actually reaches them: the native share
+   * sheet (WhatsApp, email, AirDrop…), not the silent backend upload. */
+  onSharePage?: (pageIndex: number) => void;
 }) {
   const pageCount = doc.uris.length;
 
-  const confirmRemove = (pageIndex: number) => {
-    Alert.alert('Remove this page?', undefined, [
+  const promptPageAction = (pageIndex: number) => {
+    const options: Parameters<typeof Alert.alert>[2] = [];
+    if (onSharePage) {
+      options.push({ text: 'Share with Your Specialist', onPress: () => onSharePage(pageIndex) });
+    }
+    options.push(
       { text: 'Remove', style: 'destructive', onPress: () => onRemovePage(pageIndex) },
       { text: 'Cancel', style: 'cancel' },
-    ]);
+    );
+    Alert.alert('This Page', undefined, options);
   };
 
   return (
@@ -91,7 +103,7 @@ function DocCard({
       {pageCount > 0 && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.pageStrip}>
           {doc.uris.map((uri, i) => (
-            <Pressable key={uri + i} style={styles.pageThumb} onPress={() => confirmRemove(i)} disabled={isAdding}>
+            <Pressable key={uri + i} style={styles.pageThumb} onPress={() => promptPageAction(i)} disabled={isAdding}>
               <Image source={{ uri }} style={StyleSheet.absoluteFill} contentFit="cover" />
               <View style={styles.pageThumbBadge}>
                 <Text style={styles.pageThumbBadgeText}>×</Text>
@@ -255,6 +267,28 @@ export default function DocumentsScreen() {
     ]);
   };
 
+  // The real hand-off a salesperson without Supabase access actually
+  // uses (Terry, 2026-10-15) — the same single-page PDF that
+  // uploadLicenseScan silently archives, but put directly into the
+  // customer's own hands to send however they already talk to their
+  // specialist (WhatsApp, email, AirDrop…), same mechanics as
+  // DocumentCard's "Save / Share PDF".
+  const shareLicensePage = async (pageIndex: number) => {
+    const licenseDoc = documents.find((d) => d.id === LICENSE_DOC_ID);
+    const uri = licenseDoc?.uris[pageIndex];
+    if (!uri) return;
+    try {
+      const pdfUri = await imagePageToPdf(uri);
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(pdfUri, { mimeType: 'application/pdf', UTI: 'com.adobe.pdf' });
+      } else {
+        Alert.alert('Sharing not available', "This device can't open the share sheet — try AirDrop or email instead.");
+      }
+    } catch {
+      Alert.alert('Something went wrong', 'Could not prepare that page to share — try again.');
+    }
+  };
+
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <View style={styles.headerWrap}>
@@ -270,6 +304,7 @@ export default function DocumentsScreen() {
             onAddPage={() => promptAddPage(doc)}
             onAddLicenseSide={doc.id === LICENSE_DOC_ID ? promptLicenseSide : undefined}
             onRemovePage={(pageIndex) => removeDocumentPage(doc.id, pageIndex)}
+            onSharePage={doc.id === LICENSE_DOC_ID ? shareLicensePage : undefined}
           />
         ))}
         <Text style={styles.hint}>

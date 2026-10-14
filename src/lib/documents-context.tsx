@@ -1,7 +1,12 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 
 import { dealDocuments, type DealDocument } from '@/constants/mock-data';
-import { uploadDocumentPhoto, type DealDocumentContext } from '@/lib/document-storage';
+import { uploadDocumentPhoto, uploadLicenseScan, type DealDocumentContext } from '@/lib/document-storage';
+
+// Must match LICENSE_DOC_ID in deal/documents.tsx — the one document this
+// screen captures multiple pages for, and the one that needs its pages
+// combined into a single PDF rather than uploaded as separate photos.
+const LICENSE_DOC_ID = 'license';
 
 /** `uris` holds every locally-captured page for this document, in order —
  * real capture via expo-image-picker/expo-camera (deal/documents.tsx).
@@ -75,7 +80,16 @@ export function DealDocumentsProvider({ children }: { children: ReactNode }) {
         // to work; it silently no-ops if Supabase isn't configured or
         // the bucket isn't set up yet, same as every other Supabase
         // integration point in this app.
-        uploadDocumentPhoto(id, uri, context).catch(() => {});
+        //
+        // The license doc is special-cased: each side uploads as its own
+        // single-page PDF (Terry, 2026-10-14), not a loose jpg — but still
+        // one upload per side, independent of the other, same as every
+        // other document here. Front and back stay two separate files.
+        if (id === LICENSE_DOC_ID) {
+          uploadLicenseScan(id, uri, context).catch(() => {});
+        } else {
+          uploadDocumentPhoto(id, uri, context).catch(() => {});
+        }
       },
       // Same honesty rule as addDocumentPage, the other direction: removing
       // a page changes what's actually on file, so a prior "uploaded"/

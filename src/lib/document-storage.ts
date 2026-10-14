@@ -1,4 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Print from 'expo-print';
 
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 
@@ -193,11 +195,48 @@ async function uploadDealDocument(
   }
 }
 
-/** A photographed identity document — the license front/back flow
- * (deal/documents.tsx). Unchanged behavior/signature from before `kind`
- * existed; just routes through the shared uploader now. */
+/** A photographed identity document that ISN'T the license (nothing uses
+ * this today — the license is the only document this screen captures —
+ * kept as the generic single-photo path in case that changes). Unchanged
+ * behavior/signature from before `kind` existed; just routes through the
+ * shared uploader now. */
 export function uploadDocumentPhoto(docId: string, localUri: string, context: DealDocumentContext = {}) {
   return uploadDealDocument(docId, localUri, 'scan', 'image/jpeg', 'jpg', context);
+}
+
+/** The license front/back flow specifically (deal/documents.tsx) — each
+ * side uploads as its OWN single-page PDF rather than a loose JPEG (Terry,
+ * 2026-10-14: "it needs to be a .pdf"), but front and back stay two
+ * separate files (Terry, same day: "They need to stay 2 separate images.
+ * I have no idea why, but they do" — a downstream requirement to honor,
+ * not second-guess). Called once per side, same as uploadDocumentPhoto —
+ * NOT given the full page set like a combined-document uploader would be. */
+export async function uploadLicenseScan(
+  docId: string,
+  localUri: string,
+  context: DealDocumentContext = {},
+): Promise<string | null> {
+  const pdfUri = await imagePageToPdf(localUri);
+  return uploadDealDocument(docId, pdfUri, 'scan', 'application/pdf', 'pdf', context);
+}
+
+/** Shared by uploadLicenseScan above and the "Share" button on the
+ * Documents screen (deal/documents.tsx) — the customer's own way of
+ * actually getting a license side to a salesperson who, per Terry
+ * 2026-10-15, has no Supabase access: the native share sheet (WhatsApp,
+ * email, AirDrop, Files…), so whatever the salesperson receives is the
+ * same single-page PDF that also gets archived here, not a different
+ * format for each path. */
+export async function imagePageToPdf(localUri: string): Promise<string> {
+  const base64 = await FileSystem.readAsStringAsync(localUri, { encoding: 'base64' });
+  const html = `<html><body style="margin: 0;">
+    <div style="height: 100vh; display: flex; align-items: center; justify-content: center;">
+      <img src="data:image/jpeg;base64,${base64}" style="max-width: 100%; max-height: 100%;" />
+    </div>
+  </body></html>`;
+
+  const { uri: pdfUri } = await Print.printToFileAsync({ html });
+  return pdfUri;
 }
 
 /** An app-generated sample PDF (Cost Estimate, Purchase Order, Bill of
