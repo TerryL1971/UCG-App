@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Keyboard, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { LockIcon, SendIcon, ShieldIcon, StarIcon, UmbrellaIcon, WhatsAppIcon } from '@/components/icons';
@@ -21,6 +21,7 @@ import { useDeal } from '@/lib/deal-context';
 import { useDealIntake } from '@/lib/deal-intake-context';
 import { useDealSync } from '@/lib/deal-sync';
 import { getOwnerId } from '@/lib/document-storage';
+import { openUrlWithFeedback } from '@/lib/linking';
 import { useWarranty } from '@/lib/warranty-context';
 
 interface ChatMessage {
@@ -122,7 +123,11 @@ export default function SalespersonScreen() {
       `Hi! I'm starting a deal on the ${carLabel}.`,
       `Name: ${intake.fullName}`,
       `Base: ${intake.base}`,
+      `Contact: ${intake.contact}`,
       `Payment: ${intake.paymentMethod === 'cash' ? 'Cash' : 'Financing'}`,
+      intake.paymentMethod === 'financing' && intake.financingDownPayment.trim()
+        ? `Planned down payment: ${intake.financingDownPayment.trim()}`
+        : '',
       licenseLine,
       intake.notes.trim() ? `Notes: ${intake.notes.trim()}` : '',
       code ? `Documents code: ${code}` : '',
@@ -216,12 +221,13 @@ export default function SalespersonScreen() {
   };
 
   const messageASpecialist = () =>
-    Linking.openURL(
+    openUrlWithFeedback(
       whatsappChatUrl(
         specialistWhatsapp(dealState.salesperson, dealState.onPersonalWhatsapp),
         `Hi UCG — I'm stuck in the app on ${carLabel} and need a hand.`,
       ),
-    ).catch(() => {});
+      "Couldn't open WhatsApp — make sure it's installed, then try again.",
+    );
 
   // The owner's kill switch (src/constants/ai-chat.ts) — flip
   // AI_CHAT_ENABLED to false and this screen stops calling the AI
@@ -239,7 +245,10 @@ export default function SalespersonScreen() {
       setMessages((prev) => [...prev, { role: 'user', content: text }]);
       setInput('');
       dismissKeyboard();
-      Linking.openURL(whatsappChatUrl(specialistWhatsapp(dealState.salesperson, dealState.onPersonalWhatsapp), text)).catch(() => {});
+      openUrlWithFeedback(
+        whatsappChatUrl(specialistWhatsapp(dealState.salesperson, dealState.onPersonalWhatsapp), text),
+        "Couldn't open WhatsApp — make sure it's installed, then try again. Your message wasn't sent.",
+      );
     };
 
     return (

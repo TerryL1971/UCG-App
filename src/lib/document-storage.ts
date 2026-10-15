@@ -108,6 +108,26 @@ export async function setOwnerCode(code: string): Promise<void> {
 
 export { getOwnerId };
 
+/** "Reset Test Data" (account.tsx) used to leave this untouched entirely
+ * (Terry, 2026-10-15, catching a real bug) — it cleared every local
+ * context's state but never this persisted id, even though it's shown to
+ * the customer as "Your Documents Code" and is what every Storage upload
+ * gets grouped under. Any document uploaded after a reset still landed
+ * under the same old code as whatever was uploaded before it — on a
+ * device reused by a different person, that's a real mix-up, not just
+ * cosmetic. Generates and persists a fresh code, same shape as a brand
+ * new install would get. */
+export async function resetOwnerCode(): Promise<void> {
+  const fresh = generateDealCode();
+  cachedOwnerId = fresh;
+  try {
+    await AsyncStorage.setItem(ANON_ID_KEY, fresh);
+  } catch {
+    // Falls back to in-memory only for this session — same graceful
+    // degradation as getOwnerId()/setOwnerCode() above.
+  }
+}
+
 /** Whatever the app already knows about who/what this document belongs
  * to at the moment it's captured — from deal-intake and the chosen car.
  * Recorded alongside the file (see `deal_documents`, the migration this

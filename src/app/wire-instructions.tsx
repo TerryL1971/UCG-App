@@ -1,5 +1,5 @@
 import * as Print from 'expo-print';
-import { router } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { wireInstructions } from '@/constants/mock-data';
+import { isDenStock } from '@/constants/vro-checklists';
+import { useDeal } from '@/lib/deal-context';
 import { useDealSync, type PaymentStatus } from '@/lib/deal-sync';
 
 /**
@@ -79,6 +81,15 @@ export default function WireInstructionsScreen() {
   const [isWorking, setIsWorking] = useState(false);
   const { state: dealState, send: sendDealSignal, setPaymentStatus } = useDealSync();
   const paymentStatus = dealState.paymentStatus;
+  const { car } = useDeal();
+
+  // Defense in depth: a DEN-stock car can never take a wire against a
+  // deposit (see isDenStock's doc comment) — the two real entry points
+  // (add-ons.tsx, deal-intake.tsx) already route a DEN+cash customer
+  // elsewhere, but this catches anything that still lands here directly.
+  if (isDenStock(car?.stockNumber)) {
+    return <Redirect href="/deal-paperwork" />;
+  }
 
   const handlePrint = async () => {
     try {

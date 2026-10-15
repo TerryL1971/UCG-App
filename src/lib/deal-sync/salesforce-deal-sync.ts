@@ -40,4 +40,6 @@ export class SalesforceDealSync implements DealSyncBackend {
   setPaymentStatus(_status: PaymentStatus): void {}
 
   setPersonalWhatsapp(_active: boolean): void {}
+
+  setFinancingDeclined(_declined: boolean): void {}
 }

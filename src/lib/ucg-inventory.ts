@@ -46,12 +46,33 @@ function slugFromUrl(url: string): string {
   return match ? match[1] : url;
 }
 
-function parseYearAndTitle(fullTitle: string): { year: number; title: string } {
+// 2 letters for a normal stock number (DE9917), but 3 for an EU-spec car
+// that's never been registered on the USAREUR system (DEN12345 — the
+// extra "N" is real, not a typo; see docs/deal-flow-roadmap.md, "EU-spec
+// DEN stock numbers"). isDenStock() tests the *start* of this string for
+// "den" — falling back to the raw, un-extracted slug (which starts with
+// a 4-digit year, e.g. "2018-ford-escape-sel-den9917") silently fails
+// that test even for a real DEN car, wrongly treating it as DE stock
+// everywhere: wrong "deposit" vs "reservation fee" wording, wrong
+// payment routing, wrong VAT math (Terry, 2026-10-15). Always try to
+// extract just the code from the slug before giving up and using the
+// slug whole.
+function stockNumberFromSlug(slug: string): string {
+  const match = slug.match(/-([a-z]{2,3}\d+)$/i);
+  return match ? match[1].toUpperCase() : slug;
+}
+
+// Returns null on a markup-drift miss instead of a fake `{ year: 0, ... }`
+// (Terry, 2026-10-15, catching a real gap) — that fake value used to
+// silently flow all the way to the screen, rendering as a literal "0
+// Ford Escape SEL" with no guard anywhere downstream. Each caller decides
+// what "couldn't parse this one" means for it: fetchInventoryList skips
+// the card (same as its existing href/alt/price guard), fetchInventoryDetail
+// throws (same as its existing `!res.ok` guard) rather than ever handing
+// a screen a half-real car.
+function parseYearAndTitle(fullTitle: string): { year: number; title: string } | null {
   const match = fullTitle.trim().match(/^(\d{4})\s+(.*)$/);
-  if (match) {
-    return { year: Number(match[1]), title: match[2].trim() };
-  }
-  return { year: 0, title: fullTitle.trim() };
+  return match ? { year: Number(match[1]), title: match[2].trim() } : null;
 }
 
 /** List-level scrape: one pass over /inventory/ for cards (photo, title, price). */
@@ -77,18 +98,15 @@ export async function fetchInventoryList(): Promise<InventoryListItem[]> {
 
     if (!hrefMatch || !altMatch || !priceMatch) continue;
 
+    const parsed = parseYearAndTitle(altMatch[1]);
+    if (!parsed) continue;
+    const { year, title } = parsed;
     const detailUrl = hrefMatch[1];
-    const { year, title } = parseYearAndTitle(altMatch[1]);
     const slug = slugFromUrl(detailUrl);
-    // 2 letters for a normal stock number (DE9917), but 3 for an EU-spec
-    // car that's never been registered on the USAREUR system (DEN12345 —
-    // the extra "N" is real, not a typo; see docs/deal-flow-roadmap.md,
-    // "EU-spec DEN stock numbers").
-    const stockMatch = slug.match(/-([a-z]{2,3}\d+)$/i);
 
     items.push({
       slug,
-      stockNumber: stockMatch ? stockMatch[1].toUpperCase() : slug,
+      stockNumber: stockNumberFromSlug(slug),
       year,
       title,
       price: Number(priceMatch[1].replace(/,/g, '')),
@@ -111,9 +129,24 @@ export async function fetchInventoryDetail(slug: string): Promise<InventoryDetai
   const html = await res.text();
 
   const h1Match = html.match(/<h1[^>]*>(.*?)<\/h1>/s);
-  const { year, title } = parseYearAndTitle(h1Match ? h1Match[1].trim() : slug);
+  const parsed = parseYearAndTitle(h1Match ? h1Match[1].trim() : slug);
+  if (!parsed) {
+    throw new Error(`Could not parse year/title for listing ${slug}`);
+  }
+  const { year, title } = parsed;
 
   const priceMatch = html.match(/\$([\d,]+)(?:\s|<)/);
+  // Was `: 0` (Terry, 2026-10-15, catching a real gap) — a scrape miss
+  // silently became a real-looking $0 car, which then rendered as a
+  // malformed negative "Balance Due" everywhere downstream with nothing
+  // flagging that the underlying price data was actually bad. Throwing
+  // here routes it into car/[id].tsx's existing "Couldn't load this
+  // listing" error screen instead — the same honest failure path a
+  // non-200 response already takes, rather than a car that looks real
+  // but has fabricated pricing.
+  if (!priceMatch) {
+    throw new Error(`Could not parse price for listing ${slug}`);
+  }
   const stockMatch = html.match(/Stock #<\/th><td>([^<]+)<\/td>/);
 
   const specsMatch = html.match(/specs-table[\s\S]*?<\/table>/);
@@ -135,10 +168,10 @@ export async function fetchInventoryDetail(slug: string): Promise<InventoryDetai
 
   return {
     slug,
-    stockNumber: stockMatch ? stockMatch[1].trim() : slug,
+    stockNumber: stockMatch ? stockMatch[1].trim() : stockNumberFromSlug(slug),
     year,
     title,
-    price: priceMatch ? Number(priceMatch[1].replace(/,/g, '')) : 0,
+    price: Number(priceMatch[1].replace(/,/g, '')),
     thumbnail: images[0] ?? '',
     detailUrl,
     mileage: specs['Mileage'] ? Number(specs['Mileage']) : undefined,

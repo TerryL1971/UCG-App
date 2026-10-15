@@ -383,13 +383,24 @@ export default function DealIntakeScreen() {
           </>
         )}
 
-        {paymentMethod === 'cash' && (
-          <Field label="Paying by Wire?">
-            <Pressable style={styles.licenseLinkButton} onPress={() => router.push('/wire-instructions')}>
-              <Text style={styles.licenseLinkButtonLabel}>View Wire Instructions  →</Text>
-            </Pressable>
-          </Field>
-        )}
+        {paymentMethod === 'cash' &&
+          (isDenStock(car?.stockNumber) ? (
+            // A DEN-stock car can never take a wire against a deposit —
+            // there is no deposit, only a Cashier's Check against the Cost
+            // Estimate (see isDenStock's doc comment). Wire Instructions is
+            // the wrong destination entirely for this car.
+            <Field label="Paying with a Cashier's Check?">
+              <Pressable style={styles.licenseLinkButton} onPress={() => router.push('/deal-paperwork')}>
+                <Text style={styles.licenseLinkButtonLabel}>View Cost Estimate  →</Text>
+              </Pressable>
+            </Field>
+          ) : (
+            <Field label="Paying by Wire?">
+              <Pressable style={styles.licenseLinkButton} onPress={() => router.push('/wire-instructions')}>
+                <Text style={styles.licenseLinkButtonLabel}>View Wire Instructions  →</Text>
+              </Pressable>
+            </Field>
+          ))}
 
         <Field label="USAREUR Driver's License">
           <View style={styles.segRow}>

@@ -86,7 +86,13 @@ export default function WarrantyScreen() {
           ) : null}
 
           <Button label="Change My Answer" variant="secondary" style={styles.recapBtn} onPress={clearChoice} />
-          <Button label="Back to Add-Ons" style={styles.recapBtn} onPress={() => router.back()} />
+          {/* Label kept origin-agnostic on purpose (Terry, 2026-10-15,
+              catching a real bug) — this screen is also reachable
+              directly from the Salesperson chat, not just Add-Ons, and
+              router.back() correctly returns to wherever the customer
+              actually came from. "Back to Add-Ons" was wrong whenever
+              that wasn't Add-Ons. */}
+          <Button label="Done" style={styles.recapBtn} onPress={() => router.back()} />
         </View>
       </SafeAreaView>
     );

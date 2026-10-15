@@ -1,4 +1,4 @@
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -9,6 +9,7 @@ import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { specialistWhatsapp, whatsappChatUrl } from '@/constants/mock-data';
 import { useDeal } from '@/lib/deal-context';
 import { useDealSync } from '@/lib/deal-sync';
+import { openUrlWithFeedback } from '@/lib/linking';
 
 /**
  * The other add-on flagged as an empty row (docs/deal-flow-roadmap.md's
@@ -26,7 +27,10 @@ export default function PaintProtectionScreen() {
 
   const askAboutPpf = () => {
     const msg = `Hi UCG — I'd like to ask about Paint Protection Film (PPF) for ${carLabel}.`;
-    Linking.openURL(whatsappChatUrl(specialistWhatsapp(dealState.salesperson, dealState.onPersonalWhatsapp), msg)).catch(() => {});
+    openUrlWithFeedback(
+      whatsappChatUrl(specialistWhatsapp(dealState.salesperson, dealState.onPersonalWhatsapp), msg),
+      "Couldn't open WhatsApp — make sure it's installed, then try again.",
+    );
   };
 
   return (

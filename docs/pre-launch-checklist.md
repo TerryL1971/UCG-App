@@ -81,9 +81,16 @@ it changes about launch-readiness:
   back in the app" round-trip needs a dev-client/standalone build —
   Expo Go can't be deep-linked into. See
   `backend-and-ai-agent-plan.md`'s "Real auth" section for full detail.
-- **"View Contract"** (`deal/index.tsx`) — honestly shows "isn't wired
-  up yet" rather than faking a document. Needs real contract
-  storage/e-signature, which needs the backend first.
+- ~~**"View Contract"** (`deal/index.tsx`) — honestly shows "isn't wired
+  up yet" rather than faking a document.~~ **Superseded, 2026-09/10.**
+  `deal-paperwork.tsx` now generates real Cost Estimate/Purchase Order/
+  Bill of Sale PDFs from live deal data via `document-card.tsx`, which
+  also uploads the exact shared/printed file to Supabase Storage and
+  supports capturing + uploading a photo of the physically-signed copy
+  (`uploadSignedDocument`). Still not real e-signature (a photo of a
+  pen-signed page, not an e-sign integration) — that part is still
+  genuinely blocked on the backend — but "isn't wired up yet" undersold
+  what's actually there now.
 - **DealerTeam/Salesforce sync** — `salesforce-dealerteam-integration-plan.md`'s
   entire Phase 1b/2/3 is blocked on UCG actually getting DealerTeam API
   access, which is still an open question for the owners (per the
@@ -110,14 +117,19 @@ it changes about launch-readiness:
   bucket (`src/lib/document-storage.ts`) instead of living only on the
   customer's phone — Terry asked how a salesperson would ever see/
   retrieve a scanned document, and the honest answer was "they can't."
-  Still needs, before this is real for real customers: (1) Terry
-  creating the `documents` bucket + an insert policy in the Supabase
-  dashboard — nothing here can do that itself, no service-role key lives
-  in this app; (2) an actual retrieval UI — right now "retrieval" means
-  opening the bucket in the Supabase dashboard by hand, there's no
-  salesperson-facing screen at all; (3) deposit records are still
-  local-device-only, untouched by this. This makes the item right below
-  (legal counsel, GDPR) more urgent, not less — real PII now has
+  **Update, 2026-09/10:** (1) is done — the `documents` bucket exists and
+  is smoke-tested end to end (real upload, real code, real signed URL
+  fetch). (2) was superseded, not just completed: the original premise
+  (an in-app salesperson screen) was Terry's explicit correction —
+  salespeople work from WhatsApp/Genius Scan/SharePoint, not a bolted-on
+  tool in the customer's app (see `document-retrieval-plan.md`). The real
+  path now is the customer sharing the file directly (license scans
+  convert to a PDF per side with a "Share with Your Specialist" action
+  using the native share sheet — WhatsApp, email, AirDrop), plus a
+  separate, still-unbuilt SharePoint/Graph API integration pending UCG
+  IT approval for salesperson-side ingestion. (3) is still true —
+  deposit records remain local-device-only. This makes the item right
+  below (legal counsel, GDPR) more urgent, not less — real PII now has
   somewhere real to persist.
 
 ## D. Blocked on a decision only Terry/UCG can make

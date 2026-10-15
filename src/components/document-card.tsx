@@ -9,6 +9,7 @@ import { CheckCircleIcon, PlusIcon } from '@/components/icons';
 import { Colors, Fonts, Radius, Shadow } from '@/constants/theme';
 import { uploadGeneratedDocument, uploadSignedDocument, type DealDocumentContext } from '@/lib/document-storage';
 import { compressPhoto } from '@/lib/image';
+import { isSupabaseConfigured } from '@/lib/supabase';
 
 /**
  * One generatable document — Print / Save-Share, plus a real place to
@@ -120,8 +121,21 @@ export function DocumentCard({
     setIsUploadingSigned(true);
     try {
       const compressed = await compressPhoto(result.assets[0].uri);
+      const path = await uploadSignedDocument(docId, compressed, context);
+      // uploadSignedDocument also returns null when Supabase just isn't
+      // configured (a normal, expected state in dev) — only treat a null
+      // result as a real failure worth alarming over when Supabase IS
+      // configured, so this doesn't start showing false errors during
+      // ordinary local testing. Previously this set signedUri and fired
+      // onSigned unconditionally, before the upload even resolved — a
+      // genuine failure still showed "✓ Signed copy on file" with no
+      // error, and the real timeline step silently never advanced
+      // (Terry, 2026-10-15).
+      if (isSupabaseConfigured && !path) {
+        Alert.alert('Something went wrong', "Couldn't save your signed copy — check your connection and try again.");
+        return;
+      }
       setSignedUri(compressed);
-      await uploadSignedDocument(docId, compressed, context);
       if (isFirstUpload) onSigned?.();
     } finally {
       setIsUploadingSigned(false);

@@ -1,6 +1,8 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
+import * as Sharing from 'expo-sharing';
 import { useEffect, useState } from 'react';
 import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -10,9 +12,9 @@ import { DocumentCard } from '@/components/document-card';
 import { Button } from '@/components/ui/button';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { SUPPORT_WHATSAPP, ucgLocations, usareurBases, whatsappChatUrl } from '@/constants/mock-data';
-import { useDeal } from '@/lib/deal-context';
 import { buildSellBackBillOfSaleHtml, type SellBackDealInput } from '@/lib/deal-documents';
 import { compressPhoto } from '@/lib/image';
+import { isValidEmail } from '@/lib/validation';
 import { useVinScan } from '@/lib/vin-scan-context';
 
 const conditions = ['Fair', 'Good', 'Excellent'] as const;
@@ -38,8 +40,32 @@ const preBuyInspectionLocation = ucgLocations.find((l) => l.bookingUrl);
 // before anything gets generated from it.
 type OfferStatus = 'form' | 'awaitingAccept' | 'enteringAmount' | 'accepted';
 
+// Draft-autosave (Terry, 2026-10-15, catching a real gap): deal-intake.tsx
+// persists continuously specifically because losing a filled-in form
+// happened twice in testing — this screen's own form grew to 10+ fields
+// plus up to 15 photos with the Oct 13 rework and had zero persistence of
+// its own. Scoped to just the main form (not the post-offer
+// accepted-amount/lien fields reached only after a specialist has texted
+// a real number) — that stage is shorter-lived and lower-stakes to lose.
+const SELL_BACK_DRAFT_KEY = 'ucg.sellBackDraft';
+
+interface SellBackDraft {
+  sellerName: string;
+  sellerContact: string;
+  sellerEmail: string;
+  plate: string;
+  vehicleYear: string;
+  mileage: string;
+  mileageUnit: (typeof mileageUnits)[number];
+  spec: (typeof specs)[number];
+  condition: (typeof conditions)[number];
+  photos: string[];
+  dutyStation: string | null;
+  otherDutyStation: string;
+  notes: string;
+}
+
 export default function SellBackScreen() {
-  const { car } = useDeal();
   const { lastScannedVin, clearLastScannedVin } = useVinScan();
   const [offerStatus, setOfferStatus] = useState<OfferStatus>('form');
 
@@ -61,13 +87,14 @@ export default function SellBackScreen() {
   const [payoffAmountText, setPayoffAmountText] = useState('');
   const [payoffDate, setPayoffDate] = useState('');
 
-  // If they chose this car from our own inventory earlier in the app, we
-  // already know its VIN — no reason to make them type it again. If they
-  // never went through that flow (or came here for a car we didn't sell
-  // them), this just stays blank and they fill it in like normal.
-  const [plate, setPlate] = useState(() => car?.vin ?? '');
-  // Same idea as `plate` above — pre-filled when we already know the car.
-  const [vehicleYear, setVehicleYear] = useState(() => (car?.year ? String(car.year) : ''));
+  // Deliberately NOT pre-filled from useDeal()'s car (Terry, 2026-10-15,
+  // catching a real bug): that value is whatever car the customer is
+  // currently shopping to BUY, not a car they're selling back — nothing
+  // in this app actually tracks past purchases, so pre-filling from it
+  // silently attached the wrong vehicle's VIN/year to the generated Bill
+  // of Sale for anyone mid-shopping a different car at the same time.
+  const [plate, setPlate] = useState('');
+  const [vehicleYear, setVehicleYear] = useState('');
   const [mileage, setMileage] = useState('');
   const [mileageUnit, setMileageUnit] = useState<(typeof mileageUnits)[number]>('mi');
   const [spec, setSpec] = useState<(typeof specs)[number]>('US');
@@ -79,6 +106,74 @@ export default function SellBackScreen() {
   const [notes, setNotes] = useState('');
   const isOtherDutyStation = dutyStation === 'Other';
   const effectiveDutyStation = isOtherDutyStation ? otherDutyStation.trim() : dutyStation;
+  const [hasLoadedDraft, setHasLoadedDraft] = useState(false);
+
+  // Load once on mount — before the save-effect below runs, so it doesn't
+  // immediately overwrite a real saved draft with the screen's just-
+  // mounted blank defaults.
+  useEffect(() => {
+    AsyncStorage.getItem(SELL_BACK_DRAFT_KEY)
+      .then((raw) => {
+        if (raw) {
+          const draft: Partial<SellBackDraft> = JSON.parse(raw);
+          if (draft.sellerName) setSellerName(draft.sellerName);
+          if (draft.sellerContact) setSellerContact(draft.sellerContact);
+          if (draft.sellerEmail) setSellerEmail(draft.sellerEmail);
+          if (draft.plate) setPlate(draft.plate);
+          if (draft.vehicleYear) setVehicleYear(draft.vehicleYear);
+          if (draft.mileage) setMileage(draft.mileage);
+          if (draft.mileageUnit) setMileageUnit(draft.mileageUnit);
+          if (draft.spec) setSpec(draft.spec);
+          if (draft.condition) setCondition(draft.condition);
+          if (draft.photos) setPhotos(draft.photos);
+          if (draft.dutyStation) setDutyStation(draft.dutyStation);
+          if (draft.otherDutyStation) setOtherDutyStation(draft.otherDutyStation);
+          if (draft.notes) setNotes(draft.notes);
+        }
+      })
+      .catch(() => {
+        // Corrupt or inaccessible storage — start clean rather than crash.
+      })
+      .finally(() => setHasLoadedDraft(true));
+  }, []);
+
+  // Save on every change, same pattern as deal-intake-context.tsx's
+  // saveDraft — skipped until the load above finishes, so this doesn't
+  // immediately stomp a real saved draft with blank initial state.
+  useEffect(() => {
+    if (!hasLoadedDraft) return;
+    const draft: SellBackDraft = {
+      sellerName,
+      sellerContact,
+      sellerEmail,
+      plate,
+      vehicleYear,
+      mileage,
+      mileageUnit,
+      spec,
+      condition,
+      photos,
+      dutyStation,
+      otherDutyStation,
+      notes,
+    };
+    AsyncStorage.setItem(SELL_BACK_DRAFT_KEY, JSON.stringify(draft)).catch(() => {});
+  }, [
+    hasLoadedDraft,
+    sellerName,
+    sellerContact,
+    sellerEmail,
+    plate,
+    vehicleYear,
+    mileage,
+    mileageUnit,
+    spec,
+    condition,
+    photos,
+    dutyStation,
+    otherDutyStation,
+    notes,
+  ]);
 
   /** index === null means "append a new photo" rather than replace one. */
   const captureInto = async (index: number | null, useCamera: boolean) => {
@@ -108,8 +203,23 @@ export default function SellBackScreen() {
     }
   };
 
+  // Shares straight from this device's own storage — doesn't depend on
+  // WhatsApp's in-chat attach-photo picker being able to find the file,
+  // which it may not: compressPhoto saves into this app's own private
+  // sandbox, not the system Photos library (Terry, 2026-10-15, catching a
+  // real gap — the WhatsApp message below used to promise these photos
+  // were "ready to send," which wasn't guaranteed).
+  const sharePhoto = async (uri: string) => {
+    if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(uri);
+    } else {
+      Alert.alert('Sharing not available', "This device can't open the share sheet.");
+    }
+  };
+
   const handleExistingPhotoPress = (index: number) => {
     Alert.alert('Photo', undefined, [
+      { text: 'Share', onPress: () => sharePhoto(photos[index]) },
       { text: 'Replace', onPress: () => promptSource(index) },
       {
         text: 'Remove',
@@ -142,13 +252,31 @@ export default function SellBackScreen() {
     }
   }, [lastScannedVin, clearLastScannedVin]);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!plate.trim() || !vehicleYear.trim() || !mileage.trim() || !effectiveDutyStation) {
       Alert.alert('Almost there', 'Add your VIN, model year, mileage, and duty station so we can put together an offer.');
       return;
     }
+    // Was maxLength={4} + non-empty only — "0000" or a future-enough year
+    // both passed (Terry, 2026-10-15, catching a real gap). Upper bound is
+    // current year + 1, not just the current year — dealerships (including
+    // UCG's own real listings) sell next-model-year cars before the
+    // calendar year turns over.
+    const yearNum = Number(vehicleYear.trim());
+    const maxPlausibleYear = new Date().getFullYear() + 1;
+    if (!Number.isInteger(yearNum) || yearNum < 1980 || yearNum > maxPlausibleYear) {
+      Alert.alert('Almost there', `Model year should be between 1980 and ${maxPlausibleYear}.`);
+      return;
+    }
     if (!sellerName.trim() || !sellerEmail.trim() || !sellerContact.trim()) {
       Alert.alert('Almost there', 'Add your name, email, and phone number so we can actually reach you with an offer.');
+      return;
+    }
+    // Was non-empty-only here while create-account.tsx/log-in.tsx both
+    // actually validate the format — a garbage email sailed straight into
+    // this message and the generated Bill of Sale (Terry, 2026-10-15).
+    if (!isValidEmail(sellerEmail.trim())) {
+      Alert.alert('Almost there', "That email doesn't look quite right — double-check it.");
       return;
     }
     // No real offer-generation backend yet, so there's no real dollar
@@ -173,21 +301,67 @@ export default function SellBackScreen() {
       `Name: ${sellerName.trim()}`,
       `Email: ${sellerEmail.trim()}`,
       `Phone: ${sellerContact.trim()}`,
-      car ? `Car: ${car.year} ${car.title}` : `Year: ${vehicleYear.trim()}`,
+      `Year: ${vehicleYear.trim()}`,
       `VIN: ${plate.trim()}`,
       `Mileage: ${mileage.trim()} ${mileageUnit}`,
       `Spec: ${spec}`,
       `Condition: ${condition}`,
       `Duty station: ${effectiveDutyStation}`,
       notes.trim() ? `Notes: ${notes.trim()}` : '',
+      // Doesn't claim they're "ready to send here in the chat" — that's
+      // not guaranteed (compressPhoto saves into this app's own private
+      // sandbox, not the system Photos library, so they may not show up
+      // in WhatsApp's own attach-photo picker). The Share button on each
+      // photo above (uses the native share sheet directly) is the real,
+      // guaranteed-to-work path (Terry, 2026-10-15).
       photos.length
-        ? `I have ${photos.length} photo${photos.length > 1 ? 's' : ''} ready to send here in the chat.`
+        ? `I have ${photos.length} photo${photos.length > 1 ? 's' : ''} taken — tap Share on each one above to send them separately.`
         : '',
     ]
       .filter(Boolean)
       .join('\n');
-    Linking.openURL(whatsappChatUrl(SUPPORT_WHATSAPP, message)).catch(() => {});
+    // Awaited now, and only advances on real success (Terry, 2026-10-15,
+    // catching a real bug) — this used to fire-and-forget and show
+    // "Your Request Is In" regardless of whether WhatsApp actually opened.
+    try {
+      await Linking.openURL(whatsappChatUrl(SUPPORT_WHATSAPP, message));
+    } catch {
+      Alert.alert('Could not open WhatsApp', "Make sure WhatsApp is installed, then try again — nothing's been sent yet.");
+      return;
+    }
     setOfferStatus('awaitingAccept');
+    // The submission succeeded — nothing left to recover a draft of.
+    AsyncStorage.removeItem(SELL_BACK_DRAFT_KEY).catch(() => {});
+  };
+
+  // "Start Over" used to only flip offerStatus back to 'form', leaving
+  // every field (including the accepted-offer amount and lien details)
+  // holding whatever the previous round left there (Terry, 2026-10-15,
+  // catching a real bug) — a second submission could re-render pre-filled
+  // with a stale dollar amount and generate a Bill of Sale with the wrong
+  // price. A real restart clears everything back to a blank form.
+  const startOver = () => {
+    setOfferStatus('form');
+    setPlate('');
+    setVehicleYear('');
+    setMileage('');
+    setMileageUnit('mi');
+    setSpec('US');
+    setCondition('Good');
+    setPhotos([]);
+    setDutyStation(null);
+    setOtherDutyStation('');
+    setNotes('');
+    setSellerName('');
+    setSellerContact('');
+    setSellerEmail('');
+    setAcceptedAmountText('');
+    setHasLien(false);
+    setLienHolder('');
+    setLienAccountNumber('');
+    setPayoffAmountText('');
+    setPayoffDate('');
+    AsyncStorage.removeItem(SELL_BACK_DRAFT_KEY).catch(() => {});
   };
 
   return (
@@ -199,8 +373,9 @@ export default function SellBackScreen() {
       {offerStatus !== 'form' ? (
         <OfferStatusView
           status={offerStatus}
+          dutyStation={effectiveDutyStation}
           onAccept={() => setOfferStatus('enteringAmount')}
-          onStartOver={() => setOfferStatus('form')}
+          onStartOver={startOver}
           acceptedAmountText={acceptedAmountText}
           setAcceptedAmountText={setAcceptedAmountText}
           hasLien={hasLien}
@@ -221,7 +396,6 @@ export default function SellBackScreen() {
             setOfferStatus('accepted');
           }}
           sellBackInput={{
-            car,
             plateOrVin: plate,
             vehicleYear,
             mileage,
@@ -245,17 +419,6 @@ export default function SellBackScreen() {
             <Text style={styles.intro}>
               Already own a Used Car Guys vehicle? Get a real offer in minutes — no obligation.
             </Text>
-
-            {car && (
-              <View style={styles.recognizedCard}>
-                <Text style={styles.recognizedTitle}>
-                  Selling back your {car.year} {car.title}?
-                </Text>
-                <Text style={styles.recognizedBody}>
-                  {car.vin ? "We've filled in the VIN below." : 'Add its VIN below to get started.'}
-                </Text>
-              </View>
-            )}
 
             <Field label="VIN">
               <View style={styles.plateRow}>
@@ -359,7 +522,8 @@ export default function SellBackScreen() {
                 )}
               </View>
               <Text style={styles.photoHint}>
-                Photos are automatically resized to keep things quick to send — take as many as you need.
+                Photos are automatically resized to keep things quick to send — take as many as you need. Tap a
+                photo to share it directly, replace it, or remove it.
               </Text>
             </Field>
 
@@ -425,7 +589,7 @@ export default function SellBackScreen() {
               <TextInput
                 value={sellerContact}
                 onChangeText={setSellerContact}
-                placeholder="e.g. 4915154991777"
+                placeholder="e.g. +1 555 123 4567 (WhatsApp)"
                 placeholderTextColor={Colors.textFaint}
                 keyboardType="phone-pad"
                 style={styles.input}
@@ -449,6 +613,7 @@ export default function SellBackScreen() {
 
 function OfferStatusView({
   status,
+  dutyStation,
   onAccept,
   onStartOver,
   acceptedAmountText,
@@ -467,6 +632,7 @@ function OfferStatusView({
   sellBackInput,
 }: {
   status: Exclude<OfferStatus, 'form'>;
+  dutyStation: string | null;
   onAccept: () => void;
   onStartOver: () => void;
   acceptedAmountText: string;
@@ -588,11 +754,24 @@ function OfferStatusView({
             Last step: a specialist needs to physically inspect your car before the sale is final.
           </Text>
           {preBuyInspectionLocation?.bookingUrl ? (
-            <Button
-              label={`Book a Pre-Buy Inspection (${preBuyInspectionLocation.name})`}
-              onPress={() => Linking.openURL(preBuyInspectionLocation.bookingUrl!)}
-              style={styles.statusButton}
-            />
+            <>
+              <Button
+                label={`Book a Pre-Buy Inspection (${preBuyInspectionLocation.name})`}
+                onPress={() => Linking.openURL(preBuyInspectionLocation.bookingUrl!)}
+                style={styles.statusButton}
+              />
+              {/* This is the only real booking link that exists (Terry,
+                  2026-10-15, catching a real inconsistency) — now that this
+                  same flow asks for a Duty Station, suggesting Ramstein
+                  regardless reads as a bigger mismatch than before for
+                  anyone stationed elsewhere. */}
+              {dutyStation && !dutyStation.toLowerCase().includes('ramstein') && (
+                <Text style={styles.statusBody}>
+                  This is the only location with a real booking link so far — your specialist will schedule your
+                  inspection near {dutyStation} directly.
+                </Text>
+              )}
+            </>
           ) : (
             <Text style={styles.statusBody}>
               Booking links for the other locations aren&apos;t set up yet — your specialist will schedule this with you
@@ -612,8 +791,9 @@ function OfferStatusView({
               context={{
                 customerName: sellBackInput.sellerName,
                 customerContact: sellBackInput.sellerContact,
-                carStockNumber: sellBackInput.car?.stockNumber,
-                carTitle: sellBackInput.car ? `${sellBackInput.car.year} ${sellBackInput.car.title}` : sellBackInput.plateOrVin,
+                carTitle: sellBackInput.vehicleYear
+                  ? `${sellBackInput.vehicleYear} model year, VIN ${sellBackInput.plateOrVin}`
+                  : sellBackInput.plateOrVin,
               }}
             />
           </View>
@@ -658,14 +838,6 @@ const styles = StyleSheet.create({
   body: { flex: 1, paddingHorizontal: Spacing.xxl },
   bodyContent: { paddingTop: Spacing.md, paddingBottom: Spacing.xl },
   intro: { fontFamily: Fonts.body, fontSize: 13.5, color: Colors.textMuted, lineHeight: 20, marginBottom: 20 },
-  recognizedCard: {
-    backgroundColor: Colors.navyTint,
-    borderRadius: Radius.lg,
-    padding: 14,
-    marginBottom: 18,
-  },
-  recognizedTitle: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.navy },
-  recognizedBody: { fontFamily: Fonts.body, fontSize: 12.5, color: Colors.navy, marginTop: 2, opacity: 0.8 },
   lienToggleRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16, paddingVertical: 4 },
   checkbox: {
     width: 22,

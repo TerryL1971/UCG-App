@@ -191,6 +191,19 @@ real customer would hit it.
     confirm only fires when there's an actual previous, different car
     whose progress is about to be lost (nothing to warn about on a first
     pick).
+  - **Later, separate bug (2026-09-22, commit `cc6c1e1`) — the warning
+    could silently fail to show at all.** `car/[id].tsx` reuses the same
+    screen instance when navigating straight from one car's detail page
+    to another's (same route, different `id`) — Expo Router doesn't
+    remount it. The screen's local `car`/`error` state wasn't being reset
+    for the new `id`, so the PREVIOUS car's data (and its already-enabled
+    "Choose This Car" button) stayed on screen until the new fetch
+    resolved. Tapping Choose in that window acted on the stale car,
+    compared it against itself, and silently re-picked it instead of
+    switching — which is what made the confirm dialog above seem to skip
+    itself. Fixed by resetting `car`/`error` to null/false at the start
+    of the id-keyed fetch effect, before the new fetch begins — the exact
+    pattern React's own docs show for a data fetch keyed on a changing id.
 
 - **Service Center hub — open to non-customers.** New `/service` screen
   (`src/app/service.tsx`) + `src/constants/service-center.ts` with real
@@ -223,9 +236,15 @@ real customer would hit it.
   handoff — still not built). Entry points: the deposit success screen
   ("Next: Protect Your Car") and a button on the salesperson screen that
   reflects the current choice. Choice is passed to the AI agent context.
-  **Not built:** the American Auto Nation insurance-quote handoff that a
-  decline is supposed to lead into; wiring the choice into a My Deal
-  timeline step; the winter-tire / PPF add-ons (still waiting on flyers).
+  **Not built, as of this entry:** the American Auto Nation insurance-
+  quote handoff that a decline is supposed to lead into; wiring the
+  choice into a My Deal timeline step; the winter-tire / PPF add-ons
+  (still waiting on flyers). **Superseded, stale as of 2026-10-15:** the
+  AAN handoff IS built — `warranty.tsx`'s decline recap shows an
+  `aanNudge` card ("Have you sorted insurance?") that routes to
+  `/insurance`, and `product-vision.md`'s own feature table already
+  correctly lists this as "Built" — this entry just never got updated to
+  match (the roadmap lagging the vision doc, not the code).
 - **`deal-sync` module — the seam between the app and DealerTeam.** Answers
   the recurring "should we clone DealerTeam?" question: no. The app now
   talks to one interface, `DealSyncBackend` (`src/lib/deal-sync/`), with
@@ -630,6 +649,14 @@ real customer would hit it.
   a Human" WhatsApp fallback for anything it can't answer. Full writeup
   in `docs/backend-and-ai-agent-plan.md`, "AI agent" — this is that
   plan's Tier 1, now built rather than only planned.
+  **Superseded Sept — flipped back off (`AI_CHAT_ENABLED = false`,
+  `src/constants/ai-chat.ts`).** Terry's call, reversing the above: the AI
+  chat "will cost UCG a tremendous amount of money" and doesn't fit how
+  the business wants to reach customers. The code this entry describes
+  still exists and still works — it's just not what a real customer hits
+  today. They get the WhatsApp hand-off this entry says was replaced.
+  Needs an explicit decision (re-enable, or retire the feature for good)
+  rather than sitting disabled by default.
 - **Found while testing the chat: "Talk to a Human" isn't real yet.**
   `salesperson.whatsapp` (`491700000000`) has been a placeholder since
   this file's first version — it doesn't reach anyone. Wasn't consequential
@@ -1003,6 +1030,17 @@ pattern above.
 entry above: `wire-instructions.tsx`, on-screen + printable/shareable
 PDF, real numbers. The **PIF confirmation** half is still not built —
 no manual check-off exists yet for "funds received."
+
+## Deal-intake "Anything Else We Should Know?" notes — went nowhere, now fixed (2026-10-15)
+
+`deal-intake.tsx`'s optional free-text notes field was captured into
+`DealIntake.notes` and round-tripped through the data model since the
+field existed, but nothing downstream ever actually read it — not the
+WhatsApp handoff draft (`salesperson.tsx`'s `composeWhatsAppDraft`), not
+the AI chat's context sent to `chat+api.ts`. A customer could type a real
+note and it would just silently never reach anyone. Fixed: `notes` now
+appears as its own line in both the WhatsApp draft and the system-prompt
+context the AI agent actually receives (`chat+api.ts`'s `contextLine`).
 
 ## Not covered yet
 

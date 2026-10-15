@@ -28,6 +28,12 @@ sale/purchase screenshots. `GAP` steps get narrated or skipped.
    a conversation's length. Terry's also weighing replacing this whole
    chat with a static FAQ page instead — noted, not built, pending that
    decision.
+   **Flipped off Sept (`AI_CHAT_ENABLED = false`) — the owner made that
+   call: "will cost UCG a tremendous amount of money" and doesn't fit how
+   the business wants to reach customers.** The code above still describes
+   what the AI path does when the flag is on; as of this writing it's off,
+   and customers get the WhatsApp hand-off it was meant to replace
+   instead. Re-check this flag before relying on this section.
 2. **Start the deal** — intake: name/WhatsApp/base/cash-or-financing/lender
    `WORKS` · **APO/FPO address** `WORKS` · USAREUR license status + photo
    `WORKS` · survives restart & switching cars `WORKS`.

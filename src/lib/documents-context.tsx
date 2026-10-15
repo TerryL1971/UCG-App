@@ -1,7 +1,8 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import { dealDocuments, type DealDocument } from '@/constants/mock-data';
 import { uploadDocumentPhoto, uploadLicenseScan, type DealDocumentContext } from '@/lib/document-storage';
+import { isSupabaseConfigured } from '@/lib/supabase';
 
 // Must match LICENSE_DOC_ID in deal/documents.tsx — the one document this
 // screen captures multiple pages for, and the one that needs its pages
@@ -16,8 +17,18 @@ const LICENSE_DOC_ID = 'license';
  * Plural and an array (not a single `uri`), matching the "1-x pages"
  * flow Terry originally asked for (Sept 2) for whatever document needs
  * it — today that's just the license (front + back), but the shape
- * doesn't assume a fixed count. */
-export type DocumentState = DealDocument & { uris: string[] };
+ * doesn't assume a fixed count.
+ *
+ * `backendStatus` tracks the DURABLE copy specifically — separate from
+ * `status` ("needed"/"uploaded"/"approved"), which only ever reflected
+ * whether a photo was captured locally, not whether it actually reached
+ * Storage (Terry, 2026-10-15, catching a real gap: every Storage write
+ * was fire-and-forget, so the UI showed "Uploaded" confidently even on a
+ * genuine network failure, indistinguishable from real success). `null`
+ * means "nothing to report" — Supabase isn't configured at all, which is
+ * a normal, expected state in dev, not a failure worth alarming over. */
+export type DocumentBackendStatus = 'uploading' | 'synced' | 'failed' | null;
+export type DocumentState = DealDocument & { uris: string[]; backendStatus: DocumentBackendStatus };
 
 /**
  * Shared so the real Documents screen (deal/documents.tsx, where pages
@@ -58,11 +69,19 @@ const DealDocumentsContext = createContext<DealDocumentsContextValue | null>(nul
 // invariant addDocumentPage/removeDocumentPage already enforce on every
 // later change, just applied to the starting state too.
 function withNoPages(): DocumentState[] {
-  return dealDocuments.map((d) => ({ ...d, status: 'needed', uris: [] }));
+  return dealDocuments.map((d) => ({ ...d, status: 'needed', uris: [], backendStatus: null }));
 }
 
 export function DealDocumentsProvider({ children }: { children: ReactNode }) {
   const [documents, setDocuments] = useState<DocumentState[]>(withNoPages);
+  // Doesn't cancel the underlying network request — this is still a plain
+  // fetch() with no AbortController plumbed through document-storage.ts —
+  // but it does stop an upload that was already in flight when "Reset
+  // Test Data" fired from writing its result back into a document array
+  // that's already been reset out from under it (Terry, 2026-10-15,
+  // catching a real gap). A ref, not state: it has to be read synchronously
+  // inside closures captured before a reset, not trigger its own re-render.
+  const generationRef = useRef(0);
 
   const value = useMemo(
     () => ({
@@ -72,24 +91,37 @@ export function DealDocumentsProvider({ children }: { children: ReactNode }) {
       // so leaving it marked "approved" after adding a page would be
       // dishonest about what's actually happened.
       addDocumentPage: (id: string, uri: string, context?: DealDocumentContext) => {
-        setDocuments((docs) => docs.map((d) => (d.id === id ? { ...d, status: 'uploaded', uris: [...d.uris, uri] } : d)));
-        // Fire-and-forget: the real, durable copy (Terry, 2026-09-21:
-        // "how will a salesperson see and retrieve any of the scanned
-        // docs?"). The UI above already has what it needs — the local
-        // uri — so this doesn't block or need to succeed for the screen
-        // to work; it silently no-ops if Supabase isn't configured or
-        // the bucket isn't set up yet, same as every other Supabase
-        // integration point in this app.
+        setDocuments((docs) =>
+          docs.map((d) =>
+            d.id === id
+              ? { ...d, status: 'uploaded', uris: [...d.uris, uri], backendStatus: isSupabaseConfigured ? 'uploading' : null }
+              : d,
+          ),
+        );
+        // Not fire-and-forget anymore (Terry, 2026-10-15, catching a real
+        // gap) — the local uri above still lands instantly either way, but
+        // backendStatus now actually reflects whether the durable copy
+        // (Terry, 2026-09-21: "how will a salesperson see and retrieve any
+        // of the scanned docs?") really made it, instead of the UI just
+        // assuming success the moment a photo was taken. Still silent
+        // (no alert) when Supabase just isn't configured at all — a
+        // normal, expected state in dev, not a failure.
         //
         // The license doc is special-cased: each side uploads as its own
         // single-page PDF (Terry, 2026-10-14), not a loose jpg — but still
         // one upload per side, independent of the other, same as every
         // other document here. Front and back stay two separate files.
-        if (id === LICENSE_DOC_ID) {
-          uploadLicenseScan(id, uri, context).catch(() => {});
-        } else {
-          uploadDocumentPhoto(id, uri, context).catch(() => {});
-        }
+        const generation = generationRef.current;
+        const upload = id === LICENSE_DOC_ID ? uploadLicenseScan(id, uri, context) : uploadDocumentPhoto(id, uri, context);
+        upload
+          .then((path) => {
+            if (!isSupabaseConfigured || generation !== generationRef.current) return;
+            setDocuments((docs) => docs.map((d) => (d.id === id ? { ...d, backendStatus: path ? 'synced' : 'failed' } : d)));
+          })
+          .catch(() => {
+            if (generation !== generationRef.current) return;
+            setDocuments((docs) => docs.map((d) => (d.id === id ? { ...d, backendStatus: 'failed' } : d)));
+          });
       },
       // Same honesty rule as addDocumentPage, the other direction: removing
       // a page changes what's actually on file, so a prior "uploaded"/
@@ -102,10 +134,18 @@ export function DealDocumentsProvider({ children }: { children: ReactNode }) {
           docs.map((d) => {
             if (d.id !== id) return d;
             const uris = d.uris.filter((_, i) => i !== pageIndex);
-            return { ...d, uris, status: uris.length === 0 ? 'needed' : 'uploaded' };
+            return {
+              ...d,
+              uris,
+              status: uris.length === 0 ? 'needed' : 'uploaded',
+              backendStatus: uris.length === 0 ? null : d.backendStatus,
+            };
           }),
         ),
-      resetDocuments: () => setDocuments(withNoPages()),
+      resetDocuments: () => {
+        generationRef.current += 1;
+        setDocuments(withNoPages());
+      },
     }),
     [documents],
   );

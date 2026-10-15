@@ -27,6 +27,7 @@ interface DealSyncContextValue {
   jumpToStep: (index: number) => void;
   setPaymentStatus: (status: PaymentStatus) => void;
   setPersonalWhatsapp: (active: boolean) => void;
+  setFinancingDeclined: (declined: boolean) => void;
 }
 
 const DealSyncContext = createContext<DealSyncContextValue | null>(null);
@@ -52,6 +53,7 @@ export function DealSyncProvider({ children }: { children: ReactNode }) {
       jumpToStep: (index: number) => backend.jumpToStep(index),
       setPaymentStatus: (status: PaymentStatus) => backend.setPaymentStatus(status),
       setPersonalWhatsapp: (active: boolean) => backend.setPersonalWhatsapp(active),
+      setFinancingDeclined: (declined: boolean) => backend.setFinancingDeclined(declined),
     }),
     [state, backend],
   );

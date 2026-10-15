@@ -84,7 +84,11 @@ export default function DealPaperworkScreen() {
             </>
           ) : (
             <>
-              <Row label="Down Payment" value={`-${money(pricing.holdAmount)}`} />
+              {/* "Deposit Paid," not "Down Payment" — matches add-ons.tsx,
+                  and avoids colliding with the customer's own separately-
+                  typed financing down payment (deal-intake.tsx), which is
+                  a different number entirely (Terry, 2026-10-15). */}
+              <Row label="Deposit Paid" value={`-${money(pricing.holdAmount)}`} />
               <Row label="Amount Due Upon Delivery" value={money(pricing.balanceAfterHold)} bold red />
             </>
           )}

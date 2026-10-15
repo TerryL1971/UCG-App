@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -10,6 +11,7 @@ import { useDeal } from '@/lib/deal-context';
 import { useDealIntake } from '@/lib/deal-intake-context';
 import { useDealSync } from '@/lib/deal-sync';
 import { useDealDocuments } from '@/lib/documents-context';
+import { resetOwnerCode } from '@/lib/document-storage';
 import { useSaved } from '@/lib/saved-context';
 import { useVinScan } from '@/lib/vin-scan-context';
 import { useWarranty } from '@/lib/warranty-context';
@@ -43,6 +45,12 @@ export default function AccountScreen() {
           clearCar();
           resetDealSync();
           resetDocuments();
+          resetOwnerCode().catch(() => {});
+          // sell-back.tsx's own draft-autosave (Terry, 2026-10-15) — left
+          // out here would silently repopulate the Sell It Back form on
+          // next visit, contradicting this alert's "clears... everything
+          // you've entered" promise.
+          AsyncStorage.removeItem('ucg.sellBackDraft').catch(() => {});
           clearWarrantyChoice();
           clearSaved();
           clearLastScannedVin();

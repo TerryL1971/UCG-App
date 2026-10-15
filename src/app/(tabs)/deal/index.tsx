@@ -361,6 +361,27 @@ function StepDetailContent({ step, car }: { step: DealStep; car: ReturnType<type
       );
     }
 
+    // A decline/never-approved outcome wasn't modeled at all before this
+    // (Terry, 2026-10-15, catching a real gap) — the simulation always
+    // just auto-advanced after its wait, with no decline state anywhere.
+    // Still a simulated signal (setFinancingDeclined is dev/test only,
+    // same as setPaymentStatus) until a real bank/DealerTeam integration
+    // exists — but the customer-facing outcome and next step are real.
+    if (dealState.financingDeclined) {
+      return (
+        <View style={[styles.detailCard, { flexDirection: 'column', alignItems: 'stretch', gap: 8 }]}>
+          <Text style={styles.detailPlainText}>
+            The bank wasn&apos;t able to approve this application. That doesn&apos;t mean the deal is over — talk to
+            your specialist about trying a different lender or switching to a cash deal.
+          </Text>
+          <Pressable style={styles.detailLinkRow} onPress={() => router.push('/salesperson')}>
+            <DownloadIcon size={14} color={Colors.navy} />
+            <Text style={styles.detailLink}>Talk to Your Specialist</Text>
+          </Pressable>
+        </View>
+      );
+    }
+
     const terms = dealState.financingTerms;
     if (!terms) {
       return (
@@ -379,6 +400,13 @@ function StepDetailContent({ step, car }: { step: DealStep; car: ReturnType<type
           <FinanceStat label="APR" value={`${terms.apr}%`} />
           <FinanceStat label="Term" value={`${terms.termMonths} mo`} />
           <FinanceStat label="Monthly" value={`$${terms.monthlyPayment}`} />
+          {/* Collected on deal-intake.tsx and round-tripped through the
+              data model, but never shown anywhere until now — a customer
+              who typed "$2,000" had no way to confirm it was received
+              (Terry, 2026-10-15, catching a real gap). */}
+          {intake?.financingDownPayment?.trim() ? (
+            <FinanceStat label="Planned Down Payment" value={intake.financingDownPayment.trim()} />
+          ) : null}
         </View>
         <Text style={styles.detailSubtitle}>Financed through {terms.lender}. Once approved, the loan is sent to the bank outside of this app — your salesperson handles that step directly.</Text>
       </View>
@@ -432,7 +460,7 @@ function FinanceStat({ label, value }: { label: string; value: string }) {
 export default function TimelineScreen() {
   const { car } = useDeal();
   const { intake } = useDealIntake();
-  const { state: dealState, jumpToStep } = useDealSync();
+  const { state: dealState, jumpToStep, setFinancingDeclined } = useDealSync();
   const isDen = isDenStock(car?.stockNumber);
   const dealSteps = useMemo(
     () => displaySteps(dealState.steps, intake?.paymentMethod, dealState.paymentStatus, isDen),
@@ -579,6 +607,24 @@ export default function TimelineScreen() {
           ))}
         </View>
       </View>
+      )}
+
+      {/* Dev/testing only, same gating as "Jump to Step" above — lets the
+          real decline state (added 2026-10-15, catching a real gap: there
+          was no decline outcome modeled anywhere, not even as a
+          placeholder) actually be checked without a real bank/DealerTeam
+          integration to trigger it. */}
+      {__DEV__ && (
+        <View style={styles.testingRow}>
+          <Text style={styles.testingLabel}>TESTING — Financing Decline:</Text>
+          <Pressable
+            onPress={() => setFinancingDeclined(!dealState.financingDeclined)}
+            style={[styles.testingChip, dealState.financingDeclined && styles.testingChipActive]}>
+            <Text style={[styles.testingChipText, dealState.financingDeclined && styles.testingChipTextActive]}>
+              {dealState.financingDeclined ? 'Declined' : 'Not declined'}
+            </Text>
+          </Pressable>
+        </View>
       )}
 
       <ScrollView ref={outerScrollRef} contentContainerStyle={styles.scrollContent}>

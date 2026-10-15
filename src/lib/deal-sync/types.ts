@@ -48,6 +48,15 @@ export interface DealServerState {
    * 21: "keep it simulated for now," same call as `paymentStatus`'s PIF
    * timer). Meaningless (and never true) while `salesperson` is null. */
   onPersonalWhatsapp: boolean;
+  /** A real decline/never-approved outcome wasn't modeled at all before
+   * this (Terry, 2026-10-15, catching a real gap) — every "waiting on
+   * bank" step just auto-advanced after the simulated wait, with no
+   * decline state anywhere, not even as a placeholder. `false` by
+   * default; only a financed, non-DEN deal can ever see this (a cash or
+   * DEN deal never goes to a bank at all — see `financingTerms` above).
+   * Reset the same places `financingTerms` effectively resets: a fresh
+   * deal, or payment method/DEN-ness actually changing. */
+  financingDeclined: boolean;
 }
 
 /**
@@ -114,4 +123,9 @@ export interface DealSyncBackend {
    * trigger exists yet (see that field's doc comment); `SalesforceDealSync`
    * no-ops this too, same as the other dev-only setters. */
   setPersonalWhatsapp(active: boolean): void;
+  /** Dev/test only — simulates a real bank declining the financing
+   * application, same rationale as the other dev-only setters above. No
+   * real trigger exists yet (this would come from a real DealerTeam/bank
+   * integration); `SalesforceDealSync` no-ops this too. */
+  setFinancingDeclined(declined: boolean): void;
 }

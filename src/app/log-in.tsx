@@ -8,10 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
-
-function isValidEmail(email: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
+import { isValidEmail } from '@/lib/validation';
 
 export default function LogInScreen() {
   const { logIn } = useAuth();

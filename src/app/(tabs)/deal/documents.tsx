@@ -97,20 +97,37 @@ function DocCard({
               </Text>
             )}
           </View>
+          {/* backendStatus previously had no visible signal at all — a
+              genuine network failure looked identical to real success
+              (Terry, 2026-10-15, catching a real gap). null (Supabase not
+              configured) and 'synced' both stay quiet on purpose. */}
+          {doc.backendStatus === 'uploading' && <Text style={styles.backendHint}>Backing up…</Text>}
+          {doc.backendStatus === 'failed' && (
+            <Text style={[styles.backendHint, styles.backendHintFailed]}>
+              Backup failed — check your connection. Your photo is still here on your phone.
+            </Text>
+          )}
         </View>
       </View>
 
       {pageCount > 0 && (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.pageStrip}>
-          {doc.uris.map((uri, i) => (
-            <Pressable key={uri + i} style={styles.pageThumb} onPress={() => promptPageAction(i)} disabled={isAdding}>
-              <Image source={{ uri }} style={StyleSheet.absoluteFill} contentFit="cover" />
-              <View style={styles.pageThumbBadge}>
-                <Text style={styles.pageThumbBadgeText}>×</Text>
-              </View>
-            </Pressable>
-          ))}
-        </ScrollView>
+        <>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.pageStrip}>
+            {doc.uris.map((uri, i) => (
+              <Pressable key={uri + i} style={styles.pageThumb} onPress={() => promptPageAction(i)} disabled={isAdding}>
+                <Image source={{ uri }} style={StyleSheet.absoluteFill} contentFit="cover" />
+                <View style={styles.pageThumbBadge}>
+                  <Text style={styles.pageThumbBadgeText}>×</Text>
+                </View>
+              </Pressable>
+            ))}
+          </ScrollView>
+          {/* Previously the ONLY way to find "Share with Your Specialist"
+              was to already know to tap a thumbnail — zero visible
+              affordance for the one real way a salesperson without
+              Supabase access gets this file (Terry, 2026-10-15). */}
+          {onSharePage && <Text style={styles.pageHint}>Tap a photo to share it with your specialist or remove it.</Text>}
+        </>
       )}
 
       {onAddLicenseSide ? (
@@ -488,6 +505,9 @@ const styles = StyleSheet.create({
   rowName: { fontFamily: Fonts.bodyBold, fontSize: 14.5, color: Colors.text },
   pageCount: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textMuted },
   pageStrip: { flexGrow: 0 },
+  pageHint: { fontFamily: Fonts.body, fontSize: 11.5, color: Colors.textMuted, marginTop: 6 },
+  backendHint: { fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted, marginTop: 4 },
+  backendHintFailed: { color: Colors.red },
   pageThumb: {
     width: 64,
     height: 64,

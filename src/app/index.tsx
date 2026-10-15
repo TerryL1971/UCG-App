@@ -1,6 +1,6 @@
 import { Redirect, router } from 'expo-router';
 import { Image } from 'expo-image';
-import { StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
@@ -18,10 +18,20 @@ export default function OnboardingScreen() {
   const { user, isLoading } = useAuth();
 
   // Briefly true while AsyncStorage resolves (near-instant on device) —
-  // render nothing rather than flash "Create Account" for someone who's
-  // actually already logged in.
+  // this used to render nothing (null) rather than flash "Create Account"
+  // for someone who's actually already logged in. In Supabase mode that
+  // check can take up to the 4s safety-net timeout (auth-context.tsx) on
+  // a slow real-device network — null left a true blank WHITE screen for
+  // however long that took, a jarring break right after the navy splash
+  // (Terry, 2026-10-15, catching a real gap). Matching that navy
+  // background here instead means a slow check reads as "still loading,"
+  // never as "something's broken."
   if (isLoading) {
-    return null;
+    return (
+      <View style={styles.loadingScreen}>
+        <ActivityIndicator color="#fff" />
+      </View>
+    );
   }
 
   // Already logged in from a previous session — skip straight past
@@ -60,6 +70,12 @@ export default function OnboardingScreen() {
 }
 
 const styles = StyleSheet.create({
+  loadingScreen: {
+    flex: 1,
+    backgroundColor: Colors.navy,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   screen: {
     flex: 1,
     backgroundColor: Colors.bg,

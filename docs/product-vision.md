@@ -89,7 +89,7 @@ buying anything — same app, different door.)*
 |---|---|---|
 | Inventory list + sorting | **Partial** — live scrape of usedcarguys.net (`ucg-inventory.ts`), no real API | WordPress REST API (`wordpress-inventory-api-spec.md`) |
 | Car detail page | **Partial** — scraped, same fragility | same |
-| AI chat bot ("UCG Assistant") — runs the whole flow | **Built** — real Claude-backed route; decoupled from any named person (2026-09-03) | Funded Claude API key (Terry now, UCG later); real hosting; consider Haiku 4.5 for cost |
+| AI chat bot ("UCG Assistant") — runs the whole flow | **Built, but DISABLED since 2026-09** (`AI_CHAT_ENABLED = false` in `ai-chat.ts`) — Terry's call: "will cost UCG a tremendous amount of money" and doesn't fit how the business wants to reach customers. The code still exists and works; customers today get the WhatsApp hand-off it was meant to replace instead. | A real decision: re-enable it, or formally retire the feature |
 | Real salesperson assigned after deposit (management) | **Built (mock)** (2026-09-03) — `DealServerState.salesperson` null until `deposit-paid`, then assigned | Real names from DealerTeam; management assignment tool |
 | "Stuck" escape hatch → real human on WhatsApp/Trengo | **Built** (2026-09-03) — link in chat, placeholder number | UCG's real Trengo-connected WhatsApp number |
 | Buy / 5-day hold | Hold **built** | — |
@@ -109,7 +109,7 @@ buying anything — same app, different door.)*
 | **Service center** (oil, repair, tires — open to *anyone*, not just buyers) | **Built** (2026-09-03) — `/service` hub, real service list, hands off to UCG's `/book/` etc.; entry points on Browse + Account | Real hours; whether `/book/` should be embedded vs. linked |
 | Sell / trade — VIN → multi-step form → quote | **Partial** — Sell It Back screen exists, no real quote engine | Real valuation source (mirror usedcarguys.net/sell-your-vehicle/ 9-step) |
 | **Import customer info from the UCG inbound email** | **NOT built** | The Word doc Terry has; where the email lands; backend to parse it |
-| Two-way customer messaging for follow-up info | **Partial** — AI chat only | Backend; real salesperson channel |
+| Two-way customer messaging for follow-up info | **Partial** — WhatsApp hand-off only, now that AI chat is disabled (see above) | Backend; real salesperson channel |
 | Notify customer when a document is ready | **NOT built** | Backend + push (APNs/FCM) |
 | Scan / upload documents (license etc.) | **Partial** — multi-page capture built; no edge-detect scanner (Expo Go limit) | — |
 | In-app e-signature on UCG documents | **NOT built** | Backend + document storage + e-sign |

@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CheckCircleIcon } from '@/components/icons';
@@ -11,6 +11,7 @@ import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { useDeal } from '@/lib/deal-context';
 import { useDealIntake } from '@/lib/deal-intake-context';
 import { useDealSync } from '@/lib/deal-sync';
+import { openUrlWithFeedback } from '@/lib/linking';
 
 /**
  * American Auto Nation — UCG's own insurance. Pushed deliberately (see
@@ -29,7 +30,10 @@ export default function InsuranceScreen() {
     const msg = `Hi UCG — I'd like an American Auto Nation insurance quote for ${carLabel}${
       intake?.base ? `, headed to ${intake.base}` : ''
     }.`;
-    Linking.openURL(whatsappChatUrl(specialistWhatsapp(dealState.salesperson, dealState.onPersonalWhatsapp), msg)).catch(() => {});
+    openUrlWithFeedback(
+      whatsappChatUrl(specialistWhatsapp(dealState.salesperson, dealState.onPersonalWhatsapp), msg),
+      "Couldn't open WhatsApp — make sure it's installed, then try again.",
+    );
   };
 
   return (
@@ -64,7 +68,7 @@ export default function InsuranceScreen() {
             label="Visit americanautonation.com"
             variant="secondary"
             style={styles.secondaryBtn}
-            onPress={() => Linking.openURL(AAN.url).catch(() => {})}
+            onPress={() => openUrlWithFeedback(AAN.url, "Couldn't open that site — check your connection and try again.")}
           />
           <Pressable style={styles.skipRow} onPress={() => router.back()} hitSlop={6}>
             <Text style={styles.skipText}>Not now</Text>

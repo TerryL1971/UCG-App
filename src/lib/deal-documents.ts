@@ -33,7 +33,12 @@ import type { InventoryDetail } from '@/lib/ucg-inventory';
 const GERMAN_VAT_RATE = 0.19;
 
 export function money(n: number): string {
-  return `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  // `n.toLocaleString()` already puts the minus sign on a negative
+  // number — prefixing "$" blindly produced "$-300.00" instead of
+  // "-$300.00" (Terry, 2026-10-15). Format the absolute value and place
+  // the sign and "$" together instead.
+  const sign = n < 0 ? '-' : '';
+  return `${sign}$${Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 export interface DealPricing {
@@ -295,7 +300,11 @@ export function buildCostEstimateHtml(
 }
 
 /** Path B (DE*****, previously USAREUR-registered or US-spec) — Purchase
- * Order / Kaufvertrag finalizing price, ahead of a real deposit. Real
+ * Order / Kaufvertrag finalizing price, ahead of a real deposit. "VAT
+ * Form" is exclusively DEN-path terminology (Path A, above) — this
+ * document's total-price row used to say "(AE550/VAT Form)," which
+ * mixed the two and could confuse a non-DEN customer reading their own
+ * paperwork (Terry, 2026-10-15); it's just "(AE550)" here now. Real
  * DealerTeam output titles this "Purchase Order / Kaufvertrag" — one
  * document, not two — matching that here rather than the app's own
  * separate "Bill of Sale" (src/app/deal-paperwork.tsx still generates
@@ -310,10 +319,17 @@ export function buildPurchaseOrderHtml(
 ): string {
   const p = computeDealPricing(car, hasPpp);
   const isFinanced = intake?.paymentMethod === 'financing';
+  // Collected on deal-intake.tsx ("Planned Down Payment") and round-tripped
+  // through the data model, but never actually shown anywhere — a customer
+  // who typed "$2,000" had no way to confirm it was received (Terry,
+  // 2026-10-15, catching a real gap).
+  const plannedDownPaymentLine = isFinanced && intake?.financingDownPayment?.trim()
+    ? ` &nbsp;&nbsp; Planned Down Payment: ${intake.financingDownPayment.trim()}`
+    : '';
   const financeCompanyLine = isFinanced
     ? financingTerms
-      ? `Finance Company: ${financingTerms.lender} &nbsp;&nbsp; Amount Financed: ${money(financingTerms.amountFinanced)}`
-      : `Finance Company: ${intake?.financingLenders?.length ? intake.financingLenders.join(', ') : 'Pending bank approval'} &nbsp;&nbsp; Amount Financed: pending approval`
+      ? `Finance Company: ${financingTerms.lender} &nbsp;&nbsp; Amount Financed: ${money(financingTerms.amountFinanced)}${plannedDownPaymentLine}`
+      : `Finance Company: ${intake?.financingLenders?.length ? intake.financingLenders.join(', ') : 'Pending bank approval'} &nbsp;&nbsp; Amount Financed: pending approval${plannedDownPaymentLine}`
     : `Finance Company: Cash - No Lien &nbsp;&nbsp; Amount Financed: ${money(0)}`;
 
   return `
@@ -330,8 +346,8 @@ export function buildPurchaseOrderHtml(
         ${partiesGrid(car, intake, hasPpp)}
 
         <table class="totals">
-          <tr><td>Total Price (AE550/VAT Form)</td><td>${money(p.subtotal)}</td></tr>
-          <tr><td>Down Payment</td><td>(${money(p.holdAmount)})</td></tr>
+          <tr><td>Total Price (AE550)</td><td>${money(p.subtotal)}</td></tr>
+          <tr><td>Deposit Paid</td><td>(${money(p.holdAmount)})</td></tr>
           <tr class="total"><td>Amount Due Upon Delivery</td><td>${money(p.balanceAfterHold)}</td></tr>
         </table>
         <p class="financeLine">${financeCompanyLine}</p>
@@ -407,17 +423,18 @@ export function buildBillOfSaleHtml(car: InventoryDetail | null, intake: DealInt
  * apply when UCG is the one selling).
  *
  * Sell It Back has no year/make/model/color/engine data for a car it
- * didn't sell — only whatever the customer typed (plate/VIN, mileage,
- * condition) plus, if this happens to be a car they originally bought
- * from UCG, whatever `useDeal()` still has cached. Fields with no real
- * source are left out rather than guessed at, same rule as every other
- * generator in this file.
+ * didn't sell — only whatever the customer typed (plate/VIN, model year,
+ * mileage, spec, condition). This deliberately does NOT fall back to
+ * `useDeal()`'s car (Terry, 2026-10-15, catching a real bug): that value
+ * is the car the customer is currently shopping to BUY, not one they
+ * previously sold to UCG — nothing in this app actually tracks past
+ * purchases, so borrowing it here silently attached the wrong vehicle's
+ * VIN/year to this document for anyone mid-shopping a different car at
+ * the same time. Fields with no real source are left out rather than
+ * guessed at, same rule as every other generator in this file.
  */
 export interface SellBackDealInput {
-  car: InventoryDetail | null;
   plateOrVin: string;
-  /** Only meaningful when `car` is null — an unrecognized VIN still has a
-   * real model year the customer typed in, unlike `car.year`. */
   vehicleYear: string;
   mileage: string;
   mileageUnit: 'mi' | 'km';
@@ -435,15 +452,12 @@ export interface SellBackDealInput {
 }
 
 function sellBackVehicleLines(input: SellBackDealInput): string {
-  const { car, plateOrVin, vehicleYear, mileage, mileageUnit } = input;
+  const { plateOrVin, vehicleYear, mileage, mileageUnit } = input;
   const bits = [
     'Used',
-    car ? `${car.year} ${car.title}` : vehicleYear ? `${vehicleYear} model year` : '',
-    car?.exteriorColor ? `Color: ${car.exteriorColor}` : '',
+    vehicleYear ? `${vehicleYear} model year` : '',
     `VIN: ${plateOrVin || '—'}`,
-    car?.vin && car.vin !== plateOrVin ? `VIN on file: ${car.vin}` : '',
     mileage ? `Odometer: ${mileage} ${mileageUnit}` : '',
-    car?.engine ? `Engine: ${car.engine}` : '',
     `Spec: ${input.spec}`,
     `Condition: ${input.condition}`,
   ];

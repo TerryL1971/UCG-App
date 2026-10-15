@@ -141,12 +141,20 @@ and handle Supabase's "confirm your email" flow (a new account with no
 session yet shows "check your email" instead of silently bouncing to a
 signed-out home screen).
 
-**Not done yet, deliberately:** no SQL migrations, no `deals`/
-`documents`/`salespeople` tables, no RLS policies — those come once
-real project credentials exist to actually test against, per the
+**Not done yet, deliberately, as of this entry:** no SQL migrations, no
+`deals`/`documents`/`salespeople` tables, no RLS policies — those come
+once real project credentials exist to actually test against, per the
 schema sketch below. Terry needs to create the actual Supabase project
 before any of that can move (see the account-creation walkthrough
 handed to him alongside this).
+
+**Partially superseded, 2026-09-21** (see `document-retrieval-plan.md`
+for the full story): `deal_documents` and `deal_code_lookup_attempts`
+are real, deployed migrations now — the `documents` bucket + the
+code-based retrieval flow for generated/signed paperwork are shipped
+and smoke-tested. `deals` and `salespeople` tables genuinely still don't
+exist — those stay blocked on the DealerTeam integration question
+below, same as when this was first written.
 
 **Update, same day: Terry created the real project** (org "Lombardi
 Enterprises," project "UCG App," region eu-west-2/London) and proved
@@ -226,6 +234,16 @@ Two more real, non-blocking findings from that same test:
    it blind.
 
 ## AI agent — two tiers, one now shipped
+
+**Status update, Sept: DISABLED.** `AI_CHAT_ENABLED = false` in
+`src/constants/ai-chat.ts` — Terry's call, reversing "shipped" below: the
+AI chat "will cost UCG a tremendous amount of money" and doesn't fit how
+the business wants to reach customers. Everything in this section is
+still accurate as a description of the CODE (it exists, it works, it's
+real), but it is not what a real customer experiences today — they get
+the WhatsApp hand-off this plan describes as replaced. This needs an
+explicit decision (re-enable, or formally retire the feature) rather than
+sitting disabled by default indefinitely.
 
 - **Tier 1 — SHIPPED (Sept 1), ahead of the rest of this plan.** Terry
   decided this explicitly: "Meet Your Specialist" is a real AI agent,

@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { isDenStock } from '@/constants/vro-checklists';
 import { computeDealPricing, money } from '@/lib/deal-documents';
 import { useDeal } from '@/lib/deal-context';
 import { useDealIntake } from '@/lib/deal-intake-context';
+import { openUrlWithFeedback } from '@/lib/linking';
 import { useWarranty } from '@/lib/warranty-context';
 
 /**
@@ -47,7 +48,13 @@ export default function AddOnsScreen() {
 
   const continueToPayment = () => {
     if (intake?.paymentMethod === 'financing') {
-      Linking.openURL(FINANCE_APPLICATION_URL).catch(() => {});
+      openUrlWithFeedback(FINANCE_APPLICATION_URL, "Couldn't open the financing application — check your connection and try again.");
+    } else if (isDen) {
+      // A DEN-stock car can never take a wire against a deposit — there is
+      // no deposit, only a Cashier's Check against the Cost Estimate (see
+      // isDen's doc comment above). Sending a DEN+cash customer to Wire
+      // Instructions would contradict that rule outright.
+      router.push('/deal-paperwork');
     } else {
       router.push('/wire-instructions');
     }
