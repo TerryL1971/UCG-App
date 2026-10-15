@@ -161,9 +161,23 @@ export async function fetchInventoryDetail(slug: string): Promise<InventoryDetai
 
   const vinMatch = html.match(/VIN:\s*([A-HJ-NPR-Z0-9]{6,17})/);
 
+  // Was matching `wp-content/uploads/stock/...` (Terry, 2026-10-15,
+  // catching a real bug) — that path turns out to belong ONLY to the
+  // page's sitewide "Recent Arrivals" sidebar widget (six other, totally
+  // unrelated listings shown on every single detail page), never to this
+  // car's own photos. The real per-vehicle gallery — confirmed by reading
+  // the actual markup, `<li class="lightbox-image">` and a
+  // `data-slide-index` thumbnail slider — is hosted on S3 under a
+  // completely different host (`s3.amazonaws.com/vehicle-images/...`),
+  // which the old pattern never matched at all. Net effect: every car in
+  // the app showed the same handful of Recent Arrivals photos — always
+  // the first one, regardless of which car was actually open, since that
+  // widget doesn't change per listing. Already absolute URLs, so no
+  // `${BASE_URL}` prefix needed (that host is s3.amazonaws.com, not
+  // usedcarguys.net).
   const imageMatches = [
-    ...html.matchAll(/wp-content\/uploads\/stock\/[a-zA-Z0-9_-]+\.(?:jpg|jpeg|png|webp)/gi),
-  ].map((m) => `${BASE_URL}/${m[0]}`);
+    ...html.matchAll(/https:\/\/s3\.amazonaws\.com\/vehicle-images\/[a-zA-Z0-9_-]+\.(?:jpg|jpeg|png|webp)/gi),
+  ].map((m) => m[0]);
   const images = Array.from(new Set(imageMatches));
 
   return {
