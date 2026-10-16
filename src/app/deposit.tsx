@@ -9,11 +9,12 @@ import { CheckCircleIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
-import { HOLD_AMOUNT } from '@/constants/mock-data';
+import { HOLD_AMOUNT, specialistWhatsapp, whatsappChatUrl } from '@/constants/mock-data';
 import { isDenStock } from '@/constants/vro-checklists';
 import { parseJsonResponse } from '@/lib/api-fetch';
 import { useDeal } from '@/lib/deal-context';
 import { useDealSync } from '@/lib/deal-sync';
+import { openUrlWithFeedback } from '@/lib/linking';
 
 /**
  * Real decision, confirmed by Terry (Sept 1): a flat $300.00 USD, not a
@@ -31,17 +32,32 @@ import { useDealSync } from '@/lib/deal-sync';
  */
 const DEPOSIT_AMOUNT = HOLD_AMOUNT;
 
-type DepositStatus = 'idle' | 'opening' | 'capturing' | 'success' | 'cancelled' | 'error';
+type DepositStatus = 'idle' | 'opening' | 'capturing' | 'success' | 'cancelled' | 'error' | 'ambiguous';
 
 export default function DepositScreen() {
   const { car } = useDeal();
-  const { send: sendDealSignal } = useDealSync();
+  const { state: dealState, send: sendDealSignal } = useDealSync();
   const carLabel = car ? `${car.year} ${car.title}` : 'your car';
   const isReservationFee = isDenStock(car?.stockNumber);
   const feeNoun = isReservationFee ? 'reservation fee' : 'deposit';
   const feeNounTitle = isReservationFee ? 'Reservation Fee' : 'Deposit';
-  const [status, setStatus] = useState<DepositStatus>('idle');
+  // A deposit already being recorded (dealState.salesperson only gets
+  // assigned once the real 'deposit-paid' signal has fired — see
+  // mock-deal-sync.ts) means this screen would otherwise re-show "Pay
+  // Deposit" after a reload/app-restart mid-flow, even though it already
+  // succeeded — deal-sync's own state persists across restarts now, this
+  // screen just wasn't checking it (Terry/David, 2026-10-16: catching a
+  // real gap in exactly the moment real money is involved).
+  const [status, setStatus] = useState<DepositStatus>(() => (dealState.salesperson ? 'success' : 'idle'));
   const [errorMessage, setErrorMessage] = useState('');
+
+  const messageSpecialist = () => {
+    const msg = `Hi UCG — I just tried to pay the ${feeNoun} on ${carLabel} and the app couldn't confirm whether it went through. Can you check before I try again?`;
+    openUrlWithFeedback(
+      whatsappChatUrl(specialistWhatsapp(dealState.salesperson, dealState.onPersonalWhatsapp), msg),
+      "Couldn't open WhatsApp — make sure it's installed, then message your specialist directly before trying again.",
+    );
+  };
 
   const startDeposit = async () => {
     setStatus('opening');
@@ -81,8 +97,21 @@ export default function DepositScreen() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderId: createData.orderId }),
       });
-      const captureData = await parseJsonResponse<{ status?: string; error?: string }>(captureRes);
+      const captureData = await parseJsonResponse<{ status?: string; error?: string; ambiguous?: boolean }>(
+        captureRes,
+      );
       if (!captureRes.ok || captureData.status !== 'COMPLETED') {
+        // `ambiguous` (capture-order+api.ts) means PayPal itself couldn't
+        // be reached to confirm one way or the other — the one real case
+        // where a naive "just try again" risks a second, genuine charge
+        // on a brand-new order. Every other failure here is confirmed
+        // safe to retry (capture-order+api.ts only returns a plain error
+        // once it's actually checked PayPal's own order status directly).
+        if (captureData.ambiguous) {
+          setStatus('ambiguous');
+          setErrorMessage(captureData.error ?? "Couldn't confirm your payment status.");
+          return;
+        }
         throw new Error(captureData.error ?? 'Payment could not be confirmed');
       }
 
@@ -161,11 +190,28 @@ export default function DepositScreen() {
             {status === 'cancelled' && <Text style={styles.errorText}>Checkout was cancelled — nothing was charged.</Text>}
             {status === 'error' && <Text style={styles.errorText}>{errorMessage}</Text>}
 
-            <Button
-              label={isReservationFee ? 'Pay Reservation Fee with PayPal' : 'Pay Deposit with PayPal'}
-              onPress={startDeposit}
-              style={styles.button}
-            />
+            {status === 'ambiguous' ? (
+              // Genuinely ambiguous — PayPal couldn't be reached to confirm
+              // one way or the other, so the safe default is "don't retry
+              // blindly" instead of offering the same Pay button right
+              // under a warning that undermines it (Terry/David,
+              // 2026-10-16). A real person checking PayPal directly is the
+              // actual safe path here, not another automated attempt.
+              <View style={styles.ambiguousCard}>
+                <Text style={styles.ambiguousTitle}>Don&apos;t pay again yet</Text>
+                <Text style={styles.ambiguousText}>{errorMessage} You may have already been charged.</Text>
+                <Button label="Message My Specialist" onPress={messageSpecialist} style={styles.buttonStacked} />
+                <Text style={styles.ambiguousRetryLink} onPress={startDeposit}>
+                  I&apos;m sure nothing went through — try again
+                </Text>
+              </View>
+            ) : (
+              <Button
+                label={isReservationFee ? 'Pay Reservation Fee with PayPal' : 'Pay Deposit with PayPal'}
+                onPress={startDeposit}
+                style={styles.button}
+              />
+            )}
           </>
         )}
       </View>
@@ -209,4 +255,30 @@ const styles = StyleSheet.create({
   },
   button: { width: '100%', marginTop: 26 },
   buttonStacked: { width: '100%', marginTop: 10 },
+  ambiguousCard: {
+    width: '100%',
+    backgroundColor: Colors.redTint,
+    borderRadius: Radius.lg,
+    borderWidth: 1.5,
+    borderColor: Colors.red,
+    padding: 16,
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  ambiguousTitle: { fontFamily: Fonts.display, fontSize: 17, color: Colors.red },
+  ambiguousText: {
+    fontFamily: Fonts.body,
+    fontSize: 13,
+    color: Colors.text,
+    textAlign: 'center',
+    lineHeight: 19,
+    marginTop: 6,
+  },
+  ambiguousRetryLink: {
+    fontFamily: Fonts.bodySemibold,
+    fontSize: 12.5,
+    color: Colors.textMuted,
+    textDecorationLine: 'underline',
+    marginTop: 14,
+  },
 });
