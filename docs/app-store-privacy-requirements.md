@@ -54,17 +54,34 @@ Deletion has to actually remove the account and the data you're not
 legally required to keep; a confirmation step before deleting is fine.
 [Apple App Review Help — 5.1.1(v)](https://developer.apple.com/help/app-review/guideline-reference/5-1-1-account-deletion)
 
-**This is the one real gap worth flagging now, not later:** `.env` shows
-Supabase is already configured with real credentials, so `auth-context.tsx`
-is running in real-account mode today, not the old local stand-in. Right
-now the Account screen offers **Log Out** (session only) and **"Erase
-Everything & Start Over"** (clears local app state + calls
-`supabase.auth.signOut()`), but neither of those deletes the underlying
-Supabase `auth.users` row or the account's data server-side. Apple will
-reject a submission over this once real account creation is live — this
-needs a real "Delete My Account" action (an authenticated call that
-actually deletes the Supabase user + their stored documents/deal data,
-not just signs them out locally) before App Store submission.
+**The gap worth flagging — not because real customers are using it today,
+but because of what it's architecturally wired to:** per
+`docs/backend-and-ai-agent-plan.md`, Supabase auth was deliberately built
+to be the **real** customer-account system, not a mock — "a real account
+is the concrete meaning of 'not a demo' for a customer." Everything
+happening against it right now (Terry's `.env`, Terry's own test
+signups) is development/test usage, not live customers — but it's
+exercising the actual production account system, not a stand-in that
+gets swapped out later. **DealerTeam is a separate thing**: per
+`docs/salesforce-dealerteam-integration-plan.md`, it's the still-unbuilt
+deal/sales-pipeline sync (financing status, documents, salesperson
+assignment) — nothing in that plan or this one makes it an identity
+provider. Same for the UCG website integration, which today means
+`src/lib/ucg-inventory.ts` scraping live listings — also not account
+related. So however the DealerTeam/website API work shakes out, it
+doesn't change who holds the actual customer login; that's Supabase,
+per the existing plan.
+
+Right now the Account screen offers **Log Out** (session only) and
+**"Erase Everything & Start Over"** (clears local app state + calls
+`supabase.auth.signOut()`), but neither deletes the underlying Supabase
+`auth.users` row or the account's data server-side. This isn't an
+App-Review blocker *today* while this is Terry's own test account — but
+it needs to exist **before** the app goes live with real account
+creation turned on, since that's the moment Apple's 5.1.1(v) actually
+applies. Worth building this alongside whichever Supabase
+tables/RLS-policy work happens next (per that doc's schema sketch), not
+scrambling for it right before submission.
 
 ### d) App Tracking Transparency (ATT) — only if cross-app/cross-site tracking exists
 ATT's prompt is required only when you track a user across *other*
@@ -123,10 +140,11 @@ viewed from the app-store-submission side.)
 ## 4. Action items, roughly in order
 
 1. **Publish a real, hosted Privacy Policy URL.** `docs/privacy-policy-draft.md` has the content skeleton — it needs the bracketed placeholders filled with UCG's real legal-entity details and a lawyer's sign-off, then hosting somewhere with a stable URL (both stores require this at submission, not after).
-2. **Build a real "Delete My Account" flow** — the actual gap identified above, now that Supabase is live with real credentials. Confirm with counsel whether this needs to be full GDPR erasure (delete from Supabase entirely) or can retain anything UCG has a legal basis to keep (e.g., completed-sale records), and word the in-app confirmation accordingly.
-3. **Fill out Apple's App Privacy questionnaire and Google's Data Safety form** using the table above as the starting map — these are self-declared in each store's console, not something built into the app's code.
-4. **Get a Data Processing Agreement in place with Supabase, PayPal, and Anthropic** (or confirm one already exists via their standard terms) before real customer data flows through them at scale.
-5. **Confirm EU/German data residency for the Supabase project** — relevant both to the privacy policy's "where is data stored" section and to GDPR's international-transfer rules if it's hosted outside the EU.
+2. **Build a real "Delete My Account" flow** before enabling real customer account creation at launch — the gap identified above. This is about the Supabase account specifically (the real identity system per the backend plan), independent of whether DealerTeam/website API integration is ready by then. Confirm with counsel whether this needs to be full GDPR erasure (delete from Supabase entirely) or can retain anything UCG has a legal basis to keep (e.g., completed-sale records), and word the in-app confirmation accordingly.
+3. **Revisit the App Privacy label / Data Safety form again once DealerTeam integration actually ships** — at that point DealerTeam becomes a new third-party recipient of customer data (same open item already tracked in `docs/privacy-policy-draft.md` §3), which both stores' disclosures need to reflect. Not urgent now since that integration doesn't exist yet.
+4. **Fill out Apple's App Privacy questionnaire and Google's Data Safety form** using the table above as the starting map — these are self-declared in each store's console, not something built into the app's code.
+5. **Get a Data Processing Agreement in place with Supabase, PayPal, and Anthropic** (or confirm one already exists via their standard terms) before real customer data flows through them at scale.
+6. **Confirm EU/German data residency for the Supabase project** — already done, per `docs/backend-and-ai-agent-plan.md` (region eu-west-2/London) — worth re-confirming this stays true if the project ever moves orgs/accounts.
 
 Sources:
 - [Apple App Review Help — 5.1.1 Account Deletion](https://developer.apple.com/help/app-review/guideline-reference/5-1-1-account-deletion)
