@@ -33,7 +33,10 @@ export default function ServiceScreen() {
           </Text>
         </View>
 
-        <Button label="Request an Appointment  →" onPress={() => openUrl(serviceLinks.appointmentRequest)} />
+        <Button
+          label="Request an Appointment (opens usedcarguys.net)"
+          onPress={() => openUrl(serviceLinks.appointmentRequest)}
+        />
 
         <Text style={styles.sectionLabel}>What We Do</Text>
         {serviceOfferings.map((s) => (
@@ -45,13 +48,13 @@ export default function ServiceScreen() {
 
         <View style={styles.secondaryActions}>
           <Button
-            label="Get a Tire Quote"
+            label="Get a Tire Quote (opens website)"
             variant="secondary"
             style={styles.secondaryBtn}
             onPress={() => openUrl(serviceLinks.tireQuote)}
           />
           <Button
-            label="Warranty Assistance"
+            label="Service Warranty Claims (opens website)"
             variant="secondary"
             style={styles.secondaryBtn}
             onPress={() => openUrl(serviceLinks.warrantyAssistance)}

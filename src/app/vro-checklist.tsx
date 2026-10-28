@@ -62,7 +62,11 @@ export default function VroChecklistScreen() {
             <Text style={styles.segHint}>
               {car?.stockNumber?.toUpperCase().startsWith('DEN')
                 ? 'Your stock number starts with DEN, so this is most likely an EU-spec car. Your salesperson will confirm.'
-                : 'Not sure which? Your salesperson knows for certain.'}
+                : 'Not sure which? Check your Purchase Order or Cost Estimate — it states this. US-spec usually means a mph speedometer; EU-spec means km/h. Your salesperson knows for certain.'}
+            </Text>
+            <Text style={styles.segHint}>
+              This only changes what&apos;s shown on this screen — it doesn&apos;t change anything on your actual
+              deal.
             </Text>
           </>
         )}
@@ -114,9 +118,9 @@ export default function VroChecklistScreen() {
         </View>
 
         <Text style={styles.footNote}>
-          This list follows the USAREUR regulation every VRO uses (
-          {selling ? 'form 550-175B' : 'AE 190-1'}), worded as the Stuttgart office has it.
-          {base && base !== 'Stuttgart' ? ` The ${base} VRO may phrase a few things differently — your salesperson confirms the exact list for your base.` : ''}
+          This follows the regulation every VRO uses ({selling ? 'form 550-175B' : 'AE 190-1'}), written the way
+          USAG Stuttgart&apos;s office phrases it.
+          {base && base !== 'Stuttgart' ? ` Your base (${base}) may word a few things differently — your salesperson confirms the exact list for you.` : ''}
         </Text>
 
         {!selling && (

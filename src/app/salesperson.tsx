@@ -320,7 +320,7 @@ export default function SalespersonScreen() {
           </View>
 
           <Pressable style={styles.doneRow} onPress={dismissKeyboard} hitSlop={8}>
-            <Text style={styles.doneRowText}>Done ⌄</Text>
+            <Text style={styles.doneRowText}>Hide Keyboard</Text>
           </Pressable>
 
           <View style={styles.ctaWrap}>
@@ -331,6 +331,7 @@ export default function SalespersonScreen() {
               icon={<LockIcon color={Colors.navy} />}
               onPress={() => router.push('/deposit')}
             />
+            <Text style={styles.ctaCaption}>Refundable — holds the car while we finish your paperwork.</Text>
             <Button
               label={
                 warrantyChoice
@@ -344,6 +345,7 @@ export default function SalespersonScreen() {
               icon={<ShieldIcon color={Colors.navy} />}
               onPress={() => router.push('/warranty')}
             />
+            <Text style={styles.ctaCaption}>Our extended warranty, beyond the 1-year standard coverage.</Text>
             <Button
               label="Insurance — First Month Paid"
               variant="secondary"
@@ -351,6 +353,7 @@ export default function SalespersonScreen() {
               icon={<UmbrellaIcon color={Colors.navy} />}
               onPress={() => router.push('/insurance')}
             />
+            <Text style={styles.ctaCaption}>Add a German policy — UCG covers your first month.</Text>
             <Button label="View My Timeline  →" onPress={() => router.push('/(tabs)/deal')} />
           </View>
 
@@ -452,7 +455,7 @@ export default function SalespersonScreen() {
             outside this KeyboardAvoidingView and could otherwise end up
             stuck behind an open keyboard with no way to reach them. */}
         <Pressable style={styles.doneRow} onPress={dismissKeyboard} hitSlop={8}>
-          <Text style={styles.doneRowText}>Done ⌄</Text>
+          <Text style={styles.doneRowText}>Hide Keyboard</Text>
         </Pressable>
 
         <Pressable style={styles.stuckRow} hitSlop={6} onPress={messageASpecialist}>
@@ -467,6 +470,7 @@ export default function SalespersonScreen() {
             icon={<LockIcon color={Colors.navy} />}
             onPress={() => router.push('/deposit')}
           />
+          <Text style={styles.ctaCaption}>Refundable — holds the car while we finish your paperwork.</Text>
           <Button
             label={
               warrantyChoice
@@ -480,6 +484,7 @@ export default function SalespersonScreen() {
             icon={<ShieldIcon color={Colors.navy} />}
             onPress={() => router.push('/warranty')}
           />
+          <Text style={styles.ctaCaption}>Our extended warranty, beyond the 1-year standard coverage.</Text>
           <Button
             label="Insurance — First Month Paid"
             variant="secondary"
@@ -487,6 +492,7 @@ export default function SalespersonScreen() {
             icon={<UmbrellaIcon color={Colors.navy} />}
             onPress={() => router.push('/insurance')}
           />
+          <Text style={styles.ctaCaption}>Add a German policy — UCG covers your first month.</Text>
           <Button label="View My Timeline  →" onPress={() => router.push('/(tabs)/deal')} />
         </View>
 
@@ -567,15 +573,28 @@ const styles = StyleSheet.create({
   },
   doneRow: { alignSelf: 'center', paddingVertical: 6, paddingHorizontal: 14 },
   doneRowText: { fontFamily: Fonts.bodySemibold, fontSize: 12.5, color: Colors.textMuted },
-  stuckRow: { alignSelf: 'center', paddingVertical: 4, paddingHorizontal: 14 },
+  stuckRow: {
+    alignSelf: 'center',
+    marginTop: 4,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: Radius.pill,
+    backgroundColor: Colors.navyTint,
+  },
   stuckText: {
-    fontFamily: Fonts.bodySemibold,
-    fontSize: 11.5,
-    color: Colors.textMuted,
-    textDecorationLine: 'underline',
+    fontFamily: Fonts.bodyBold,
+    fontSize: 12.5,
+    color: Colors.navy,
   },
   ctaWrap: { paddingHorizontal: Spacing.xxl, paddingTop: 4, paddingBottom: 8, gap: 10 },
   depositButton: { marginBottom: 0 },
+  ctaCaption: {
+    fontFamily: Fonts.body,
+    fontSize: 11.5,
+    color: Colors.textMuted,
+    textAlign: 'center',
+    marginTop: -4,
+  },
   whatsappAvatarWrap: { backgroundColor: '#25D366', alignItems: 'center', justifyContent: 'center' },
   whatsappSendButton: {
     width: 52,

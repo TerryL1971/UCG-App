@@ -18,6 +18,7 @@ export default function BrowseScreen() {
   const [query, setQuery] = useState('');
   const [cars, setCars] = useState<InventoryListItem[] | null>(null);
   const [error, setError] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -31,7 +32,12 @@ export default function BrowseScreen() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [retryKey]);
+
+  const retry = () => {
+    setError(false);
+    setRetryKey((k) => k + 1);
+  };
 
   const visible = useMemo(() => {
     if (!cars) return [];
@@ -77,9 +83,10 @@ export default function BrowseScreen() {
       {error ? (
         <View style={styles.centerMessage}>
           <Text style={styles.centerTitle}>Couldn&apos;t load live inventory</Text>
-          <Text style={styles.centerBody}>
-            usedcarguys.net didn&apos;t respond as expected. Pull to try again in a bit.
-          </Text>
+          <Text style={styles.centerBody}>usedcarguys.net didn&apos;t respond as expected.</Text>
+          <Pressable style={styles.retryButton} onPress={retry}>
+            <Text style={styles.retryButtonText}>Try Again</Text>
+          </Pressable>
         </View>
       ) : !cars ? (
         <View style={styles.centerMessage}>
@@ -187,4 +194,14 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     textAlign: 'center',
   },
+  retryButton: {
+    marginTop: 16,
+    height: 44,
+    paddingHorizontal: 20,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.red,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  retryButtonText: { fontFamily: Fonts.bodyBold, fontSize: 13.5, color: '#fff' },
 });

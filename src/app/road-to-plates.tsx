@@ -33,6 +33,10 @@ export default function RoadToPlatesScreen() {
             ? 'This EU-spec car has never been on the USAREUR system, so it goes through the VAT Form process on the way to plates.'
             : 'Here’s everything that happens between paying for your car and driving it away with plates on it.'}
         </Text>
+        <Text style={styles.notTrackerNote}>
+          This is what to expect, not a live tracker — besides the VRO visit, every step below is handled by UCG
+          or a German office, nothing to tap through here.
+        </Text>
 
         <View style={styles.list}>
           {steps.map((step, i) => (
@@ -45,11 +49,7 @@ export default function RoadToPlatesScreen() {
           <Text style={styles.linkSubtitle}>The full UCG-provides / you-bring packet, for your base.</Text>
         </Pressable>
 
-        <Text style={styles.footNote}>
-          Besides the VRO visit itself, every step above is handled by UCG or a German office — nothing here to
-          tap through, just what to expect and roughly the order it happens in. Your salesperson can tell you
-          exactly where you are in it.
-        </Text>
+        <Text style={styles.footNote}>Your salesperson can tell you exactly where you are in it.</Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -80,7 +80,15 @@ function StepRow({ step, index, isLast }: { step: RoadStep; index: number; isLas
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: Colors.bg },
   body: { paddingHorizontal: Spacing.xxl, paddingBottom: Spacing.xl, paddingTop: 4 },
-  intro: { fontFamily: Fonts.body, fontSize: 13.5, color: Colors.textMuted, lineHeight: 20, marginTop: 4, marginBottom: 18 },
+  intro: { fontFamily: Fonts.body, fontSize: 13.5, color: Colors.textMuted, lineHeight: 20, marginTop: 4 },
+  notTrackerNote: {
+    fontFamily: Fonts.body,
+    fontSize: 11.5,
+    color: Colors.textFaint,
+    lineHeight: 16,
+    marginTop: 6,
+    marginBottom: 18,
+  },
   list: { gap: 0 },
   stepRow: { flexDirection: 'row', gap: 12 },
   stepMarkerCol: { alignItems: 'center', width: 28 },

@@ -136,7 +136,14 @@ export function DocumentCard({
         return;
       }
       setSignedUri(compressed);
-      if (isFirstUpload) onSigned?.();
+      if (isFirstUpload) {
+        onSigned?.();
+        // The failure path already shows an Alert — the success path used
+        // to only change a background color, easy to miss while scrolling
+        // on the single highest-stakes confirmation in this flow (a signed
+        // legal document actually saved). Terry/David pre-launch UX pass.
+        Alert.alert('Saved', `Your signed ${title.split(' / ')[0]} is saved.`);
+      }
     } finally {
       setIsUploadingSigned(false);
     }
@@ -170,6 +177,8 @@ export function DocumentCard({
         </Pressable>
       </View>
 
+      {!signable && <Text style={styles.notSignableNote}>This one isn&apos;t signed — just print or share it.</Text>}
+
       {signable &&
         (signedUri ? (
           <Pressable style={styles.signedRow} onPress={shareSignedCopy}>
@@ -179,7 +188,7 @@ export function DocumentCard({
                 <CheckCircleIcon size={13} />
                 <Text style={styles.signedLabel}>Signed copy on file</Text>
               </View>
-              <Text style={styles.signedSub}>Tap to share · Replace</Text>
+              <Text style={styles.signedSub}>Tap photo to share</Text>
             </View>
             <Pressable hitSlop={8} onPress={promptUploadSigned}>
               <Text style={styles.signedReplace}>Replace</Text>
@@ -205,6 +214,7 @@ const styles = StyleSheet.create({
   },
   docTitle: { fontFamily: Fonts.display, fontSize: 17, color: Colors.navy },
   docDesc: { fontFamily: Fonts.body, fontSize: 12.5, color: Colors.textMuted, marginTop: 3, lineHeight: 18 },
+  notSignableNote: { fontFamily: Fonts.body, fontSize: 11.5, color: Colors.textFaint, marginTop: 10 },
   docButtonRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
   docBtnSecondary: {
     flex: 1,

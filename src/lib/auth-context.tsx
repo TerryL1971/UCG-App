@@ -156,6 +156,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
+/** Supabase's own `error.message` strings are backend-grade English, not
+ * copy written for a stressed, possibly non-native-English customer
+ * (Terry/David pre-launch UX pass: "Invalid login credentials" doesn't
+ * even say which field is wrong). Maps the known cases to plain language;
+ * anything unrecognized falls through unchanged rather than hiding a real,
+ * unanticipated error behind a vague catch-all. */
+export function friendlyAuthError(message: string): string {
+  const known: Record<string, string> = {
+    'Invalid login credentials': "That email or password doesn't match our records — double-check both.",
+    'User already registered': 'That email is already registered — try logging in instead.',
+    'Password should be at least 6 characters': 'Use a password with at least 6 characters.',
+    'Email not confirmed': 'Check your email for a confirmation link before logging in.',
+  };
+  return known[message] ?? message;
+}
+
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) {

@@ -160,8 +160,9 @@ export default function DepositScreen() {
               {isReservationFee ? (
                 <>
                   A refundable <Text style={styles.bold}>reservation fee</Text> puts a{' '}
-                  <Text style={styles.bold}>5-day hold</Text> on this car. On an EU-spec car this can’t be a
-                  deposit &mdash; VAT rules &mdash; so you get it back.
+                  <Text style={styles.bold}>5-day hold</Text> on this car. German tax law doesn&apos;t allow a
+                  deposit on this particular car, so it&apos;s called a reservation fee instead &mdash; it works
+                  the same way, and you get it back the same way a deposit would.
                 </>
               ) : (
                 <>
@@ -171,11 +172,15 @@ export default function DepositScreen() {
                 </>
               )}
             </Text>
+            <Text style={styles.refundNote}>
+              If anything falls through before you sign your paperwork, your specialist refunds this through the
+              same PayPal payment, usually within 1&ndash;2 business days.
+            </Text>
 
             <View style={styles.amountCard}>
               <Text style={styles.amountLabel}>{feeNounTitle}</Text>
               <Text style={styles.amountValue}>${DEPOSIT_AMOUNT}</Text>
-              <Text style={styles.amountNote}>Sandbox mode — no real charge yet.</Text>
+              {__DEV__ && <Text style={styles.amountNote}>Sandbox mode — no real charge yet.</Text>}
             </View>
 
             {(status === 'opening' || status === 'capturing') && (
@@ -225,6 +230,14 @@ const styles = StyleSheet.create({
   title: { fontFamily: Fonts.display, fontSize: 22, color: Colors.text, textAlign: 'center', marginTop: 8 },
   body_text: { fontFamily: Fonts.body, fontSize: 14, color: Colors.textMuted, textAlign: 'center', lineHeight: 21, marginTop: 6 },
   bold: { fontFamily: Fonts.bodyBold, color: Colors.text },
+  refundNote: {
+    fontFamily: Fonts.body,
+    fontSize: 12,
+    color: Colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 17,
+    marginTop: 10,
+  },
   amountCard: {
     backgroundColor: '#fff',
     borderRadius: Radius.xl,

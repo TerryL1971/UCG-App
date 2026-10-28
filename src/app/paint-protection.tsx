@@ -67,7 +67,7 @@ export default function PaintProtectionScreen() {
             We&apos;re finalizing the flyer for this add-on. Current pricing and what&apos;s covered come from
             your salesperson — tap below and we&apos;ll get you the details.
           </Text>
-          <Button label="Ask About PPF" onPress={askAboutPpf} style={styles.programBtn} />
+          <Button label="Ask About PPF (via WhatsApp)" onPress={askAboutPpf} style={styles.programBtn} />
         </View>
 
         <Pressable style={styles.backLink} onPress={() => router.back()}>

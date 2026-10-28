@@ -257,6 +257,14 @@ export default function SellBackScreen() {
       Alert.alert('Almost there', 'Add your VIN, model year, mileage, and duty station so we can put together an offer.');
       return;
     }
+    // A German license plate (Kennzeichen) is a very different, shorter
+    // string than a 17-character VIN — nothing used to catch someone
+    // typing the wrong one in here (Terry/David pre-launch UX pass).
+    const vinCleaned = plate.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (vinCleaned.length !== 17) {
+      Alert.alert('Almost there', 'That doesn’t look like a 17-character VIN — double-check it (not your German license plate).');
+      return;
+    }
     // Was maxLength={4} + non-empty only — "0000" or a future-enough year
     // both passed (Terry, 2026-10-15, catching a real gap). Upper bound is
     // current year + 1, not just the current year — dealerships (including
@@ -420,7 +428,7 @@ export default function SellBackScreen() {
               Already own a Used Car Guys vehicle? Get a real offer in minutes — no obligation.
             </Text>
 
-            <Field label="VIN">
+            <Field label="VIN (Required)">
               <View style={styles.plateRow}>
                 <TextInput
                   value={plate}
@@ -428,6 +436,7 @@ export default function SellBackScreen() {
                   placeholder="e.g. 1HGCM82633A004352"
                   placeholderTextColor={Colors.textFaint}
                   autoCapitalize="characters"
+                  maxLength={17}
                   style={[styles.input, styles.plateInput]}
                 />
                 <Pressable style={styles.scanButton} onPress={() => router.push('/scan-vin')}>
@@ -435,9 +444,13 @@ export default function SellBackScreen() {
                   <Text style={styles.scanButtonLabel}>Scan</Text>
                 </Pressable>
               </View>
+              <Text style={styles.mileageHint}>
+                17 characters — found on your registration or the sticker inside the driver&apos;s door. Not your
+                German license plate.
+              </Text>
             </Field>
 
-            <Field label="Model Year">
+            <Field label="Model Year (Required)">
               <TextInput
                 value={vehicleYear}
                 onChangeText={setVehicleYear}
@@ -449,7 +462,7 @@ export default function SellBackScreen() {
               />
             </Field>
 
-            <Field label="Current Mileage / Kilometers">
+            <Field label="Current Mileage / Kilometers (Required)">
               <View style={styles.mileageRow}>
                 <TextInput
                   value={mileage}
@@ -476,7 +489,7 @@ export default function SellBackScreen() {
               </Text>
             </Field>
 
-            <Field label="Is Your Car US or EU Spec?">
+            <Field label="Is Your Car US or EU Spec? (Required)">
               <View style={styles.segRow}>
                 {specs.map((s) => (
                   <Pressable
@@ -488,9 +501,13 @@ export default function SellBackScreen() {
                   </Pressable>
                 ))}
               </View>
+              <Text style={styles.mileageHint}>
+                US-spec cars usually have a mph speedometer and US headlights/bumpers; EU-spec have km/h and
+                European lighting.
+              </Text>
             </Field>
 
-            <Field label="Overall Condition">
+            <Field label="Overall Condition (Required)">
               <View style={styles.segRow}>
                 {conditions.map((c) => (
                   <Pressable
@@ -504,7 +521,7 @@ export default function SellBackScreen() {
               </View>
             </Field>
 
-            <Field label={`Add Photos${photos.length ? ` (${photos.length})` : ''}`}>
+            <Field label={`Add Photos (optional)${photos.length ? ` — ${photos.length}` : ''}`}>
               <View style={styles.photoRow}>
                 {photos.map((uri, i) => (
                   <Pressable
@@ -522,12 +539,13 @@ export default function SellBackScreen() {
                 )}
               </View>
               <Text style={styles.photoHint}>
-                Photos are automatically resized to keep things quick to send — take as many as you need. Tap a
-                photo to share it directly, replace it, or remove it.
+                Photos are automatically resized to keep things quick to send — take as many as you need. These
+                don&apos;t attach to the message below automatically — after you submit, come back and tap each
+                photo above to share it separately.
               </Text>
             </Field>
 
-            <Field label="Current Duty Station">
+            <Field label="Current Duty Station (Required)">
               <View style={styles.chipRow}>
                 {[...usareurBases, 'Other'].map((b) => (
                   <Pressable
@@ -563,7 +581,7 @@ export default function SellBackScreen() {
 
             <Text style={styles.sectionHeading}>Last step — how should we reach you?</Text>
 
-            <Field label="Your Name">
+            <Field label="Your Name (Required)">
               <TextInput
                 value={sellerName}
                 onChangeText={setSellerName}
@@ -573,7 +591,7 @@ export default function SellBackScreen() {
               />
             </Field>
 
-            <Field label="Email Address">
+            <Field label="Email Address (Required)">
               <TextInput
                 value={sellerEmail}
                 onChangeText={setSellerEmail}
@@ -585,7 +603,7 @@ export default function SellBackScreen() {
               />
             </Field>
 
-            <Field label="Phone / WhatsApp Number">
+            <Field label="Phone / WhatsApp Number (Required)">
               <TextInput
                 value={sellerContact}
                 onChangeText={setSellerContact}
@@ -598,7 +616,7 @@ export default function SellBackScreen() {
           </ScrollView>
 
           <View style={styles.footer}>
-            <Button label="Get My Offer" onPress={handleSubmit} />
+            <Button label="Send My Offer Request (via WhatsApp)" onPress={handleSubmit} />
             <View style={styles.trustRow}>
               <Trust icon={<ShieldIcon size={20} />} label="No obligation" />
               <Trust icon={<ClockIcon size={20} />} label="Real offers, real fast" />
@@ -650,6 +668,16 @@ function OfferStatusView({
   onConfirmAccept: () => void;
   sellBackInput: SellBackDealInput;
 }) {
+  // Wipes every field on this screen with no way back — same real-world
+  // severity as Account's "Erase Everything & Start Over," which already
+  // confirms before acting (Terry/David pre-launch UX pass: this one
+  // didn't, despite being just as destructive).
+  const confirmStartOver = () => {
+    Alert.alert('Start Over?', 'This clears everything you’ve entered on this screen — there’s no undo. Continue?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Start Over', style: 'destructive', onPress: onStartOver },
+    ]);
+  };
   // The one status with real inputs to fill in gets its own scrollable
   // form instead of the centered "here's what happened" layout the other
   // two statuses use — there's meaningfully more to type here (name,
@@ -724,7 +752,7 @@ function OfferStatusView({
         </ScrollView>
         <View style={styles.footer}>
           <Button label="Confirm" onPress={onConfirmAccept} />
-          <Text style={styles.statusStartOver} onPress={onStartOver}>
+          <Text style={styles.statusStartOver} onPress={confirmStartOver}>
             Start Over
           </Text>
         </View>
@@ -779,7 +807,9 @@ function OfferStatusView({
             </Text>
           )}
           <Pressable style={styles.clearLinkRow} onPress={() => router.push('/vro-checklist?mode=sell')}>
-            <Text style={styles.clearLink}>What to bring to clear the car at the VRO  →</Text>
+            <Text style={styles.clearLink}>
+              What to bring to clear the car at the VRO (Vehicle Registration Office)  →
+            </Text>
           </Pressable>
 
           <View style={{ width: '100%' }}>
@@ -800,7 +830,7 @@ function OfferStatusView({
         </>
       )}
 
-      <Text style={styles.statusStartOver} onPress={onStartOver}>
+      <Text style={styles.statusStartOver} onPress={confirmStartOver}>
         Start Over
       </Text>
     </View>

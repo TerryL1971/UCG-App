@@ -7,7 +7,7 @@ import { Field } from '@/components/ui/field';
 import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
-import { useAuth } from '@/lib/auth-context';
+import { friendlyAuthError, useAuth } from '@/lib/auth-context';
 import { isValidEmail } from '@/lib/validation';
 
 export default function CreateAccountScreen() {
@@ -35,7 +35,7 @@ export default function CreateAccountScreen() {
       // call once real Supabase credentials exist (see auth-context.tsx).
       const result = await signUp(name.trim(), email.trim(), password);
       if (result.error) {
-        setFormError(result.error);
+        setFormError(friendlyAuthError(result.error));
         return;
       }
       if (result.needsEmailConfirmation) {

@@ -35,7 +35,7 @@ export default function AccountScreen() {
   // Apple will require once real backend accounts exist — see
   // docs/backend-and-ai-agent-plan.md.
   const resetTestData = () => {
-    Alert.alert('Reset Test Data', 'This clears your account, chosen car, saved cars, and everything you’ve entered. Continue?', [
+    Alert.alert('Erase Everything & Start Over', 'This clears your account, chosen car, saved cars, and everything you’ve entered — there’s no undo. Continue?', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Reset',
@@ -113,9 +113,14 @@ export default function AccountScreen() {
             Log Out
           </Text>
         )}
-        <Text style={styles.resetTestData} onPress={resetTestData}>
-          Reset Test Data
-        </Text>
+        {/* This is the more destructive of the two actions on this screen —
+            it wipes the account, chosen car, and everything entered, not
+            just the session — so it gets the alarming red/bordered
+            treatment Log Out doesn't need (Terry/David pre-launch UX
+            pass: the styling was backwards from the real stakes). */}
+        <Pressable style={styles.resetTestDataButton} onPress={resetTestData}>
+          <Text style={styles.resetTestData}>Erase Everything & Start Over</Text>
+        </Pressable>
       </View>
     </SafeAreaView>
   );
@@ -176,13 +181,21 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontFamily: Fonts.bodySemibold,
     fontSize: 14,
-    color: Colors.red,
+    color: Colors.navy,
+  },
+  resetTestDataButton: {
+    marginTop: 14,
+    height: 44,
+    borderRadius: Radius.md,
+    borderWidth: 1.5,
+    borderColor: Colors.red,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   resetTestData: {
     textAlign: 'center',
-    fontFamily: Fonts.bodySemibold,
-    fontSize: 12.5,
-    color: Colors.textMuted,
-    marginTop: 12,
+    fontFamily: Fonts.bodyBold,
+    fontSize: 13,
+    color: Colors.red,
   },
 });

@@ -52,8 +52,8 @@ export default function OnboardingScreen() {
           <Image source={logo} style={styles.logo} contentFit="contain" />
           <Text style={styles.title}>Your next car,{'\n'}one step at a time.</Text>
           <Text style={styles.subtitle}>
-            Browse the lot, get matched with a real specialist, and track your whole deal — financing to
-            pickup — in one place.
+            Browse the lot, get matched with your deal team, and track your whole deal — financing to pickup
+            — in one place.
           </Text>
         </View>
 

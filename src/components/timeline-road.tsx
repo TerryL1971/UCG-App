@@ -418,7 +418,9 @@ const styles = StyleSheet.create({
     borderRadius: Radius.md,
   },
   stopRowViewed: {
-    backgroundColor: 'rgba(39,51,104,0.08)',
+    backgroundColor: 'rgba(39,51,104,0.14)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(39,51,104,0.35)',
   },
   labelWrap: {
     maxWidth: 110,
@@ -430,7 +432,7 @@ const styles = StyleSheet.create({
     color: Colors.text,
     lineHeight: 15,
   },
-  labelCurrent: { color: Colors.red },
+  labelCurrent: { color: Colors.navy },
   labelUpcoming: { color: Colors.textFaint },
   carWrap: {
     position: 'absolute',

@@ -88,7 +88,7 @@ export default function ScanVinScreen() {
           <Text style={styles.hint}>
             {notAVin
               ? "That didn't look like a VIN — try again"
-              : 'Align the VIN barcode — usually on the dashboard or door jamb sticker'}
+              : 'Align the VIN barcode — usually on the dashboard or on a sticker inside the driver\'s door'}
           </Text>
         </View>
 

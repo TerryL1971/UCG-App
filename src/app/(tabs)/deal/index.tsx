@@ -306,7 +306,7 @@ function StepDetailContent({ step, car }: { step: DealStep; car: ReturnType<type
         ))}
         {intake && (
           <Text style={styles.detailPlainText}>
-            APO / FPO:{' '}
+            APO / FPO address (your military mailing address):{' '}
             {intake.apoAddress
               ? formatApoAddress(intake.apoAddress)
               : 'not added yet — needed for registration, plates, and the environmental sticker'}
@@ -322,14 +322,32 @@ function StepDetailContent({ step, car }: { step: DealStep; car: ReturnType<type
 
   if (step.id === 'financing') {
     if (isDenStock(car?.stockNumber)) {
+      if (step.status === 'done') {
+        return (
+          <View style={[styles.detailCard, { flexDirection: 'column', alignItems: 'stretch', gap: 8 }]}>
+            <Text style={styles.detailPlainText}>
+              Your VAT Form is stamped and on file — no need to go back to the bank or the VAT Office for this
+              step. Next, UCG gets your TÜV (Germany&apos;s required safety inspection) done and readies your
+              registration paperwork for the VRO (Vehicle Registration Office).
+            </Text>
+            <Pressable style={styles.detailLinkRow} onPress={() => router.push('/road-to-plates')}>
+              <DownloadIcon size={14} color={Colors.navy} />
+              <Text style={styles.detailLink}>See the Full Road to Plates</Text>
+            </Pressable>
+          </View>
+        );
+      }
       return (
         <View style={[styles.detailCard, { flexDirection: 'column', alignItems: 'stretch', gap: 8 }]}>
           <Text style={styles.detailPlainText}>
-            Take your Cost Estimate to Service Federal Credit Union or Community Bank for an Official Cashier&apos;s
-            Check, then the check and the Cost Estimate to the VAT Office for a Super VAT Form. Bring the VAT Form,
-            any paperwork from the VAT Office, the Cashier&apos;s Check, and the Cost Estimate back to UCG — your
-            salesperson stamps the VAT Form, gets a release from admin, gets the TÜV done, and readies your
-            registration paperwork for the VRO.
+            1. Take your Cost Estimate to Service Federal Credit Union or Community Bank for an Official
+            Cashier&apos;s Check.{'\n'}
+            2. Take the check and the Cost Estimate to the VAT Office for a Super VAT Form.{'\n'}
+            3. Bring the VAT Form, any paperwork from the VAT Office, the Cashier&apos;s Check, and the Cost
+            Estimate back to UCG.{'\n'}
+            4. Your salesperson stamps the VAT Form, gets a release from admin, gets the TÜV (Germany&apos;s
+            required safety inspection) done, and readies your registration paperwork for the VRO (Vehicle
+            Registration Office).
           </Text>
           <Pressable style={styles.detailLinkRow} onPress={() => router.push('/road-to-plates')}>
             <DownloadIcon size={14} color={Colors.navy} />
@@ -567,8 +585,14 @@ export default function TimelineScreen() {
           <Text style={styles.reviewStep}>
             Step {viewedIndex + 1} of {dealSteps.length}
           </Text>
-          <View style={styles.waitingChip}>
-            <Text style={styles.waitingChipText}>{waitingOnLabel[viewedStep.waitingOn]}</Text>
+          {/* Reviewing an already-completed step via the back arrow used to
+              still show "Waiting on ___" right next to its own checkmark —
+              a real contradiction, not just unclear wording (Terry/David
+              pre-launch UX pass). Done steps show a plain "Done" instead. */}
+          <View style={[styles.waitingChip, viewedStep.status === 'done' && styles.waitingChipDone]}>
+            <Text style={[styles.waitingChipText, viewedStep.status === 'done' && styles.waitingChipTextDone]}>
+              {viewedStep.status === 'done' ? 'Done' : waitingOnLabel[viewedStep.waitingOn]}
+            </Text>
           </View>
         </View>
 
@@ -707,6 +731,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.redTint,
   },
   waitingChipText: { fontFamily: Fonts.bodyBold, fontSize: 11.5, color: Colors.red },
+  waitingChipDone: { backgroundColor: Colors.greenTint },
+  waitingChipTextDone: { color: Colors.green },
   testingRow: {
     marginHorizontal: Spacing.xl,
     marginTop: Spacing.md,

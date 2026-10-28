@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
@@ -25,6 +26,12 @@ export default function CaptureLicenseScreen() {
   const { setLastCapturedLicensePhoto } = useLicenseCapture();
   const [permission, requestPermission] = useCameraPermissions();
   const [isCapturing, setIsCapturing] = useState(false);
+  // A license photo gets saved sight-unseen the moment the shutter is
+  // tapped otherwise — no way to tell if it came out blurry or cut off
+  // before moving on, for a document this sensitive during an already
+  // stressful purchase (Terry/David pre-launch UX pass). A quick
+  // preview/retake step costs little since the photo is already in memory.
+  const [previewUri, setPreviewUri] = useState<string | null>(null);
   const cameraRef = useRef<CameraView>(null);
 
   const sideLabel = side === 'back' ? 'Back' : 'Front';
@@ -36,11 +43,16 @@ export default function CaptureLicenseScreen() {
       const photo = await cameraRef.current.takePictureAsync({ quality: 0.8 });
       if (!photo) return;
       const compressed = await compressPhoto(photo.uri);
-      setLastCapturedLicensePhoto(side === 'back' ? 'back' : 'front', compressed, target === 'documents' ? 'documents' : 'intake');
-      router.back();
+      setPreviewUri(compressed);
     } finally {
       setIsCapturing(false);
     }
+  };
+
+  const confirmPhoto = () => {
+    if (!previewUri) return;
+    setLastCapturedLicensePhoto(side === 'back' ? 'back' : 'front', previewUri, target === 'documents' ? 'documents' : 'intake');
+    router.back();
   };
 
   if (!permission) {
@@ -62,6 +74,27 @@ export default function CaptureLicenseScreen() {
           </Text>
         </View>
       </SafeAreaView>
+    );
+  }
+
+  if (previewUri) {
+    return (
+      <View style={styles.screen}>
+        <Image source={{ uri: previewUri }} style={StyleSheet.absoluteFill} contentFit="contain" />
+        <SafeAreaView style={styles.overlay} edges={['top', 'bottom']}>
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>Review — {sideLabel}</Text>
+          </View>
+          <View style={styles.previewActions}>
+            <Pressable style={styles.previewSecondaryBtn} onPress={() => setPreviewUri(null)}>
+              <Text style={styles.previewSecondaryLabel}>Retake</Text>
+            </Pressable>
+            <Pressable style={styles.previewPrimaryBtn} onPress={confirmPhoto}>
+              <Text style={styles.previewPrimaryLabel}>Use This Photo</Text>
+            </Pressable>
+          </View>
+        </SafeAreaView>
+      </View>
     );
   }
 
@@ -132,6 +165,31 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 19,
   },
+  previewActions: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingHorizontal: Spacing.xxl,
+    paddingBottom: Spacing.xxl,
+  },
+  previewSecondaryBtn: {
+    flex: 1,
+    height: 52,
+    borderRadius: Radius.md,
+    borderWidth: 1.5,
+    borderColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  previewSecondaryLabel: { fontFamily: Fonts.bodyBold, fontSize: 15, color: '#fff' },
+  previewPrimaryBtn: {
+    flex: 1.4,
+    height: 52,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.red,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  previewPrimaryLabel: { fontFamily: Fonts.bodyBold, fontSize: 15, color: '#fff' },
   shutterRow: { alignItems: 'center', paddingBottom: Spacing.xxxl },
   shutterButton: {
     width: 74,

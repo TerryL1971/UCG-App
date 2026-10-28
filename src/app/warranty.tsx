@@ -77,11 +77,23 @@ export default function WarrantyScreen() {
 
           {choice.decision === 'declined' ? (
             <Pressable style={styles.aanNudge} onPress={() => router.push('/insurance')}>
-              <Text style={styles.aanNudgeTitle}>Have you sorted insurance?</Text>
-              <Text style={styles.aanNudgeText}>
-                You&apos;ll need a German policy to register the car. American Auto Nation is UCG&apos;s own &mdash;
-                and your first month is reimbursed.  →
-              </Text>
+              {choice.declineReason === 'I already have coverage elsewhere' ? (
+                <>
+                  <Text style={styles.aanNudgeTitle}>Already have insurance sorted?</Text>
+                  <Text style={styles.aanNudgeText}>
+                    Good — American Auto Nation is UCG&apos;s own, and often beats an outside policy. Worth a quick
+                    look before you register.  →
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.aanNudgeTitle}>Have you sorted insurance?</Text>
+                  <Text style={styles.aanNudgeText}>
+                    You&apos;ll need a German policy to register the car. American Auto Nation is UCG&apos;s own
+                    &mdash; and your first month is reimbursed.  →
+                  </Text>
+                </>
+              )}
             </Pressable>
           ) : null}
 
@@ -199,18 +211,21 @@ function TierCard({ tier, featured }: { tier: WarrantyTier; featured?: boolean }
 
       <View style={styles.specRows}>
         <SpecRow label="Coverage" value={tier.coverage} />
-        <SpecRow label="Deductible" value={tier.deductible} />
+        <SpecRow label="Deductible" hint="what you pay out of pocket per claim" value={tier.deductible} />
         <SpecRow label="Rental car" value={tier.rentalCar} />
-        <SpecRow label="Max claim" value={tier.maxClaim} />
+        <SpecRow label="Max claim" hint="the total cap across the whole plan" value={tier.maxClaim} />
       </View>
     </View>
   );
 }
 
-function SpecRow({ label, value }: { label: string; value: string }) {
+function SpecRow({ label, hint, value }: { label: string; hint?: string; value: string }) {
   return (
     <View style={styles.specRow}>
-      <Text style={styles.specLabel}>{label}</Text>
+      <Text style={styles.specLabel}>
+        {label}
+        {hint ? <Text style={styles.specLabelHint}> — {hint}</Text> : null}
+      </Text>
       <Text style={styles.specValue}>{value}</Text>
     </View>
   );
@@ -261,6 +276,13 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     letterSpacing: 0.3,
     textTransform: 'uppercase',
+  },
+  specLabelHint: {
+    fontFamily: Fonts.body,
+    fontSize: 10.5,
+    color: Colors.textMuted,
+    letterSpacing: 0,
+    textTransform: 'none',
   },
   specValue: { fontFamily: Fonts.body, fontSize: 12.5, color: Colors.text, lineHeight: 17 },
 

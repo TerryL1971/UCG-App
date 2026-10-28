@@ -71,7 +71,7 @@ export default function WinterTiresScreen() {
             We&apos;re finalizing the flyer for this program. Current pricing and what&apos;s included come from
             your salesperson — tap below and we&apos;ll get you the details.
           </Text>
-          <Button label="Ask About Winter Tires" onPress={askAboutTires} style={styles.programBtn} />
+          <Button label="Ask About Winter Tires (via WhatsApp)" onPress={askAboutTires} style={styles.programBtn} />
         </View>
 
         <Pressable style={styles.backLink} onPress={() => router.back()}>

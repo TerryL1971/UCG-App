@@ -326,13 +326,13 @@ export const oneYearWarranty: WarrantyTier = {
   price: 'Included in the advertised price',
   coverage: 'Comprehensive — only what is on the warranty list is covered. If it is not listed, it is not covered.',
   deductible: 'On cars over 40,000 miles, a deductible applies to parts. Labour is 100% covered either way.',
-  rentalCar: '€60 per day, after the first 4 days',
-  maxClaim: '€3,300 over the coverage period',
+  rentalCar: '€60/day starting day 5 of a covered repair',
+  maxClaim: '€3,300 total, across the whole coverage period',
   highlights: [
     'Engine, transmission, axle/transfer case, steering, brakes',
     'Fuel, electrical, cooling, exhaust and safety systems',
     'Comfort electric — power windows, sunroof, central locking',
-    'Rental / towing reimbursement up to €60/day (4 days max)',
+    'Rental / towing reimbursement — €60/day starting day 5 of a covered repair',
   ],
 };
 
@@ -342,8 +342,8 @@ export const premiumProtectionPlan: WarrantyTier = {
   coverage:
     'Bumper to bumper — everything in the 1-year plan plus all electronic and mechanical components, excluding wear-and-tear items and fluids.',
   deductible: '$0 deductible on parts AND labour',
-  rentalCar: '€60 per day after 4 days, plus priority access to UCG’s small fleet of courtesy cars',
-  maxClaim: '€10,000 over the coverage period',
+  rentalCar: '€60/day starting day 5 of a covered repair, plus priority access to UCG’s small fleet of courtesy cars',
+  maxClaim: '€10,000 total, across the whole coverage period',
   highlights: [
     'Two years of overseas coverage',
     'Unlimited mileage',

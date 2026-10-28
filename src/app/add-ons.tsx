@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
@@ -48,7 +48,21 @@ export default function AddOnsScreen() {
 
   const continueToPayment = () => {
     if (intake?.paymentMethod === 'financing') {
-      openUrlWithFeedback(FINANCE_APPLICATION_URL, "Couldn't open the financing application — check your connection and try again.");
+      Alert.alert(
+        'Opening UCG’s Financing Application',
+        'This opens UCG’s secure financing application in your browser — your info goes directly to UCG, not through this app.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Continue',
+            onPress: () =>
+              openUrlWithFeedback(
+                FINANCE_APPLICATION_URL,
+                "Couldn't open the financing application — check your connection and try again.",
+              ),
+          },
+        ],
+      );
     } else if (isDen) {
       // A DEN-stock car can never take a wire against a deposit — there is
       // no deposit, only a Cashier's Check against the Cost Estimate (see
@@ -77,19 +91,19 @@ export default function AddOnsScreen() {
         />
         <AddOnRow
           title="American Auto Nation Insurance"
-          status="Explore"
+          status="Ask your specialist"
           statusTone="muted"
           onPress={() => router.push('/insurance')}
         />
         <AddOnRow
           title="Winter Tire Program"
-          status="Ask salesperson"
+          status="Ask your specialist"
           statusTone="muted"
           onPress={() => router.push('/winter-tires')}
         />
         <AddOnRow
           title="Paint Protection Film"
-          status="Ask salesperson"
+          status="Ask your specialist"
           statusTone="muted"
           onPress={() => router.push('/paint-protection')}
         />

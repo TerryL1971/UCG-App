@@ -154,6 +154,15 @@ export default function WireInstructionsScreen() {
           <Row label="SWIFT/BIC" value={step2.swiftBic} />
         </View>
 
+        <View style={styles.fraudWarning}>
+          <Text style={styles.fraudWarningTitle}>For your safety</Text>
+          <Text style={styles.fraudWarningText}>
+            UCG will never change these wire details over text or email. If anything you&apos;re sent looks
+            different from what&apos;s shown here, call your specialist directly on a number you already know
+            before sending any money.
+          </Text>
+        </View>
+
         <Text style={styles.footerNote}>
           If you or the bank teller are having any issue or have any questions, please call or WhatsApp our
           mobile number on +{supportWhatsapp}.
@@ -284,5 +293,15 @@ const styles = StyleSheet.create({
     lineHeight: 19,
     marginTop: 20,
   },
+  fraudWarning: {
+    backgroundColor: Colors.redTint,
+    borderRadius: Radius.lg,
+    borderWidth: 1.5,
+    borderColor: Colors.red,
+    padding: 14,
+    marginTop: 20,
+  },
+  fraudWarningTitle: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.red },
+  fraudWarningText: { fontFamily: Fonts.body, fontSize: 12.5, color: Colors.text, lineHeight: 18, marginTop: 4 },
   button: { marginTop: 14 },
 });

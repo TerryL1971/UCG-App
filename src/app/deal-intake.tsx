@@ -209,11 +209,11 @@ export default function DealIntakeScreen() {
       <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent}>
         <Text style={styles.intro}>
           A quick heads-up for your salesperson &mdash; cash or financed, which base you&apos;re headed to, your
-          APO address, and where you stand on a license &mdash; so they can start putting your deal together
-          instead of starting from scratch.
+          APO/FPO address (your military mailing address in Germany), and where you stand on a license &mdash; so
+          they can start putting your deal together instead of starting from scratch.
         </Text>
 
-        <Field label="Your Name">
+        <Field label="Your Name (Required)">
           <TextInput
             value={fullName}
             onChangeText={setFullName}
@@ -227,7 +227,7 @@ export default function DealIntakeScreen() {
             2: it's UCG's preferred channel whenever a real call/text is
             needed, so the number collected here should be the one that
             actually reaches the customer on WhatsApp. */}
-        <Field label="WhatsApp Number">
+        <Field label="WhatsApp Number (Required)">
           <TextInput
             value={contact}
             onChangeText={setContact}
@@ -236,9 +236,12 @@ export default function DealIntakeScreen() {
             keyboardType="phone-pad"
             style={styles.input}
           />
+          <Text style={styles.licenseHintMuted}>
+            We use WhatsApp to text or call you — it&apos;s free in the app store if you don&apos;t have it yet.
+          </Text>
         </Field>
 
-        <Field label="Which Base Are You Headed To?">
+        <Field label="Which Base Are You Headed To? (Required)">
           <View style={styles.chipRow}>
             {[...usareurBases, 'Other'].map((b) => (
               <Pressable
@@ -272,6 +275,10 @@ export default function DealIntakeScreen() {
 
           {apoStatus === 'have' ? (
             <View style={{ marginTop: 10, gap: 10 }}>
+              <Text style={styles.licenseHint}>
+                Germany is almost always <Text style={styles.licenseHintBold}>APO AE</Text> — most people can just
+                leave the chips below on their defaults.
+              </Text>
               <TextInput
                 value={apoRecipient}
                 onChangeText={setApoRecipient}
@@ -315,9 +322,8 @@ export default function DealIntakeScreen() {
                 style={styles.input}
               />
               <Text style={styles.licenseHint}>
-                Germany is almost always <Text style={styles.licenseHintBold}>APO AE</Text>. This is the address the
-                Vehicle Registration Office needs to register the car, issue your plates, and issue the environmental
-                sticker.
+                This is the address the Vehicle Registration Office needs to register the car, issue your plates,
+                and issue the environmental sticker.
               </Text>
             </View>
           ) : (
@@ -389,16 +395,24 @@ export default function DealIntakeScreen() {
             // there is no deposit, only a Cashier's Check against the Cost
             // Estimate (see isDenStock's doc comment). Wire Instructions is
             // the wrong destination entirely for this car.
-            <Field label="Paying with a Cashier's Check?">
+            <Field label="Cashier's Check Details">
               <Pressable style={styles.licenseLinkButton} onPress={() => router.push('/deal-paperwork')}>
                 <Text style={styles.licenseLinkButtonLabel}>View Cost Estimate  →</Text>
               </Pressable>
+              <Text style={styles.licenseHintMuted}>
+                Optional — just background info for when you&apos;re ready. You can submit this form without
+                visiting it.
+              </Text>
             </Field>
           ) : (
-            <Field label="Paying by Wire?">
+            <Field label="Wire Transfer Details">
               <Pressable style={styles.licenseLinkButton} onPress={() => router.push('/wire-instructions')}>
                 <Text style={styles.licenseLinkButtonLabel}>View Wire Instructions  →</Text>
               </Pressable>
+              <Text style={styles.licenseHintMuted}>
+                Optional — just background info for when you&apos;re ready. You can submit this form without
+                visiting it.
+              </Text>
             </Field>
           ))}
 
@@ -419,22 +433,20 @@ export default function DealIntakeScreen() {
                 You can take the actual exam online before you even land &mdash; not just practice for it. No CAC?
                 Family members can request a free sponsored account instead.
               </Text>
-              <Pressable style={styles.licenseLinkButton} onPress={() => Linking.openURL(USAREUR_OFFICIAL_JKO_URL)}>
-                <Text style={styles.licenseLinkButtonLabel}>Take the Exam Online (JKO)  →</Text>
-              </Pressable>
               <Text style={styles.licenseHint}>
                 Heads up: your browser may flag this .mil site as &ldquo;not private.&rdquo; That&apos;s normal for
                 DoD sites (they use a certificate most phones don&apos;t trust by default) &mdash; it&apos;s safe to
                 continue through.
               </Text>
+              <Pressable style={styles.licenseLinkButton} onPress={() => Linking.openURL(USAREUR_OFFICIAL_JKO_URL)}>
+                <Text style={styles.licenseLinkButtonLabel}>Take the Exam Online (JKO)  →</Text>
+              </Pressable>
               <Text style={styles.licenseHint}>
-                Search course <Text style={styles.licenseHintBold}>USA 007</Text>, complete it, then pass exam{' '}
-                <Text style={styles.licenseHintBold}>USA 007B</Text> (85% or higher). Your score is valid 60 days
-                &mdash; worth timing this close to your move rather than doing it too early.
-              </Text>
-              <Text style={styles.licenseHint}>
-                On arrival: bring your printed certificate, stateside license, and DoD ID/CAC, plus a $30 fee, to
-                the base testing station for a quick vision check and your physical license.
+                1. Search course <Text style={styles.licenseHintBold}>USA 007</Text> and complete it.{'\n'}
+                2. Pass exam <Text style={styles.licenseHintBold}>USA 007B</Text> at 85% or higher &mdash; valid 60
+                days, so time this close to your move.{'\n'}
+                3. On arrival: bring your printed certificate, stateside license, and DoD ID/CAC, plus a $30 fee,
+                to the base testing station for a quick vision check and your physical license.
               </Text>
               <Text style={styles.licenseSubLink} onPress={() => Linking.openURL(USAREUR_STUDY_GUIDE_URL)}>
                 Want to study the manual first? →
@@ -472,8 +484,8 @@ export default function DealIntakeScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <Button label={intake ? 'Save Changes  →' : 'Submit for a Salesperson  →'} onPress={handleSubmit} />
-        <Text style={styles.footerHint}>Your salesperson sees all of this the moment they pick up your deal.</Text>
+        <Button label={intake ? 'Save Changes  →' : 'Submit to Your Deal Team  →'} onPress={handleSubmit} />
+        <Text style={styles.footerHint}>Your deal team sees all of this the moment they pick up your deal.</Text>
       </View>
     </SafeAreaView>
   );
@@ -589,6 +601,13 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   licenseHint: { fontFamily: Fonts.body, fontSize: 11.5, color: Colors.navy, opacity: 0.8, lineHeight: 16 },
+  licenseHintMuted: {
+    fontFamily: Fonts.body,
+    fontSize: 11.5,
+    color: Colors.textMuted,
+    marginTop: 6,
+    lineHeight: 16,
+  },
   licenseHintBold: { fontFamily: Fonts.bodyBold, opacity: 1 },
   gallery: { backgroundColor: Colors.navyTint },
   galleryBadge: {

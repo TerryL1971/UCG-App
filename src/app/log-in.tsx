@@ -7,8 +7,10 @@ import { Field } from '@/components/ui/field';
 import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
-import { useAuth } from '@/lib/auth-context';
+import { friendlyAuthError, useAuth } from '@/lib/auth-context';
 import { isValidEmail } from '@/lib/validation';
+import { SUPPORT_WHATSAPP, whatsappChatUrl } from '@/constants/mock-data';
+import { openUrlWithFeedback } from '@/lib/linking';
 
 export default function LogInScreen() {
   const { logIn } = useAuth();
@@ -30,7 +32,7 @@ export default function LogInScreen() {
     try {
       const result = await logIn(email.trim(), password);
       if (result.error) {
-        setFormError(result.error);
+        setFormError(friendlyAuthError(result.error));
         return;
       }
       router.replace('/(tabs)');
@@ -64,6 +66,16 @@ export default function LogInScreen() {
             secureTextEntry
             error={errors.password}
           />
+          <Text
+            style={styles.forgotLink}
+            onPress={() =>
+              openUrlWithFeedback(
+                whatsappChatUrl(SUPPORT_WHATSAPP, "Hi UCG — I'm having trouble logging into the app."),
+                "Couldn't open WhatsApp — make sure it's installed, then try again.",
+              )
+            }>
+            Forgot password?
+          </Text>
 
           {formError && <Text style={styles.formError}>{formError}</Text>}
 
@@ -110,5 +122,13 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.bodySemibold,
     fontSize: 13,
     color: Colors.red,
+  },
+  forgotLink: {
+    marginTop: -6,
+    marginBottom: 8,
+    alignSelf: 'flex-end',
+    fontFamily: Fonts.bodySemibold,
+    fontSize: 12.5,
+    color: Colors.navy,
   },
 });

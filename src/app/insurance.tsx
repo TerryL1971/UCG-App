@@ -63,7 +63,7 @@ export default function InsuranceScreen() {
         </Text>
 
         <View style={styles.actions}>
-          <Button label="Request a Quote" onPress={requestQuote} />
+          <Button label="Request a Quote (via WhatsApp)" onPress={requestQuote} />
           <Button
             label="Visit americanautonation.com"
             variant="secondary"
