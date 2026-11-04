@@ -206,6 +206,22 @@ may not have:
 - Who builds and hosts the backend/proxy any of Phase 1a/1b needs? It
   doesn't exist yet either way.
 
+## Answers from Michelle (Nov 4, 2026)
+
+- **API access:** "Both — depends on what we need. Give me some specs."
+  So some access exists and some is a paid add-on. She wants a concrete
+  list of objects and read/write needs to price it.
+- **Salesforce edition: Enterprise.** Enterprise includes the REST API,
+  Connected Apps, Change Data Capture, and developer sandboxes as
+  standard Salesforce features. Whether the *DealerTeam package objects*
+  are reachable that way at no extra cost is the open part.
+- **Website:** Michelle and Tom run usedcarguys.net. **The website's
+  inventory already comes from a DealerTeam feed.** The cheapest stable
+  fix for scraping is still `docs/wordpress-inventory-api-spec.md`
+  (expose what WordPress already receives), not a new DealerTeam API.
+- **Her priority:** customers who have *already started a purchase* —
+  i.e. Phase 2 (read-your-own-deal) is the value case, not lead capture.
+
 ## Sources
 
 - [DealerTeam](https://www.dealerteam.com/) —

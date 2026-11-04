@@ -17,28 +17,24 @@ Where this needs to live once real: linked from the app (e.g., an
 
 **Angaben gemäß § 5 DDG** (Information according to § 5 DDG)
 
-[LEGAL BUSINESS NAME — the registered entity name, not just "Used Car
-Guys" if the legal entity name differs]
-
-[FULL POSTAL ADDRESS — street, house number, postal code, city — a real
-serviceable address, not a PO box]
+The Used Car Guys GmbH
+Ludwig-Erhard-Str. 8
+66877 Ramstein-Miesenbach
 
 **Vertreten durch** (Represented by):
-[NAME(S) OF MANAGING DIRECTOR(S)/OWNER(S) — e.g. David / Michelle /
-James, whichever combination is the actual legal representative(s) of
-record]
+David Sweeney & James Sweeney (Geschäftsführer)
 
 **Kontakt** (Contact):
-Telefon: [PHONE NUMBER]
-E-Mail: [EMAIL ADDRESS]
+Telefon: +49 (0)6371 920 000
+E-Mail: online@usedcarguys.net
 
 **Registereintrag** (Register entry) — *if UCG is a registered company
 (e.g., GmbH) rather than a sole proprietorship*:
-Eingetragen im Handelsregister [REGISTER COURT NAME]
-Registernummer: [REGISTRATION NUMBER]
+Eingetragen im Handelsregister Amtsgericht Zweibrücken
+Registernummer: HRB 33368
 
 **Umsatzsteuer-ID** (VAT ID) — *if applicable*:
-[VAT IDENTIFICATION NUMBER per §27a UStG]
+DE282887501
 
 **Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV** (Responsible for
 content, if the site/app includes editorial content like a blog):

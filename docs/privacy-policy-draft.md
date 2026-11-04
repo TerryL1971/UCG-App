@@ -13,18 +13,20 @@ not just about data.
 
 ---
 
-## Privacy Policy for [APP NAME] ("the App"), operated by [UCG LEGAL
-ENTITY NAME]
+## Privacy Policy for [APP NAME] ("the App"), operated by The Used Car Guys GmbH
 
 **Last updated:** [DATE — keep current; GDPR requires this reflect
 reality, not read as boilerplate]
 
 ### 1. Who is responsible for your data (the "controller")
 
-[UCG LEGAL ENTITY NAME]
-[FULL ADDRESS]
-[CONTACT EMAIL]
-[CONTACT PHONE]
+The Used Car Guys GmbH
+Ludwig-Erhard-Str. 8, 66877 Ramstein-Miesenbach, Germany
+online@usedcarguys.net
++49 (0)6371 920 000
+
+**Privacy contact:** Michelle [surname + direct email to confirm] —
+named by UCG (Nov 2026) as the app's privacy/data-protection contact.
 
 *(Same entity details as the Impressum —* `docs/impressum-template.md`
 *— these should always match.)*
@@ -95,9 +97,9 @@ Under GDPR, you have the right to:
 - Request deletion ("right to be forgotten")
 - Request a copy of your data in a portable format
 - Object to certain processing
-- Lodge a complaint with a supervisory authority — in Germany, [THE
-  RELEVANT STATE DATA PROTECTION AUTHORITY, depending on where UCG is
-  legally established]
+- Lodge a complaint with a supervisory authority — in Germany, the Landesbeauftragte für den
+  Datenschutz und die Informationsfreiheit Rheinland-Pfalz (LfDI RLP),
+  since UCG is registered in Ramstein-Miesenbach
 
 To exercise these, contact [EMAIL]. **[Once real backend accounts
 exist, Apple additionally requires self-service account deletion from
