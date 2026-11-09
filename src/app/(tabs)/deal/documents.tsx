@@ -3,7 +3,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import { useEffect, useState } from 'react';
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DocumentIcon, IdCardIcon, MapPinIcon, PlusIcon } from '@/components/icons';
@@ -18,6 +18,7 @@ import { useDealDocuments, type DocumentState } from '@/lib/documents-context';
 import { getOwnerId, imagePageToPdf, lookupDealDocuments, type LookedUpDocument } from '@/lib/document-storage';
 import { compressPhoto } from '@/lib/image';
 import { useLicenseCapture, type LicenseSide } from '@/lib/license-capture-context';
+import { openUrlWithFeedback } from '@/lib/linking';
 
 /** The only document on this screen now (Terry, 2026-09-21 — Proof of
  * Insurance, Orders, and Proof of Residence were never UCG's to collect;
@@ -375,7 +376,7 @@ export default function DocumentsScreen() {
                 <Pressable
                   key={doc.docId + doc.kind + doc.createdAt}
                   style={styles.retrievedRow}
-                  onPress={() => Linking.openURL(doc.url).catch(() => {})}>
+                  onPress={() => openUrlWithFeedback(doc.url)}>
                   <DocumentIcon size={17} color={Colors.navy} />
                   <View style={{ flex: 1 }}>
                     <Text style={styles.retrievedTitle}>

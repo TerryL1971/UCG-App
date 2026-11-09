@@ -17,7 +17,6 @@ export default function CreateAccountScreen() {
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<{ name?: string; email?: string; password?: string }>({});
   const [formError, setFormError] = useState<string | null>(null);
-  const [confirmEmailSent, setConfirmEmailSent] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
@@ -40,10 +39,11 @@ export default function CreateAccountScreen() {
       }
       if (result.needsEmailConfirmation) {
         // Real Supabase account created, but no session yet — this
-        // project has "Confirm email" on, so there's genuinely nothing
-        // to log in to until that link is clicked. Telling the customer
-        // that beats silently bouncing them to a signed-out home screen.
-        setConfirmEmailSent(true);
+        // project has "Confirm email" on. The customer confirms by typing
+        // the emailed code in the app (verify-email.tsx), never by
+        // tapping a link that opens a browser outside it (Terry,
+        // 2026-11-09).
+        router.replace({ pathname: '/verify-email', params: { email: email.trim() } });
         return;
       }
       router.replace('/(tabs)');
@@ -51,20 +51,6 @@ export default function CreateAccountScreen() {
       setIsSubmitting(false);
     }
   };
-
-  if (confirmEmailSent) {
-    return (
-      <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-        <ScreenHeader title="Create Account" />
-        <View style={[styles.body, { justifyContent: 'center', paddingHorizontal: Spacing.xxl }]}>
-          <Text style={styles.intro}>
-            Almost there — we sent a confirmation link to {email.trim()}. Tap it, then come back and log in.
-          </Text>
-          <Button label="Back to Log In" onPress={() => router.replace('/log-in')} />
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>

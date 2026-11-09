@@ -16,6 +16,7 @@ import { buildSellBackBillOfSaleHtml, type SellBackDealInput } from '@/lib/deal-
 import { compressPhoto } from '@/lib/image';
 import { isValidEmail } from '@/lib/validation';
 import { useVinScan } from '@/lib/vin-scan-context';
+import { openUrlWithFeedback } from '@/lib/linking';
 
 const conditions = ['Fair', 'Good', 'Excellent'] as const;
 const mileageUnits = ['mi', 'km'] as const;
@@ -785,7 +786,7 @@ function OfferStatusView({
             <>
               <Button
                 label={`Book a Pre-Buy Inspection (${preBuyInspectionLocation.name})`}
-                onPress={() => Linking.openURL(preBuyInspectionLocation.bookingUrl!)}
+                onPress={() => openUrlWithFeedback(preBuyInspectionLocation.bookingUrl!)}
                 style={styles.statusButton}
               />
               {/* This is the only real booking link that exists (Terry,

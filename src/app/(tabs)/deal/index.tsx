@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import * as Sharing from 'expo-sharing';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ArrowLeftIcon, CameraIcon, DownloadIcon, MessageIcon, StarIcon } from '@/components/icons';
@@ -27,6 +27,7 @@ import { useDeal } from '@/lib/deal-context';
 import { useDealIntake } from '@/lib/deal-intake-context';
 import { useDealSync, type PaymentStatus } from '@/lib/deal-sync';
 import { useDealDocuments } from '@/lib/documents-context';
+import { openUrlWithFeedback } from '@/lib/linking';
 
 /** Cash/financing (steps 2 and 4) and DEN/non-DEN stock (step 5) each mean
  * different things depending on which — retitled here at render time
@@ -79,7 +80,7 @@ function PickupPhotoAction() {
 
   const openLocation = (reviewUrl: string) => {
     setPickingLocation(false);
-    Linking.openURL(reviewUrl);
+    openUrlWithFeedback(reviewUrl);
   };
 
   const takePhoto = async () => {
@@ -285,7 +286,7 @@ function StepDetailContent({ step, car }: { step: DealStep; car: ReturnType<type
             ? ` Submitted to ${intake.financingLenders.join(', ')}.`
             : ''}
         </Text>
-        <Pressable style={styles.detailLinkRow} onPress={() => Linking.openURL(FINANCE_APPLICATION_URL)}>
+        <Pressable style={styles.detailLinkRow} onPress={() => openUrlWithFeedback(FINANCE_APPLICATION_URL)}>
           <DownloadIcon size={14} color={Colors.navy} />
           <Text style={styles.detailLink}>View Finance Application</Text>
         </Pressable>

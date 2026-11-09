@@ -46,6 +46,20 @@ rules, claiming), `src/lib/chat.ts` (data), `src/lib/chat-context.tsx`
 4. Log out and back in on the salesperson's phone. **Account → Staff
    Inbox** now appears.
 
+## Email codes instead of links (one-time Supabase setting)
+
+Sign-up confirmation and password reset use a **6-digit code typed into
+the app** (`src/app/verify-email.tsx`, `src/app/reset-password.tsx`), so
+the customer never leaves the app. Supabase's default emails only contain
+a *link*, so both templates must include the code. In the dashboard, go
+to **Authentication → Emails** and edit:
+
+- **Confirm signup.** Body must contain `{{ .Token }}`.
+- **Reset Password.** Body must contain `{{ .Token }}`.
+
+Site URL is set to `https://www.usedcarguys.net` (it was the default
+`localhost:3000`). It only matters if someone taps an old link.
+
 ## Demo checklist (two phones)
 
 - [ ] Migration applied, and one staff account created (steps above).

@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CheckCircleIcon, MapPinIcon } from '@/components/icons';
@@ -16,6 +16,7 @@ import {
 } from '@/constants/vro-checklists';
 import { useDeal } from '@/lib/deal-context';
 import { useDealIntake } from '@/lib/deal-intake-context';
+import { openUrlWithFeedback } from '@/lib/linking';
 
 /**
  * What the customer needs at the Vehicle Registration Office — split into
@@ -105,7 +106,7 @@ export default function VroChecklistScreen() {
               <Text style={styles.officeLine}>{office.address}</Text>
               {office.hours ? <Text style={styles.officeLine}>{office.hours}</Text> : null}
               {office.infoUrl ? (
-                <Pressable onPress={() => Linking.openURL(office.infoUrl!).catch(() => {})}>
+                <Pressable onPress={() => openUrlWithFeedback(office.infoUrl!)}>
                   <Text style={styles.officeLink}>Official VRO page &amp; current checklists  →</Text>
                 </Pressable>
               ) : null}

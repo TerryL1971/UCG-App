@@ -50,7 +50,7 @@ export default function AddOnsScreen() {
     if (intake?.paymentMethod === 'financing') {
       Alert.alert(
         'Opening UCG’s Financing Application',
-        'This opens UCG’s secure financing application in your browser — your info goes directly to UCG, not through this app.',
+        'This opens UCG’s secure financing application right here — tap Done when you’re finished to come back. Your info goes directly to UCG, not through this app.',
         [
           { text: 'Cancel', style: 'cancel' },
           {

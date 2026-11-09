@@ -1,4 +1,4 @@
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { MapPinIcon, MessageIcon, PhoneIcon, WrenchIcon } from '@/components/icons';
@@ -8,6 +8,7 @@ import { whatsappChatUrl } from '@/constants/mock-data';
 import { serviceContact, serviceLinks, serviceOfferings } from '@/constants/service-center';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { directionsUrl } from '@/lib/maps';
+import { openUrlWithFeedback } from '@/lib/linking';
 
 /**
  * The Service Center hub. Deliberately reachable without a deal and
@@ -18,7 +19,7 @@ import { directionsUrl } from '@/lib/maps';
  * request form or a direct contact method (see src/constants/service-center.ts).
  */
 export default function ServiceScreen() {
-  const openUrl = (url: string) => Linking.openURL(url).catch(() => {});
+  const openUrl = (url: string) => openUrlWithFeedback(url);
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
@@ -34,7 +35,7 @@ export default function ServiceScreen() {
         </View>
 
         <Button
-          label="Request an Appointment (opens usedcarguys.net)"
+          label="Request an Appointment"
           onPress={() => openUrl(serviceLinks.appointmentRequest)}
         />
 
@@ -48,13 +49,13 @@ export default function ServiceScreen() {
 
         <View style={styles.secondaryActions}>
           <Button
-            label="Get a Tire Quote (opens website)"
+            label="Get a Tire Quote"
             variant="secondary"
             style={styles.secondaryBtn}
             onPress={() => openUrl(serviceLinks.tireQuote)}
           />
           <Button
-            label="Service Warranty Claims (opens website)"
+            label="Service Warranty Claims"
             variant="secondary"
             style={styles.secondaryBtn}
             onPress={() => openUrl(serviceLinks.warrantyAssistance)}

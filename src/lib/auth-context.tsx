@@ -39,6 +39,16 @@ interface AuthContextValue {
   signUp: (name: string, email: string, password: string) => Promise<AuthResult>;
   logIn: (email: string, password: string) => Promise<AuthResult>;
   logOut: () => void;
+  /** Email confirmation and password reset by 6-digit code typed into
+   * the app, not by a link (Terry, 2026-11-09: a link opens a browser and
+   * takes the customer out of the app — "anything that takes the customer
+   * out of the app needs to be redone"). Needs the Supabase "Confirm
+   * signup" and "Reset password" email templates to include
+   * `{{ .Token }}` — see docs/private-chat.md. */
+  verifyEmailCode: (email: string, code: string) => Promise<AuthResult>;
+  resendEmailCode: (email: string) => Promise<AuthResult>;
+  sendPasswordResetCode: (email: string) => Promise<AuthResult>;
+  resetPasswordWithCode: (email: string, code: string, newPassword: string) => Promise<AuthResult>;
 }
 
 const STORAGE_KEY = 'ucg.auth.user';
@@ -154,6 +164,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         persistLocal(null);
       },
+      // Stand-in mode never asks for a code (signUp succeeds immediately),
+      // so these only do real work against Supabase.
+      verifyEmailCode: async (email, code) => {
+        if (!isSupabaseConfigured || !supabase) return { error: null };
+        // A successful verify also signs the customer in —
+        // onAuthStateChange picks up the new session like a normal log-in.
+        const { error } = await supabase.auth.verifyOtp({ email, token: code, type: 'email' });
+        return { error: error?.message ?? null };
+      },
+      resendEmailCode: async (email) => {
+        if (!isSupabaseConfigured || !supabase) return { error: null };
+        const { error } = await supabase.auth.resend({ type: 'signup', email });
+        return { error: error?.message ?? null };
+      },
+      sendPasswordResetCode: async (email) => {
+        if (!isSupabaseConfigured || !supabase) return { error: null };
+        const { error } = await supabase.auth.resetPasswordForEmail(email);
+        return { error: error?.message ?? null };
+      },
+      resetPasswordWithCode: async (email, code, newPassword) => {
+        if (!isSupabaseConfigured || !supabase) return { error: null };
+        const { error: verifyError } = await supabase.auth.verifyOtp({ email, token: code, type: 'recovery' });
+        if (verifyError) return { error: verifyError.message };
+        // verifyOtp opened a session as that user; updateUser sets the new
+        // password on it, leaving them logged in.
+        const { error } = await supabase.auth.updateUser({ password: newPassword });
+        return { error: error?.message ?? null };
+      },
     }),
     [user, isLoading],
   );
@@ -172,8 +210,13 @@ export function friendlyAuthError(message: string): string {
     'Invalid login credentials': "That email or password doesn't match our records — double-check both.",
     'User already registered': 'That email is already registered — try logging in instead.',
     'Password should be at least 6 characters': 'Use a password with at least 6 characters.',
-    'Email not confirmed': 'Check your email for a confirmation link before logging in.',
+    'Email not confirmed': 'Your email isn’t confirmed yet — enter the 6-digit code we emailed you.',
+    'Token has expired or is invalid': 'That code is wrong or has expired — check it, or send a new one.',
+    'email rate limit exceeded': 'Too many emails sent in the last hour — wait a little while, then try again.',
   };
+  // Supabase's resend cooldown message includes a live seconds count
+  // ("…only request this after 42 seconds."), so it can't be an exact key.
+  if (message.startsWith('For security purposes')) return 'Please wait a minute before asking for another code.';
   return known[message] ?? message;
 }
 

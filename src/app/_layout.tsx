@@ -62,6 +62,8 @@ function AppShell({ fontsLoaded }: { fontsLoaded: boolean }) {
         <Stack.Screen name="index" />
         <Stack.Screen name="create-account" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="log-in" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="verify-email" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="reset-password" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="car/[id]" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="deal-intake" options={{ animation: 'slide_from_right' }} />

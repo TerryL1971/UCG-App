@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Dimensions, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Dimensions, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CheckCircleIcon, IdCardIcon } from '@/components/icons';
@@ -26,6 +26,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useDeal } from '@/lib/deal-context';
 import { useDealIntake } from '@/lib/deal-intake-context';
 import { useDealSync } from '@/lib/deal-sync';
+import { openUrlWithFeedback } from '@/lib/linking';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -434,11 +435,11 @@ export default function DealIntakeScreen() {
                 Family members can request a free sponsored account instead.
               </Text>
               <Text style={styles.licenseHint}>
-                Heads up: your browser may flag this .mil site as &ldquo;not private.&rdquo; That&apos;s normal for
+                Heads up: your phone may flag this .mil site as &ldquo;not private.&rdquo; That&apos;s normal for
                 DoD sites (they use a certificate most phones don&apos;t trust by default) &mdash; it&apos;s safe to
                 continue through.
               </Text>
-              <Pressable style={styles.licenseLinkButton} onPress={() => Linking.openURL(USAREUR_OFFICIAL_JKO_URL)}>
+              <Pressable style={styles.licenseLinkButton} onPress={() => openUrlWithFeedback(USAREUR_OFFICIAL_JKO_URL)}>
                 <Text style={styles.licenseLinkButtonLabel}>Take the Exam Online (JKO)  →</Text>
               </Pressable>
               <Text style={styles.licenseHint}>
@@ -448,7 +449,7 @@ export default function DealIntakeScreen() {
                 3. On arrival: bring your printed certificate, stateside license, and DoD ID/CAC, plus a $30 fee,
                 to the base testing station for a quick vision check and your physical license.
               </Text>
-              <Text style={styles.licenseSubLink} onPress={() => Linking.openURL(USAREUR_STUDY_GUIDE_URL)}>
+              <Text style={styles.licenseSubLink} onPress={() => openUrlWithFeedback(USAREUR_STUDY_GUIDE_URL)}>
                 Want to study the manual first? →
               </Text>
             </View>

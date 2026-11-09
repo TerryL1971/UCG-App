@@ -9,11 +9,9 @@ import { ScreenHeader } from '@/components/ui/screen-header';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
 import { friendlyAuthError, useAuth } from '@/lib/auth-context';
 import { isValidEmail } from '@/lib/validation';
-import { SUPPORT_WHATSAPP, whatsappChatUrl } from '@/constants/mock-data';
-import { openUrlWithFeedback } from '@/lib/linking';
 
 export default function LogInScreen() {
-  const { logIn } = useAuth();
+  const { logIn, resendEmailCode } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
@@ -31,6 +29,14 @@ export default function LogInScreen() {
     setIsSubmitting(true);
     try {
       const result = await logIn(email.trim(), password);
+      if (result.error === 'Email not confirmed') {
+        // Signed up but never entered the code (e.g. closed the app
+        // first) — send a fresh one and take them straight to the code
+        // screen rather than a dead-end error.
+        const resent = await resendEmailCode(email.trim());
+        router.push({ pathname: '/verify-email', params: { email: email.trim(), ...(resent.error ? {} : { resent: '1' }) } });
+        return;
+      }
       if (result.error) {
         setFormError(friendlyAuthError(result.error));
         return;
@@ -68,12 +74,7 @@ export default function LogInScreen() {
           />
           <Text
             style={styles.forgotLink}
-            onPress={() =>
-              openUrlWithFeedback(
-                whatsappChatUrl(SUPPORT_WHATSAPP, "Hi UCG — I'm having trouble logging into the app."),
-                "Couldn't open WhatsApp — make sure it's installed, then try again.",
-              )
-            }>
+            onPress={() => router.push({ pathname: '/reset-password', params: { email: email.trim() } })}>
             Forgot password?
           </Text>
 
