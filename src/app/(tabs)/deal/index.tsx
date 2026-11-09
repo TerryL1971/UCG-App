@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import * as Sharing from 'expo-sharing';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View, type ScrollViewInstance } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ArrowLeftIcon, CameraIcon, DownloadIcon, MessageIcon, StarIcon } from '@/components/icons';
@@ -496,7 +496,7 @@ export default function TimelineScreen() {
 
   const [viewedIndex, setViewedIndex] = useState(targetIndex);
   const viewedStep = dealSteps[viewedIndex];
-  const outerScrollRef = useRef<ScrollView>(null);
+  const outerScrollRef = useRef<ScrollViewInstance>(null);
 
   // dealSteps can change out from under this screen — "Reset Test Data"
   // resets it from the Account tab, and Expo Router keeps tab screens

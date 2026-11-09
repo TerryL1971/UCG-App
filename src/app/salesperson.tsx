@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { ActivityIndicator, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type ScrollViewInstance, type TextInputInstance } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { LockIcon, SendIcon, ShieldIcon, StarIcon, UmbrellaIcon, WhatsAppIcon } from '@/components/icons';
@@ -203,8 +203,8 @@ export default function SalespersonScreen() {
   // with PayPal" wording rather than inventing a new phrase for the same
   // concept.
   const holdButtonLabel = isDenStock(car?.stockNumber) ? 'Hold This Car — Pay Reservation Fee' : 'Hold This Car — Make a Deposit';
-  const scrollViewRef = useRef<ScrollView>(null);
-  const inputRef = useRef<TextInput>(null);
+  const scrollViewRef = useRef<ScrollViewInstance>(null);
+  const inputRef = useRef<TextInputInstance>(null);
 
   // Keyboard.dismiss() alone is unreliable here — it asks the OS to hide
   // the keyboard without necessarily releasing the TextInput's own focus,

@@ -10,6 +10,8 @@ import {
   Text,
   TextInput,
   View,
+  type ScrollViewInstance,
+  type TextInputInstance,
 } from 'react-native';
 
 import { SendIcon } from '@/components/icons';
@@ -73,8 +75,8 @@ export function ChatConversation({
   const [input, setInput] = useState(initialDraft);
   const [isSending, setIsSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
-  const scrollViewRef = useRef<ScrollView>(null);
-  const inputRef = useRef<TextInput>(null);
+  const scrollViewRef = useRef<ScrollViewInstance>(null);
+  const inputRef = useRef<TextInputInstance>(null);
 
   useEffect(() => {
     let cancelled = false;
