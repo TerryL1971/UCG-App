@@ -17,6 +17,11 @@ import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 export interface AuthUser {
   name: string;
   email: string;
+  /** The Supabase `auth.users` id — only present in real-Supabase mode.
+   * Stand-in mode has no real account behind it, so features that need
+   * a server-side identity (the private in-app chat, chat.ts) check for
+   * this rather than for `user` alone. */
+  id?: string;
 }
 
 export interface AuthResult {
@@ -46,10 +51,10 @@ const AuthContext = createContext<AuthContextValue | null>(null);
  * the email's local part if somehow missing (shouldn't happen through
  * this app's own signUp, but a user created another way — e.g. directly
  * in the Supabase dashboard — wouldn't have it set). */
-function authUserFromSupabase(user: { email?: string | null; user_metadata?: Record<string, unknown> }): AuthUser {
+function authUserFromSupabase(user: { id: string; email?: string | null; user_metadata?: Record<string, unknown> }): AuthUser {
   const email = user.email ?? '';
   const metaName = typeof user.user_metadata?.name === 'string' ? (user.user_metadata.name as string) : undefined;
-  return { name: metaName ?? email.split('@')[0], email };
+  return { id: user.id, name: metaName ?? email.split('@')[0], email };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {

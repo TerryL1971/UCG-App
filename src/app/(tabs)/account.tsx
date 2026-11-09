@@ -3,10 +3,11 @@ import { router } from 'expo-router';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { UserIcon, WrenchIcon } from '@/components/icons';
+import { MessageIcon, UserIcon, WrenchIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
+import { useChat } from '@/lib/chat-context';
 import { useDeal } from '@/lib/deal-context';
 import { useDealIntake } from '@/lib/deal-intake-context';
 import { useDealSync } from '@/lib/deal-sync';
@@ -18,6 +19,7 @@ import { useWarranty } from '@/lib/warranty-context';
 
 export default function AccountScreen() {
   const { user, logOut } = useAuth();
+  const { staffProfile } = useChat();
   const { clearCar } = useDeal();
   const { clearIntake } = useDealIntake();
   const { reset: resetDealSync } = useDealSync();
@@ -89,6 +91,19 @@ export default function AccountScreen() {
           <Button label="Create Account" onPress={() => router.push('/create-account')} />
           <Button label="Log In" variant="secondary" onPress={() => router.push('/log-in')} />
         </View>
+      )}
+
+      {/* Only for accounts an admin has added to staff_members — see the
+          private_chat migration. Customers never see this row. */}
+      {staffProfile && (
+        <Pressable style={styles.linkRow} onPress={() => router.push('/staff')}>
+          <MessageIcon size={18} color={Colors.navy} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.linkRowTitle}>Staff Inbox</Text>
+            <Text style={styles.linkRowSub}>Your private customer chats</Text>
+          </View>
+          <Text style={styles.linkRowChevron}>›</Text>
+        </Pressable>
       )}
 
       <Pressable style={styles.linkRow} onPress={() => router.push('/service')}>

@@ -16,6 +16,7 @@ import { StatusBar } from 'react-native';
 
 import { AnimatedSplash } from '@/components/animated-splash';
 import { AuthProvider } from '@/lib/auth-context';
+import { ChatProvider } from '@/lib/chat-context';
 import { DealProvider } from '@/lib/deal-context';
 import { DealIntakeProvider } from '@/lib/deal-intake-context';
 import { DealSyncProvider } from '@/lib/deal-sync';
@@ -76,6 +77,8 @@ function AppShell({ fontsLoaded }: { fontsLoaded: boolean }) {
         <Stack.Screen name="wire-instructions" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="deal-paperwork" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="road-to-plates" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="staff/index" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="staff/[threadId]" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="scan-vin" options={{ animation: 'slide_from_bottom', presentation: 'fullScreenModal' }} />
         <Stack.Screen
           name="capture-license"
@@ -102,17 +105,19 @@ export default function RootLayout() {
       <DealProvider>
         <DealIntakeProvider>
           <DealSyncProvider>
-            <DealDocumentsProvider>
-              <WarrantyProvider>
-                <SavedProvider>
-                  <VinScanProvider>
-                    <LicenseCaptureProvider>
-                      <AppShell fontsLoaded={fontsLoaded} />
-                    </LicenseCaptureProvider>
-                  </VinScanProvider>
-                </SavedProvider>
-              </WarrantyProvider>
-            </DealDocumentsProvider>
+            <ChatProvider>
+              <DealDocumentsProvider>
+                <WarrantyProvider>
+                  <SavedProvider>
+                    <VinScanProvider>
+                      <LicenseCaptureProvider>
+                        <AppShell fontsLoaded={fontsLoaded} />
+                      </LicenseCaptureProvider>
+                    </VinScanProvider>
+                  </SavedProvider>
+                </WarrantyProvider>
+              </DealDocumentsProvider>
+            </ChatProvider>
           </DealSyncProvider>
         </DealIntakeProvider>
       </DealProvider>

@@ -6,10 +6,8 @@ import { CheckCircleIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
-import { specialistWhatsapp, whatsappChatUrl } from '@/constants/mock-data';
 import { useDeal } from '@/lib/deal-context';
-import { useDealSync } from '@/lib/deal-sync';
-import { openUrlWithFeedback } from '@/lib/linking';
+import { useChat } from '@/lib/chat-context';
 
 /**
  * The other add-on flagged as an empty row (docs/deal-flow-roadmap.md's
@@ -22,15 +20,12 @@ import { openUrlWithFeedback } from '@/lib/linking';
  */
 export default function PaintProtectionScreen() {
   const { car } = useDeal();
-  const { state: dealState } = useDealSync();
+  const { available: inAppChat, messageSpecialist } = useChat();
   const carLabel = car ? `${car.year} ${car.title}` : 'your car';
 
   const askAboutPpf = () => {
     const msg = `Hi UCG — I'd like to ask about Paint Protection Film (PPF) for ${carLabel}.`;
-    openUrlWithFeedback(
-      whatsappChatUrl(specialistWhatsapp(dealState.salesperson, dealState.onPersonalWhatsapp), msg),
-      "Couldn't open WhatsApp — make sure it's installed, then try again.",
-    );
+    messageSpecialist(msg);
   };
 
   return (
@@ -67,7 +62,7 @@ export default function PaintProtectionScreen() {
             We&apos;re finalizing the flyer for this add-on. Current pricing and what&apos;s covered come from
             your salesperson — tap below and we&apos;ll get you the details.
           </Text>
-          <Button label="Ask About PPF (via WhatsApp)" onPress={askAboutPpf} style={styles.programBtn} />
+          <Button label={inAppChat ? 'Ask About PPF' : 'Ask About PPF (via WhatsApp)'} onPress={askAboutPpf} style={styles.programBtn} />
         </View>
 
         <Pressable style={styles.backLink} onPress={() => router.back()}>

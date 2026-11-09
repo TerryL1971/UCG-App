@@ -1,9 +1,10 @@
 import { router } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { LockIcon, SendIcon, ShieldIcon, StarIcon, UmbrellaIcon, WhatsAppIcon } from '@/components/icons';
+import { ChatConversation } from '@/components/chat-conversation';
 import { SalespersonAvatarFull } from '@/components/salesperson-avatar';
 import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/ui/screen-header';
@@ -17,11 +18,15 @@ import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { specialistWhatsapp, ucgAssistant, whatsappChatUrl } from '@/constants/mock-data';
 import { isDenStock } from '@/constants/vro-checklists';
 import { parseJsonResponse } from '@/lib/api-fetch';
+import { useAuth } from '@/lib/auth-context';
+import { fetchThread, getOrCreateCustomerThread, subscribeToThreadChanges, type ChatThread } from '@/lib/chat';
+import { useChat } from '@/lib/chat-context';
 import { useDeal } from '@/lib/deal-context';
 import { useDealIntake } from '@/lib/deal-intake-context';
 import { useDealSync } from '@/lib/deal-sync';
 import { getOwnerId } from '@/lib/document-storage';
 import { openUrlWithFeedback } from '@/lib/linking';
+import { isSupabaseConfigured } from '@/lib/supabase';
 import { useWarranty } from '@/lib/warranty-context';
 
 interface ChatMessage {
@@ -64,6 +69,109 @@ function WhatsAppRoutingTestRow() {
 }
 
 /**
+ * The private in-app chat with a real salesperson (Terry, 2026-11-09:
+ * the customer stays inside the app until they pick up their car). Shown
+ * instead of the WhatsApp hand-off whenever the customer is logged in to
+ * a real account — see chat-context.tsx for the routing rule and the
+ * private_chat migration for who can see what.
+ *
+ * Until a salesperson takes the conversation it sits on every staff
+ * member's "Waiting for a salesperson" list; once taken, the header
+ * switches to that salesperson's name live (thread realtime), and from
+ * then on only the two of them can read it.
+ */
+function InAppSpecialistChat({
+  userId,
+  composeDraft,
+  footer,
+}: {
+  userId: string;
+  composeDraft: (code: string | null) => string;
+  footer: ReactNode;
+}) {
+  const { threadDetails } = useChat();
+  const [thread, setThread] = useState<ChatThread | null>(null);
+  const [draft, setDraft] = useState('');
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    // Thread and documents code together, so the draft is final before
+    // ChatConversation mounts (it only reads initialDraft once).
+    Promise.all([getOrCreateCustomerThread(userId, threadDetails), getOwnerId().catch(() => null)])
+      .then(([t, code]) => {
+        if (cancelled) return;
+        setDraft(t.last_message_preview ? '' : composeDraft(code));
+        setThread(t);
+        setFailed(false);
+      })
+      .catch((error) => {
+        console.error('Opening in-app chat failed:', error);
+        if (!cancelled) setFailed(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- open once per user (and per retry); threadDetails is only a creation-time snapshot
+  }, [userId, attempt]);
+
+  const threadId = thread?.id;
+  useEffect(() => {
+    if (!threadId) return;
+    // Picks up the moment a salesperson takes this customer, so the
+    // header changes from "waiting" to their name without a refresh.
+    return subscribeToThreadChanges(`customer-${threadId}`, () => {
+      fetchThread(threadId)
+        .then((t) => t && setThread(t))
+        .catch(() => {});
+    });
+  }, [threadId]);
+
+  const specialistName = thread?.salesperson_name ?? 'Your UCG Specialist';
+
+  return (
+    <>
+      <View style={styles.headerRow}>
+        <View style={[styles.avatarWrap, styles.inAppAvatarWrap]}>
+          <LockIcon color="#fff" size={24} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.name}>{specialistName}</Text>
+          <Text style={styles.title}>
+            {thread?.salesperson_name
+              ? `Private chat — only you and ${thread.salesperson_name} can see it`
+              : 'A UCG specialist will pick this up shortly'}
+          </Text>
+        </View>
+      </View>
+
+      {failed ? (
+        <View style={styles.chatWrap}>
+          <Text style={styles.inAppNote}>Couldn&apos;t open the chat — check your connection.</Text>
+          <Button label="Try Again" variant="secondary" onPress={() => setAttempt((n) => n + 1)} />
+        </View>
+      ) : !thread ? (
+        <View style={styles.chatWrap}>
+          <ActivityIndicator color={Colors.navy} style={{ marginTop: 24 }} />
+        </View>
+      ) : (
+        <ChatConversation
+          threadId={thread.id}
+          viewerId={userId}
+          viewerRole="customer"
+          otherPartyLabel={specialistName}
+          initialDraft={draft}
+          placeholder="Message your UCG specialist…"
+          emptyNote="Say hi — your message goes straight to a UCG specialist, right here in the app."
+          footer={footer}
+        />
+      )}
+    </>
+  );
+}
+
+/**
  * The AI assistant chat — the "UCG Assistant" guides the customer through
  * buying or selling, start to finish (Terry, Sept 3). It is NOT a person
  * and NOT the assigned salesperson; a real human takes over logistics
@@ -87,6 +195,8 @@ export default function SalespersonScreen() {
   const { intake } = useDealIntake();
   const { choice: warrantyChoice } = useWarranty();
   const { state: dealState } = useDealSync();
+  const { user } = useAuth();
+  const { available: inAppChatAvailable } = useChat();
   const carLabel = car ? `${car.year} ${car.title}` : 'your next car';
   // Never "Deposit" on a DEN-stock car — see isDenStock's doc comment
   // (vro-checklists.ts). Matches deposit.tsx's own "Pay Reservation Fee
@@ -238,7 +348,54 @@ export default function SalespersonScreen() {
   // outside the app. Everything else the AI chat would otherwise gate
   // (deposit, warranty, insurance, timeline) stays reachable exactly as
   // before — only the chat mechanism changes.
+  // Shared by the in-app chat and the WhatsApp hand-off below — the same
+  // next steps either way, only the conversation mechanism differs.
+  const dealCtas = (
+    <View style={styles.ctaWrap}>
+      <Button
+        label={holdButtonLabel}
+        variant="secondary"
+        style={styles.depositButton}
+        icon={<LockIcon color={Colors.navy} />}
+        onPress={() => router.push('/deposit')}
+      />
+      <Text style={styles.ctaCaption}>Refundable — holds the car while we finish your paperwork.</Text>
+      <Button
+        label={
+          warrantyChoice
+            ? warrantyChoice.decision === 'accepted'
+              ? 'Premium Protection — Added ✓'
+              : 'Premium Protection — Declined'
+            : 'Premium Protection Plan'
+        }
+        variant="secondary"
+        style={styles.depositButton}
+        icon={<ShieldIcon color={Colors.navy} />}
+        onPress={() => router.push('/warranty')}
+      />
+      <Text style={styles.ctaCaption}>Our extended warranty, beyond the 1-year standard coverage.</Text>
+      <Button
+        label="Insurance — First Month Paid"
+        variant="secondary"
+        style={styles.depositButton}
+        icon={<UmbrellaIcon color={Colors.navy} />}
+        onPress={() => router.push('/insurance')}
+      />
+      <Text style={styles.ctaCaption}>Add a German policy — UCG covers your first month.</Text>
+      <Button label="View My Timeline  →" onPress={() => router.push('/(tabs)/deal')} />
+    </View>
+  );
+
   if (!AI_CHAT_ENABLED) {
+    if (inAppChatAvailable && user?.id) {
+      return (
+        <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+          <ScreenHeader title="UCG Specialist" />
+          <InAppSpecialistChat userId={user.id} composeDraft={composeWhatsAppDraft} footer={dealCtas} />
+        </SafeAreaView>
+      );
+    }
+
     const sendToWhatsApp = () => {
       const text = input.trim();
       if (!text) return;
@@ -273,6 +430,15 @@ export default function SalespersonScreen() {
             </Pressable>
           )}
         </Pressable>
+
+        {/* Guests still get the WhatsApp hand-off; a real account is what
+            makes the private in-app chat possible (it needs to know who's
+            on each end), so say so rather than leaving it undiscoverable. */}
+        {isSupabaseConfigured && !user && (
+          <Pressable style={styles.loginHint} onPress={() => router.push('/log-in')} hitSlop={6}>
+            <Text style={styles.loginHintText}>Log in to chat privately with your specialist right here in the app  →</Text>
+          </Pressable>
+        )}
 
         <KeyboardAvoidingView
           style={styles.chatWrap}
@@ -323,39 +489,7 @@ export default function SalespersonScreen() {
             <Text style={styles.doneRowText}>Hide Keyboard</Text>
           </Pressable>
 
-          <View style={styles.ctaWrap}>
-            <Button
-              label={holdButtonLabel}
-              variant="secondary"
-              style={styles.depositButton}
-              icon={<LockIcon color={Colors.navy} />}
-              onPress={() => router.push('/deposit')}
-            />
-            <Text style={styles.ctaCaption}>Refundable — holds the car while we finish your paperwork.</Text>
-            <Button
-              label={
-                warrantyChoice
-                  ? warrantyChoice.decision === 'accepted'
-                    ? 'Premium Protection — Added ✓'
-                    : 'Premium Protection — Declined'
-                  : 'Premium Protection Plan'
-              }
-              variant="secondary"
-              style={styles.depositButton}
-              icon={<ShieldIcon color={Colors.navy} />}
-              onPress={() => router.push('/warranty')}
-            />
-            <Text style={styles.ctaCaption}>Our extended warranty, beyond the 1-year standard coverage.</Text>
-            <Button
-              label="Insurance — First Month Paid"
-              variant="secondary"
-              style={styles.depositButton}
-              icon={<UmbrellaIcon color={Colors.navy} />}
-              onPress={() => router.push('/insurance')}
-            />
-            <Text style={styles.ctaCaption}>Add a German policy — UCG covers your first month.</Text>
-            <Button label="View My Timeline  →" onPress={() => router.push('/(tabs)/deal')} />
-          </View>
+          {dealCtas}
 
           <WhatsAppRoutingTestRow />
         </KeyboardAvoidingView>
@@ -596,6 +730,17 @@ const styles = StyleSheet.create({
     marginTop: -4,
   },
   whatsappAvatarWrap: { backgroundColor: '#25D366', alignItems: 'center', justifyContent: 'center' },
+  inAppAvatarWrap: { backgroundColor: Colors.navy, justifyContent: 'center' },
+  inAppNote: { fontFamily: Fonts.body, fontSize: 13, color: Colors.textMuted, textAlign: 'center', marginVertical: 16 },
+  loginHint: {
+    marginHorizontal: Spacing.xxl,
+    marginBottom: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.navyTint,
+  },
+  loginHintText: { fontFamily: Fonts.bodySemibold, fontSize: 12.5, color: Colors.navy, textAlign: 'center' },
   whatsappSendButton: {
     width: 52,
     height: 52,

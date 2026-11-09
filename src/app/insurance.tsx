@@ -6,11 +6,10 @@ import { CheckCircleIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { americanAutoNation as AAN } from '@/constants/american-auto-nation';
-import { specialistWhatsapp, whatsappChatUrl } from '@/constants/mock-data';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { useDeal } from '@/lib/deal-context';
 import { useDealIntake } from '@/lib/deal-intake-context';
-import { useDealSync } from '@/lib/deal-sync';
+import { useChat } from '@/lib/chat-context';
 import { openUrlWithFeedback } from '@/lib/linking';
 
 /**
@@ -23,17 +22,14 @@ import { openUrlWithFeedback } from '@/lib/linking';
 export default function InsuranceScreen() {
   const { car } = useDeal();
   const { intake } = useDealIntake();
-  const { state: dealState } = useDealSync();
+  const { available: inAppChat, messageSpecialist } = useChat();
   const carLabel = car ? `${car.year} ${car.title}` : 'my car';
 
   const requestQuote = () => {
     const msg = `Hi UCG — I'd like an American Auto Nation insurance quote for ${carLabel}${
       intake?.base ? `, headed to ${intake.base}` : ''
     }.`;
-    openUrlWithFeedback(
-      whatsappChatUrl(specialistWhatsapp(dealState.salesperson, dealState.onPersonalWhatsapp), msg),
-      "Couldn't open WhatsApp — make sure it's installed, then try again.",
-    );
+    messageSpecialist(msg);
   };
 
   return (
@@ -63,7 +59,7 @@ export default function InsuranceScreen() {
         </Text>
 
         <View style={styles.actions}>
-          <Button label="Request a Quote (via WhatsApp)" onPress={requestQuote} />
+          <Button label={inAppChat ? 'Request a Quote' : 'Request a Quote (via WhatsApp)'} onPress={requestQuote} />
           <Button
             label="Visit americanautonation.com"
             variant="secondary"

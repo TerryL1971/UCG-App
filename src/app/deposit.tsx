@@ -9,12 +9,12 @@ import { CheckCircleIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
-import { HOLD_AMOUNT, specialistWhatsapp, whatsappChatUrl } from '@/constants/mock-data';
+import { HOLD_AMOUNT } from '@/constants/mock-data';
 import { isDenStock } from '@/constants/vro-checklists';
 import { parseJsonResponse } from '@/lib/api-fetch';
+import { useChat } from '@/lib/chat-context';
 import { useDeal } from '@/lib/deal-context';
 import { useDealSync } from '@/lib/deal-sync';
-import { openUrlWithFeedback } from '@/lib/linking';
 
 /**
  * Real decision, confirmed by Terry (Sept 1): a flat $300.00 USD, not a
@@ -51,12 +51,11 @@ export default function DepositScreen() {
   const [status, setStatus] = useState<DepositStatus>(() => (dealState.salesperson ? 'success' : 'idle'));
   const [errorMessage, setErrorMessage] = useState('');
 
+  const { messageSpecialist: sendToSpecialist } = useChat();
+
   const messageSpecialist = () => {
     const msg = `Hi UCG — I just tried to pay the ${feeNoun} on ${carLabel} and the app couldn't confirm whether it went through. Can you check before I try again?`;
-    openUrlWithFeedback(
-      whatsappChatUrl(specialistWhatsapp(dealState.salesperson, dealState.onPersonalWhatsapp), msg),
-      "Couldn't open WhatsApp — make sure it's installed, then message your specialist directly before trying again.",
-    );
+    sendToSpecialist(msg);
   };
 
   const startDeposit = async () => {

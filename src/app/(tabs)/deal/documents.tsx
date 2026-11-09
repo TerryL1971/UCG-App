@@ -10,10 +10,10 @@ import { DocumentIcon, IdCardIcon, MapPinIcon, PlusIcon } from '@/components/ico
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { StatusChip } from '@/components/ui/chip';
 import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
-import { specialistWhatsapp, whatsappChatUrl, type DealDocument } from '@/constants/mock-data';
+import { type DealDocument } from '@/constants/mock-data';
 import { useDeal } from '@/lib/deal-context';
 import { useDealIntake } from '@/lib/deal-intake-context';
-import { useDealSync } from '@/lib/deal-sync';
+import { useChat } from '@/lib/chat-context';
 import { useDealDocuments, type DocumentState } from '@/lib/documents-context';
 import { getOwnerId, imagePageToPdf, lookupDealDocuments, type LookedUpDocument } from '@/lib/document-storage';
 import { compressPhoto } from '@/lib/image';
@@ -166,7 +166,7 @@ export default function DocumentsScreen() {
   const { lastCapturedLicensePhoto, clearLastCapturedLicensePhoto } = useLicenseCapture();
   const { car } = useDeal();
   const { intake } = useDealIntake();
-  const { state: dealState } = useDealSync();
+  const { available: inAppChat, messageSpecialist } = useChat();
 
   // The customer's own retrieval code (document-storage.ts's getOwnerId)
   // — shown so they can give it to a salesperson or type it back in on
@@ -343,11 +343,9 @@ export default function DocumentsScreen() {
             disabled={!myCode}
             onPress={() =>
               myCode &&
-              Linking.openURL(
-                whatsappChatUrl(specialistWhatsapp(dealState.salesperson, dealState.onPersonalWhatsapp), `Hi! Here's my UCG documents code: ${myCode}`),
-              ).catch(() => {})
+              messageSpecialist(`Hi! Here's my UCG documents code: ${myCode}`)
             }>
-            <Text style={styles.shareCodeButtonLabel}>Share via WhatsApp</Text>
+            <Text style={styles.shareCodeButtonLabel}>{inAppChat ? 'Send to My Specialist' : 'Share via WhatsApp'}</Text>
           </Pressable>
         </View>
 
