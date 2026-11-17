@@ -60,8 +60,19 @@ export default function AccountScreen() {
                 style: 'destructive',
                 onPress: async () => {
                   const result = await deleteAccount();
+                  if (result.error === 'not_deployed') {
+                    Alert.alert(
+                      'Account deletion isn’t set up yet',
+                      'The delete-account function hasn’t been deployed to Supabase yet (see docs/companion-app.md). Nothing was deleted.',
+                    );
+                    return;
+                  }
+                  if (result.error === 'staff_account') {
+                    Alert.alert('Staff account', 'Staff accounts are removed by an admin, not from the app. Nothing was deleted.');
+                    return;
+                  }
                   if (result.error) {
-                    Alert.alert("Couldn't delete your account", 'Check your connection and try again, or ask your salesperson.');
+                    Alert.alert("Couldn't delete your account", 'Check your connection and try again. Nothing was deleted.');
                     return;
                   }
                   AsyncStorage.multiRemove(['ucg.sellBackDraft', 'ucg.selectedDealId']).catch(() => {});

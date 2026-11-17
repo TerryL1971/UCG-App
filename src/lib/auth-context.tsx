@@ -170,7 +170,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // never be in the app — the delete-account Edge Function does it
           // server-side, for the signed-in user only.
           const { error } = await supabase.functions.invoke('delete-account', { method: 'POST' });
-          if (error) return { error: error.message };
+          if (error) {
+            // 404 = the Edge Function hasn't been deployed to Supabase yet.
+            const status = (error as { context?: { status?: number } }).context?.status;
+            if (status === 404) return { error: 'not_deployed' };
+            if (status === 403) return { error: 'staff_account' };
+            return { error: error.message };
+          }
           await supabase.auth.signOut().catch(() => {});
           setUser(null);
           return { error: null };
