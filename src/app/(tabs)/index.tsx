@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { confirmRemoveFile, DealSummaryCard, DeadlineBanner, DealSwitcher, ScanUploadButton } from '@/components/deal-ui';
 import { ArrowLeftIcon, CheckCircleIcon, LockIcon, WhatsAppIcon } from '@/components/icons';
 import { INSURANCE_STEPS, InsurancePrompt, requestAanQuote } from '@/components/insurance-prompt';
+import { PickupExtras } from '@/components/pickup-extras';
 import { TimelineRoad } from '@/components/timeline-road';
 import { Button } from '@/components/ui/button';
 import { baseName } from '@/constants/bases';
@@ -272,7 +273,9 @@ function DealView({
 
         {/* Insurance stays changeable after it's done (e.g. switching to
             American Auto Nation from another insurer). */}
-        {((viewed.status === 'current' && !viewed.lockedReason) || (viewed.id === 'insurance' && viewed.status === 'done')) && (
+        {((viewed.status === 'current' && !viewed.lockedReason) ||
+          (viewed.id === 'insurance' && viewed.status === 'done') ||
+          (viewed.id === 'delivered' && viewed.status === 'done')) && (
           <StepActions step={viewed} flow={flow} bundle={bundle} userId={userId} onChanged={onChanged} />
         )}
 
@@ -387,7 +390,12 @@ function StepActions({
     actions.push(<View key="tt">{scan('tt_doc', 'Scan My TT Doc (front & back)')}</View>);
   }
   if (step.id === 'delivered') {
-    actions.push(<View key="ho">{scan('hand_over', 'Scan My Signed Hand-Over Document')}</View>);
+    if (step.status !== 'done') {
+      actions.push(<View key="ho">{scan('hand_over', 'Scan My Signed Hand-Over Document')}</View>);
+    }
+    // Pickup photo for the salesperson + Google review — also after the
+    // step is done, since reviews often come a day later.
+    actions.push(<PickupExtras key="pickup" deal={deal} />);
   }
   if (step.id === 'handover' && flow === 'sale') {
     actions.push(

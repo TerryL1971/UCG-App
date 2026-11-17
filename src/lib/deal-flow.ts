@@ -114,7 +114,7 @@ const DELIVERY_STEP: StepDef = {
   title: 'Pick Up Your Car',
   waitingOn: () => 'you',
   explainer: () =>
-    'Bring your new plates, the environmental sticker and your TT Doc to UCG. You sign the Vehicle Hand-Over Document and get your Warranty Certificate, and the car is yours. Scan the signed Hand-Over Document, or tick it below.',
+    'Bring your new plates, the environmental sticker and your TT Doc to UCG. You sign the Vehicle Hand-Over Document and get your Warranty Certificate, and the car is yours. Scan the signed Hand-Over Document, or tick it below. Then take a photo with your car for your salesperson, and if you were happy, leave UCG a Google review.',
   // The signed Hand-Over Document being scanned IS the delivery — no
   // separate tap needed (Terry, 2026-11-17: keep the salesperson's taps
   // to a minimum).
