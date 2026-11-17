@@ -9,7 +9,7 @@ import { ScreenHeader } from '@/components/ui/screen-header';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
 import { useChat } from '@/lib/chat-context';
-import { DEMO_MODE } from '@/lib/demo-mode';
+import { useDemoMode } from '@/lib/demo-mode';
 import { dealTitle, vehicleLabel } from '@/lib/deal-flow';
 import { fetchStaffDeals, subscribeToDealChanges, type Deal } from '@/lib/deals';
 
@@ -21,6 +21,7 @@ import { fetchStaffDeals, subscribeToDealChanges, type Deal } from '@/lib/deals'
 export default function StaffDealsScreen() {
   const { user } = useAuth();
   const { staffProfile } = useChat();
+  const demo = useDemoMode();
   const [deals, setDeals] = useState<Deal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -42,15 +43,15 @@ export default function StaffDealsScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      if (staffProfile || DEMO_MODE) load();
-    }, [staffProfile, load]),
+      if (staffProfile || demo) load();
+    }, [staffProfile, demo, load]),
   );
   useEffect(() => {
-    if (!staffProfile && !DEMO_MODE) return;
+    if (!staffProfile && !demo) return;
     return subscribeToDealChanges('staff-deals', () => {
       load();
     });
-  }, [staffProfile, load]);
+  }, [staffProfile, demo, load]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -64,7 +65,7 @@ export default function StaffDealsScreen() {
     return [...matches].sort((a, b) => Number(b.salesperson_id === user?.id) - Number(a.salesperson_id === user?.id));
   }, [deals, query, user?.id]);
 
-  if (!staffProfile && !DEMO_MODE) {
+  if (!staffProfile && !demo) {
     return (
       <SafeAreaView style={styles.screen} edges={['top']}>
         <ScreenHeader title="Deals" />

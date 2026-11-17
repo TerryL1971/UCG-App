@@ -3,7 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 
 import { useAuth } from '@/lib/auth-context';
 import { fetchMyDeals, linkMyDeal, subscribeToDealChanges, type DealBundle, type LinkResult } from '@/lib/deals';
-import { DEMO_CUSTOMER_ID, DEMO_MODE } from '@/lib/demo-mode';
+import { DEMO_CUSTOMER_ID, useDemoMode } from '@/lib/demo-mode';
 import { isSupabaseConfigured } from '@/lib/supabase';
 
 /**
@@ -31,15 +31,18 @@ const SELECTED_KEY = 'ucg.selectedDealId';
 export function MyDealsProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   // Demo mode works without logging in (lib/demo-mode.ts).
-  const userId = DEMO_MODE ? (user?.id ?? DEMO_CUSTOMER_ID) : user?.id;
-  const available = DEMO_MODE || (isSupabaseConfigured && Boolean(userId));
+  const demo = useDemoMode();
+  const userId = demo ? (user?.id ?? DEMO_CUSTOMER_ID) : user?.id;
+  const available = demo || (isSupabaseConfigured && Boolean(userId));
+  // Deals belong to an account AND a mode — flipping Demo Mode reloads.
+  const loadKey = `${demo ? 'demo' : 'live'}:${userId ?? ''}`;
   const [deals, setDeals] = useState<DealBundle[]>([]);
   // Which account the current `deals` belong to — loading is simply
   // "haven't finished a load for this account yet", so switching accounts
   // shows a spinner instead of the previous account's deals.
   const [loadedFor, setLoadedFor] = useState<string | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
-  const isLoading = available && loadedFor !== userId;
+  const isLoading = available && loadedFor !== loadKey;
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -58,9 +61,9 @@ export function MyDealsProvider({ children }: { children: ReactNode }) {
       console.error('Loading deals failed:', error);
       setLoadFailed(true);
     } finally {
-      setLoadedFor(userId);
+      setLoadedFor(loadKey);
     }
-  }, [available, userId]);
+  }, [available, userId, loadKey]);
 
   // First load for this account. (Inline rather than calling refresh(),
   // so a stale response can be ignored after switching accounts.)
@@ -78,19 +81,19 @@ export function MyDealsProvider({ children }: { children: ReactNode }) {
         if (!cancelled) setLoadFailed(true);
       })
       .finally(() => {
-        if (!cancelled) setLoadedFor(userId);
+        if (!cancelled) setLoadedFor(loadKey);
       });
     return () => {
       cancelled = true;
     };
-  }, [available, userId]);
+  }, [available, userId, loadKey]);
 
   useEffect(() => {
     if (!available || !userId) return;
     return subscribeToDealChanges(`customer-${userId}`, () => {
       refresh();
     });
-  }, [available, userId, refresh]);
+  }, [available, userId, refresh, demo]);
 
   const selectDeal = useCallback((dealId: string) => {
     setSelectedId(dealId);
@@ -110,7 +113,7 @@ export function MyDealsProvider({ children }: { children: ReactNode }) {
   );
 
   // Never show another account's deals (e.g. right after logging out).
-  const visibleDeals = useMemo(() => (available && loadedFor === userId ? deals : []), [available, loadedFor, userId, deals]);
+  const visibleDeals = useMemo(() => (available && loadedFor === loadKey ? deals : []), [available, loadedFor, loadKey, deals]);
   const selected = useMemo(
     () => visibleDeals.find((b) => b.deal.id === selectedId) ?? visibleDeals[0] ?? null,
     [visibleDeals, selectedId],

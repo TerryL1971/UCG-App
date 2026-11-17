@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { MapPinIcon, MessageIcon, UserIcon, WrenchIcon } from '@/components/icons';
@@ -10,12 +10,13 @@ import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
 import { useChat } from '@/lib/chat-context';
 import { resetDemoData } from '@/lib/deals-demo';
-import { DEMO_MODE } from '@/lib/demo-mode';
+import { DEMO_SWITCH_AVAILABLE, setDemoMode, useDemoMode } from '@/lib/demo-mode';
 import { useVinScan } from '@/lib/vin-scan-context';
 
 export default function AccountScreen() {
   const { user, logOut, base, deleteAccount } = useAuth();
   const { staffProfile } = useChat();
+  const demo = useDemoMode();
   const { clearLastScannedVin } = useVinScan();
 
   // Clears what this phone holds (drafts, the remembered deal, a pending
@@ -128,7 +129,7 @@ export default function AccountScreen() {
 
       {/* Only for accounts an admin has added to staff_members — see the
           private_chat migration. Customers never see this row. */}
-      {(staffProfile || DEMO_MODE) && (
+      {(staffProfile || demo) && (
         <Pressable style={styles.linkRow} onPress={() => router.push('/staff')}>
           <MessageIcon size={18} color={Colors.navy} />
           <View style={{ flex: 1 }}>
@@ -148,7 +149,21 @@ export default function AccountScreen() {
         <Text style={styles.linkRowChevron}>›</Text>
       </Pressable>
 
-      {DEMO_MODE && (
+      {DEMO_SWITCH_AVAILABLE && (
+        <View style={styles.linkRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.linkRowTitle}>Demo Mode</Text>
+            <Text style={styles.linkRowSub}>
+              {demo
+                ? 'On: sample deals on this phone, for showing the app'
+                : 'Off: real deals from UCG, like a real customer'}
+            </Text>
+          </View>
+          <Switch value={demo} onValueChange={setDemoMode} trackColor={{ true: Colors.navy }} />
+        </View>
+      )}
+
+      {demo && (
         <Pressable
           style={styles.linkRow}
           onPress={() =>

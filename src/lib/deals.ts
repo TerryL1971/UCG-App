@@ -10,7 +10,7 @@ import {
   demoUpdateDeal,
   demoUploadDealFile,
 } from '@/lib/deals-demo';
-import { DEMO_MODE } from '@/lib/demo-mode';
+import { isDemoMode } from '@/lib/demo-mode';
 import { supabase } from '@/lib/supabase';
 
 /**
@@ -150,7 +150,7 @@ async function bundlesFor(deals: Deal[]): Promise<DealBundle[]> {
 
 /** The signed-in customer's own deals, newest first. */
 export async function fetchMyDeals(userId: string): Promise<DealBundle[]> {
-  if (DEMO_MODE) return demoFetchMyDeals();
+  if (isDemoMode()) return demoFetchMyDeals();
   const { data, error } = await client()
     .from('deals')
     .select('*')
@@ -161,7 +161,7 @@ export async function fetchMyDeals(userId: string): Promise<DealBundle[]> {
 }
 
 export async function fetchDealBundle(dealId: string): Promise<DealBundle | null> {
-  if (DEMO_MODE) return demoFetchDealBundle(dealId);
+  if (isDemoMode()) return demoFetchDealBundle(dealId);
   const { data, error } = await client().from('deals').select('*').eq('id', dealId).maybeSingle();
   if (error) throw error;
   if (!data) return null;
@@ -175,7 +175,7 @@ export type LinkResult =
 
 /** Deal # + last name → connects the deal to the signed-in account. */
 export async function linkMyDeal(dealNumber: string, lastName: string): Promise<LinkResult> {
-  if (DEMO_MODE) return demoLinkMyDeal(dealNumber, lastName);
+  if (isDemoMode()) return demoLinkMyDeal(dealNumber, lastName);
   const { data, error } = await client().rpc('link_my_deal', {
     p_deal_number: dealNumber.trim(),
     p_last_name: lastName.trim(),
@@ -195,7 +195,7 @@ export async function linkMyDeal(dealNumber: string, lastName: string): Promise<
 
 /** All deals (RLS returns everything to active staff), newest first. */
 export async function fetchStaffDeals(): Promise<Deal[]> {
-  if (DEMO_MODE) return demoFetchStaffDeals();
+  if (isDemoMode()) return demoFetchStaffDeals();
   const { data, error } = await client().from('deals').select('*').order('created_at', { ascending: false }).limit(200);
   if (error) throw error;
   return data as Deal[];
@@ -231,14 +231,14 @@ function saveError(error: { code?: string; message: string }): SaveDealResult {
 }
 
 export async function createDeal(input: NewDeal): Promise<SaveDealResult> {
-  if (DEMO_MODE) return demoCreateDeal(input);
+  if (isDemoMode()) return demoCreateDeal(input);
   const { data, error } = await client().from('deals').insert(input).select('*').single();
   if (error) return saveError(error);
   return { ok: true, deal: data as Deal };
 }
 
 export async function updateDeal(dealId: string, input: Partial<NewDeal>): Promise<SaveDealResult> {
-  if (DEMO_MODE) return demoUpdateDeal(dealId, input);
+  if (isDemoMode()) return demoUpdateDeal(dealId, input);
   const { data, error } = await client().from('deals').update(input).eq('id', dealId).select('*').single();
   if (error) return saveError(error);
   return { ok: true, deal: data as Deal };
@@ -251,7 +251,7 @@ export async function setMilestone(
   userId: string,
   happenedOn?: string,
 ): Promise<void> {
-  if (DEMO_MODE) return demoSetMilestone(dealId, milestone, done, happenedOn);
+  if (isDemoMode()) return demoSetMilestone(dealId, milestone, done, happenedOn);
   if (done) {
     const { error } = await client()
       .from('deal_milestones')
@@ -285,7 +285,7 @@ export async function uploadDealFile(params: {
   role: 'customer' | 'staff';
   userId: string;
 }): Promise<DealFile> {
-  if (DEMO_MODE) return demoUploadDealFile(params);
+  if (isDemoMode()) return demoUploadDealFile(params);
   const path = `${params.dealId}/${params.docType}-${randomId()}.pdf`;
   // fetch(uri) → arrayBuffer() is the reliable way to read a local file
   // for Storage on React Native (a Blob isn't).
@@ -316,7 +316,7 @@ export async function uploadDealFile(params: {
 /** A short-lived link for viewing or sharing one document. */
 export async function signedFileUrl(storagePath: string, expiresInSeconds = 600): Promise<string> {
   // Demo mode: a local file:// uri (callers open/share it directly).
-  if (DEMO_MODE) return demoFileUri(storagePath);
+  if (isDemoMode()) return demoFileUri(storagePath);
   const { data, error } = await client().storage.from(BUCKET).createSignedUrl(storagePath, expiresInSeconds);
   if (error || !data) throw error ?? new Error('No signed URL');
   return data.signedUrl;
@@ -329,7 +329,7 @@ export async function signedFileUrl(storagePath: string, expiresInSeconds = 600)
 /** Calls `onChange` on any change to deals, status marks or documents the
  * user can see. Callers just refetch — simpler than patching state. */
 export function subscribeToDealChanges(key: string, onChange: () => void): () => void {
-  if (DEMO_MODE) return demoSubscribe(onChange);
+  if (isDemoMode()) return demoSubscribe(onChange);
   const channel = client()
     .channel(`deals-${key}`)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'deals' }, onChange)

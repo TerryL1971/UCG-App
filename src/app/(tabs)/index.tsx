@@ -11,7 +11,7 @@ import { baseName } from '@/constants/bases';
 import { Button } from '@/components/ui/button';
 import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
-import { DEMO_MODE } from '@/lib/demo-mode';
+import { useDemoMode } from '@/lib/demo-mode';
 import {
   computeSteps,
   currentDeadline,
@@ -127,6 +127,7 @@ function DealView({
   onChanged: () => void;
 }) {
   const { deal, milestones, files } = bundle;
+  const demo = useDemoMode();
   const flow = flowOf(deal);
   const steps = useMemo(() => computeSteps(deal, milestones, files, baseId), [deal, milestones, files, baseId]);
   const deadline = currentDeadline(deal, milestones);
@@ -149,7 +150,7 @@ function DealView({
 
   return (
     <View style={{ gap: Spacing.md }}>
-      {DEMO_MODE && (
+      {demo && (
         <View style={styles.demoBanner}>
           <Text style={styles.demoText}>Demo deal with sample data.</Text>
           <Text

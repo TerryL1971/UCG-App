@@ -59,8 +59,12 @@ pay-by countdown), 90002 DEN purchase, 90003 selling to UCG. "Act as the
 salesperson" on My Deal opens the staff screen for that deal, so one
 phone can demo both sides. Account → Reset Demo Data puts them back.
 
-**At launch:** add `EXPO_PUBLIC_DEMO_MODE=false` to `.env`, apply the
-migration below, and restart Expo — the app then uses Supabase.
+**Account → Demo Mode** switches it per phone: on to show the app, off to
+use real deals from Supabase (the migration is applied and the
+`delete-account` function is deployed as of 2026-11-17).
+
+**At launch:** add `EXPO_PUBLIC_DEMO_MODE=false` to `.env` and restart
+Expo — that forces real data everywhere and hides the switch.
 
 ## Setup — once (real data)
 

@@ -8,7 +8,7 @@ import { Field } from '@/components/ui/field';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { useChat } from '@/lib/chat-context';
-import { DEMO_MODE } from '@/lib/demo-mode';
+import { useDemoMode } from '@/lib/demo-mode';
 import { toIsoDate } from '@/lib/deal-flow';
 import { createDeal, fetchDealBundle, updateDeal, type DealKind, type NewDeal, type PaymentMethod } from '@/lib/deals';
 
@@ -22,6 +22,7 @@ export default function StaffDealFormScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const editing = Boolean(id);
   const { staffProfile } = useChat();
+  const demo = useDemoMode();
 
   const [loading, setLoading] = useState(editing);
   const [saving, setSaving] = useState(false);
@@ -157,7 +158,7 @@ export default function StaffDealFormScreen() {
     }
   };
 
-  if (!staffProfile && !DEMO_MODE) {
+  if (!staffProfile && !demo) {
     return (
       <SafeAreaView style={styles.screen} edges={['top']}>
         <ScreenHeader title="Deal" />
