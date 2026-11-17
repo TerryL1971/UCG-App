@@ -275,7 +275,9 @@ function DealView({
             American Auto Nation from another insurer). */}
         {((viewed.status === 'current' && !viewed.lockedReason) ||
           (viewed.id === 'insurance' && viewed.status === 'done') ||
-          (viewed.id === 'delivered' && viewed.status === 'done')) && (
+          // Pick-up day: photo, review and "I've picked up my car" are
+          // always offered, even if earlier steps weren't all ticked.
+          viewed.id === 'delivered') && (
           <StepActions step={viewed} flow={flow} bundle={bundle} userId={userId} onChanged={onChanged} />
         )}
 
@@ -293,7 +295,10 @@ function DealView({
         {/* Also offered one step ahead: the salesperson's WhatsApp ("customs
             is all done") can arrive before the customer finished the step
             they're on. */}
-        {(viewed.status !== 'upcoming' || viewedIndex === currentIndex + 1) && !viewed.lockedReason && tick && !ticked && (
+        {(viewed.status !== 'upcoming' || viewedIndex === currentIndex + 1 || viewed.id === 'delivered') &&
+          !viewed.lockedReason &&
+          tick &&
+          !ticked && (
           <Pressable style={styles.tickButton} onPress={() => setTick(true)}>
             <View style={styles.tickBox} />
             <Text style={styles.tickLabel}>{tick.label}</Text>

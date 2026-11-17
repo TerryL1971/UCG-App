@@ -76,10 +76,13 @@ export function PickupExtras({ deal }: { deal: Deal }) {
           </View>
         </View>
       ) : (
-        <Pressable style={styles.primary} onPress={takePhoto}>
-          <CameraIcon color="#fff" strokeWidth={2.2} />
-          <Text style={styles.primaryLabel}>Take My Pickup Photo</Text>
-        </Pressable>
+        <View style={{ gap: 6 }}>
+          <Pressable style={styles.primary} onPress={takePhoto}>
+            <CameraIcon color="#fff" strokeWidth={2.2} />
+            <Text style={styles.primaryLabel}>Take My Pickup Photo</Text>
+          </Pressable>
+          <Text style={styles.hint}>Hand your phone to {who === 'UCG' ? 'your salesperson' : who} for a photo of you with your new car.</Text>
+        </View>
       )}
 
       <Pressable style={styles.review} onPress={leaveReview}>
@@ -107,6 +110,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   primaryLabel: { fontFamily: Fonts.bodyBold, fontSize: 14.5, color: '#fff' },
+  hint: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textMuted, textAlign: 'center' },
   photoCard: {
     flexDirection: 'row',
     gap: 12,
