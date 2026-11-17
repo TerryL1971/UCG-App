@@ -8,59 +8,35 @@ import { Button } from '@/components/ui/button';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
 import { useChat } from '@/lib/chat-context';
-import { useDeal } from '@/lib/deal-context';
-import { useDealIntake } from '@/lib/deal-intake-context';
-import { useDealSync } from '@/lib/deal-sync';
-import { useDealDocuments } from '@/lib/documents-context';
-import { resetOwnerCode } from '@/lib/document-storage';
-import { useSaved } from '@/lib/saved-context';
 import { useVinScan } from '@/lib/vin-scan-context';
-import { useWarranty } from '@/lib/warranty-context';
 
 export default function AccountScreen() {
   const { user, logOut } = useAuth();
   const { staffProfile } = useChat();
-  const { clearCar } = useDeal();
-  const { clearIntake } = useDealIntake();
-  const { reset: resetDealSync } = useDealSync();
-  const { resetDocuments } = useDealDocuments();
-  const { clearSaved } = useSaved();
   const { clearLastScannedVin } = useVinScan();
-  const { clearChoice: clearWarrantyChoice } = useWarranty();
 
-  // Wipes everything this app holds about you — account, chosen car,
-  // deal-intake submission, My Deal timeline progress, uploaded
-  // documents, saved cars, any pending VIN scan — and starts over from
-  // onboarding. Meant for testing (there's no real backend yet, so this
-  // IS the complete deletion, not a partial one), but the same
-  // underlying idea (a real, complete, self-service delete) is what
-  // Apple will require once real backend accounts exist — see
-  // docs/backend-and-ai-agent-plan.md.
-  const resetTestData = () => {
-    Alert.alert('Erase Everything & Start Over', 'This clears your account, chosen car, saved cars, and everything you’ve entered — there’s no undo. Continue?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Reset',
-        style: 'destructive',
-        onPress: () => {
-          clearIntake();
-          clearCar();
-          resetDealSync();
-          resetDocuments();
-          resetOwnerCode().catch(() => {});
-          // sell-back.tsx's own draft-autosave (Terry, 2026-10-15) — left
-          // out here would silently repopulate the Sell It Back form on
-          // next visit, contradicting this alert's "clears... everything
-          // you've entered" promise.
-          AsyncStorage.removeItem('ucg.sellBackDraft').catch(() => {});
-          clearWarrantyChoice();
-          clearSaved();
-          clearLastScannedVin();
-          logOut();
-          router.replace('/');
+  // Clears what this phone holds (drafts, the remembered deal, a pending
+  // VIN scan) and logs out. The deal and its documents live in the UCG
+  // account (Supabase), so they're untouched — a real "delete my
+  // account" (an App Store requirement) is a separate, server-side job.
+  const clearThisPhone = () => {
+    Alert.alert(
+      'Clear This Phone & Log Out',
+      'This logs you out and clears drafts saved on this phone. Your deal and documents stay safe in your UCG account.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear',
+          style: 'destructive',
+          onPress: () => {
+            AsyncStorage.multiRemove(['ucg.sellBackDraft', 'ucg.selectedDealId']).catch(() => {});
+            clearLastScannedVin();
+            logOut();
+            router.replace('/');
+          },
         },
-      },
-    ]);
+      ],
+    );
   };
 
   return (
@@ -80,8 +56,8 @@ export default function AccountScreen() {
           </View>
         ) : (
           <View style={{ flex: 1 }}>
-            <Text style={styles.name}>Browsing as Guest</Text>
-            <Text style={styles.email}>Create an account to save your progress</Text>
+            <Text style={styles.name}>Not logged in</Text>
+            <Text style={styles.email}>Log in to see your deal and documents</Text>
           </View>
         )}
       </View>
@@ -99,8 +75,8 @@ export default function AccountScreen() {
         <Pressable style={styles.linkRow} onPress={() => router.push('/staff')}>
           <MessageIcon size={18} color={Colors.navy} />
           <View style={{ flex: 1 }}>
-            <Text style={styles.linkRowTitle}>Staff Inbox</Text>
-            <Text style={styles.linkRowSub}>Your private customer chats</Text>
+            <Text style={styles.linkRowTitle}>Staff</Text>
+            <Text style={styles.linkRowSub}>Deals, status marks, scans and customer chats</Text>
           </View>
           <Text style={styles.linkRowChevron}>›</Text>
         </Pressable>
@@ -128,13 +104,8 @@ export default function AccountScreen() {
             Log Out
           </Text>
         )}
-        {/* This is the more destructive of the two actions on this screen —
-            it wipes the account, chosen car, and everything entered, not
-            just the session — so it gets the alarming red/bordered
-            treatment Log Out doesn't need (Terry/David pre-launch UX
-            pass: the styling was backwards from the real stakes). */}
-        <Pressable style={styles.resetTestDataButton} onPress={resetTestData}>
-          <Text style={styles.resetTestData}>Erase Everything & Start Over</Text>
+        <Pressable style={styles.resetTestDataButton} onPress={clearThisPhone}>
+          <Text style={styles.resetTestData}>Clear This Phone & Log Out</Text>
         </Pressable>
       </View>
     </SafeAreaView>

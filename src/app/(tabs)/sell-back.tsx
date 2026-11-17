@@ -4,15 +4,14 @@ import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import { useEffect, useState } from 'react';
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CameraIcon, CheckCircleIcon, ClockIcon, MapPinIcon, PlusIcon, ShieldIcon } from '@/components/icons';
-import { DocumentCard } from '@/components/document-card';
 import { Button } from '@/components/ui/button';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
-import { SUPPORT_WHATSAPP, ucgLocations, usareurBases, whatsappChatUrl } from '@/constants/mock-data';
-import { buildSellBackBillOfSaleHtml, type SellBackDealInput } from '@/lib/deal-documents';
+import { ucgLocations, usareurBases } from '@/constants/ucg-info';
+import { useChat } from '@/lib/chat-context';
 import { compressPhoto } from '@/lib/image';
 import { isValidEmail } from '@/lib/validation';
 import { useVinScan } from '@/lib/vin-scan-context';
@@ -31,7 +30,7 @@ const MAX_PHOTOS = 15;
 // before (this was originally, incorrectly, placed on the car detail
 // screen for the opposite direction — buying FROM UCG — and moved here
 // once that was caught). Only Ramstein/KMC's real booking link exists so
-// far; see ucgLocations in mock-data.ts.
+// far; see ucgLocations in constants/ucg-info.ts.
 const preBuyInspectionLocation = ucgLocations.find((l) => l.bookingUrl);
 
 // 'enteringAmount' — added 2026-09-21 (Terry: a real sell-side Bill of
@@ -68,6 +67,7 @@ interface SellBackDraft {
 
 export default function SellBackScreen() {
   const { lastScannedVin, clearLastScannedVin } = useVinScan();
+  const { messageSpecialist } = useChat();
   const [offerStatus, setOfferStatus] = useState<OfferStatus>('form');
 
   // Name/email/phone are mandatory and collected up front now (Terry,
@@ -297,7 +297,7 @@ export default function SellBackScreen() {
     //
     // This now also actually tells someone (Terry, Oct 13) — it didn't
     // before. usedcarguys.net's own "Sell Your Vehicle" page does the
-    // same thing: one tap straight into WhatsApp with the details, no
+    // same thing: one tap and the details are sent, no
     // in-app compose-and-review step first (unlike the main buying
     // flow's salesperson.tsx, which deliberately doesn't auto-launch —
     // there's no equivalent in-app chat screen here to review it in
@@ -317,27 +317,15 @@ export default function SellBackScreen() {
       `Condition: ${condition}`,
       `Duty station: ${effectiveDutyStation}`,
       notes.trim() ? `Notes: ${notes.trim()}` : '',
-      // Doesn't claim they're "ready to send here in the chat" — that's
-      // not guaranteed (compressPhoto saves into this app's own private
-      // sandbox, not the system Photos library, so they may not show up
-      // in WhatsApp's own attach-photo picker). The Share button on each
-      // photo above (uses the native share sheet directly) is the real,
-      // guaranteed-to-work path (Terry, 2026-10-15).
-      photos.length
-        ? `I have ${photos.length} photo${photos.length > 1 ? 's' : ''} taken — tap Share on each one above to send them separately.`
-        : '',
+      // The chat is text-only; photos stay on the customer's phone and
+      // can be shared with the Share button on each one.
+      photos.length ? `I have ${photos.length} photo${photos.length > 1 ? 's' : ''} of the car ready to share.` : '',
     ]
       .filter(Boolean)
       .join('\n');
-    // Awaited now, and only advances on real success (Terry, 2026-10-15,
-    // catching a real bug) — this used to fire-and-forget and show
-    // "Your Request Is In" regardless of whether WhatsApp actually opened.
-    try {
-      await Linking.openURL(whatsappChatUrl(SUPPORT_WHATSAPP, message));
-    } catch {
-      Alert.alert('Could not open WhatsApp', "Make sure WhatsApp is installed, then try again — nothing's been sent yet.");
-      return;
-    }
+    // Goes into the customer's private in-app chat (Terry, 2026-11-09:
+    // keep the customer inside the app) instead of opening WhatsApp.
+    await messageSpecialist(message);
     setOfferStatus('awaitingAccept');
     // The submission succeeded — nothing left to recover a draft of.
     AsyncStorage.removeItem(SELL_BACK_DRAFT_KEY).catch(() => {});
@@ -403,23 +391,6 @@ export default function SellBackScreen() {
               return;
             }
             setOfferStatus('accepted');
-          }}
-          sellBackInput={{
-            plateOrVin: plate,
-            vehicleYear,
-            mileage,
-            mileageUnit,
-            spec,
-            condition,
-            sellerName,
-            sellerContact,
-            sellerEmail,
-            acceptedAmount: Number(acceptedAmountText.replace(/[^0-9.]/g, '')) || 0,
-            hasLien,
-            lienHolder: hasLien ? lienHolder : undefined,
-            lienAccountNumber: hasLien ? lienAccountNumber : undefined,
-            payoffAmount: hasLien ? Number(payoffAmountText.replace(/[^0-9.]/g, '')) || 0 : undefined,
-            payoffDate: hasLien ? payoffDate : undefined,
           }}
         />
       ) : (
@@ -617,7 +588,7 @@ export default function SellBackScreen() {
           </ScrollView>
 
           <View style={styles.footer}>
-            <Button label="Send My Offer Request (via WhatsApp)" onPress={handleSubmit} />
+            <Button label="Send My Offer Request" onPress={handleSubmit} />
             <View style={styles.trustRow}>
               <Trust icon={<ShieldIcon size={20} />} label="No obligation" />
               <Trust icon={<ClockIcon size={20} />} label="Real offers, real fast" />
@@ -648,7 +619,6 @@ function OfferStatusView({
   payoffDate,
   setPayoffDate,
   onConfirmAccept,
-  sellBackInput,
 }: {
   status: Exclude<OfferStatus, 'form'>;
   dutyStation: string | null;
@@ -667,7 +637,6 @@ function OfferStatusView({
   payoffDate: string;
   setPayoffDate: (v: string) => void;
   onConfirmAccept: () => void;
-  sellBackInput: SellBackDealInput;
 }) {
   // Wipes every field on this screen with no way back — same real-world
   // severity as Account's "Erase Everything & Start Over," which already
@@ -771,8 +740,7 @@ function OfferStatusView({
         <>
           <Text style={styles.statusTitle}>Your Request Is In</Text>
           <Text style={styles.statusBody}>
-            A specialist will text you a real offer within one business day. Once you&apos;ve accepted it over text or
-            WhatsApp, come back here to confirm and book your inspection.
+            A UCG salesperson will reply in your in-app chat with a real offer within one business day. Once you&apos;ve accepted it, come back here to confirm and book your inspection.
           </Text>
           <Button label="I've Accepted My Offer" onPress={onAccept} style={styles.statusButton} />
         </>
@@ -813,21 +781,15 @@ function OfferStatusView({
             </Text>
           </Pressable>
 
-          <View style={{ width: '100%' }}>
-            <DocumentCard
-              docId="sell-back-bill-of-sale"
-              title="Bill of Sale / Kaufvertrag"
-              description="UCG purchasing this vehicle from you — print or share to sign with your specialist."
-              buildHtml={() => buildSellBackBillOfSaleHtml(sellBackInput)}
-              context={{
-                customerName: sellBackInput.sellerName,
-                customerContact: sellBackInput.sellerContact,
-                carTitle: sellBackInput.vehicleYear
-                  ? `${sellBackInput.vehicleYear} model year, VIN ${sellBackInput.plateOrVin}`
-                  : sellBackInput.plateOrVin,
-              }}
-            />
-          </View>
+          {/* The real Bill of Sale comes from DealerTeam and is signed
+              with the salesperson; the app no longer generates a sample
+              one. Once it's signed, the salesperson opens the selling
+              deal in the app and it shows up on My Deal. */}
+          <Text style={styles.statusBody}>
+            Once you sign the Bill of Sale with your salesperson, connect your selling deal on My Deal with the Deal #
+            printed on it. Every step from there, and every document, is tracked in the app.
+          </Text>
+          <Button label="Go to My Deal" variant="secondary" onPress={() => router.push('/(tabs)')} style={styles.statusButton} />
         </>
       )}
 

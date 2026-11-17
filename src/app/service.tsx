@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MapPinIcon, MessageIcon, PhoneIcon, WrenchIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/ui/screen-header';
-import { whatsappChatUrl } from '@/constants/mock-data';
+import { whatsappChatUrl } from '@/constants/ucg-info';
 import { serviceContact, serviceLinks, serviceOfferings } from '@/constants/service-center';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { directionsUrl } from '@/lib/maps';

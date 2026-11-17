@@ -50,10 +50,10 @@ export default function OnboardingScreen() {
       <SafeAreaView style={styles.body} edges={['bottom']}>
         <View style={[styles.card, Shadow.card]}>
           <Image source={logo} style={styles.logo} contentFit="contain" />
-          <Text style={styles.title}>Your next car,{'\n'}one step at a time.</Text>
+          <Text style={styles.title}>Your deal,{'\n'}one step at a time.</Text>
           <Text style={styles.subtitle}>
-            Browse the lot, get matched with your deal team, and track your whole deal — financing to pickup
-            — in one place.
+            Follow every step from your deposit to your plates, keep all your paperwork in one place, and chat with
+            your salesperson.
           </Text>
         </View>
 
@@ -61,7 +61,7 @@ export default function OnboardingScreen() {
           <Button label="Create Account" onPress={() => router.push('/create-account')} />
           <Button label="Log In" variant="secondary" onPress={() => router.push('/log-in')} />
           <Text style={styles.link} onPress={() => router.replace('/(tabs)')}>
-            Browse cars without an account
+            Look around first
           </Text>
         </View>
       </SafeAreaView>

@@ -67,7 +67,7 @@ export default function StaffInboxScreen() {
   if (!staffProfile || !user?.id) {
     return (
       <SafeAreaView style={styles.screen} edges={['top']}>
-        <ScreenHeader title="Staff Inbox" />
+        <ScreenHeader title="Staff" />
         <Text style={styles.note}>This screen is only for UCG staff accounts.</Text>
       </SafeAreaView>
     );
@@ -81,10 +81,14 @@ export default function StaffInboxScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
-      <ScreenHeader title="Staff Inbox" subtitle={`${staffProfile.display_name}${staffProfile.location ? ` · ${staffProfile.location}` : ''}`} />
+      <ScreenHeader title="Staff" subtitle={`${staffProfile.display_name}${staffProfile.location ? ` · ${staffProfile.location}` : ''}`} />
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refresh} tintColor={Colors.navy} />}>
+        <Pressable style={({ pressed }) => [styles.dealsCard, pressed && { opacity: 0.8 }]} onPress={() => router.push('/staff/deals')}>
+          <Text style={styles.dealsTitle}>Deals  →</Text>
+          <Text style={styles.dealsBody}>Open a deal for a customer, tap Retail Ready / Paid in Full / Delivered, and add scans.</Text>
+        </Pressable>
         {isLoading ? (
           <ActivityIndicator color={Colors.navy} style={{ marginTop: 32 }} />
         ) : loadFailed ? (
@@ -135,6 +139,9 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: Colors.bg },
   content: { paddingHorizontal: Spacing.xl, paddingBottom: Spacing.xxxl },
   note: { fontFamily: Fonts.body, fontSize: 14, color: Colors.textMuted, textAlign: 'center', margin: Spacing.xxl },
+  dealsCard: { backgroundColor: Colors.navy, borderRadius: Radius.lg, padding: 16, marginTop: Spacing.sm },
+  dealsTitle: { fontFamily: Fonts.display, fontSize: 19, color: '#fff' },
+  dealsBody: { fontFamily: Fonts.body, fontSize: 13, color: 'rgba(255,255,255,0.85)', marginTop: 2, lineHeight: 18 },
   sectionTitle: { fontFamily: Fonts.display, fontSize: 17, color: Colors.text, marginTop: Spacing.md },
   sectionHint: { fontFamily: Fonts.body, fontSize: 12.5, color: Colors.textMuted, marginTop: 2, marginBottom: Spacing.sm },
   empty: { fontFamily: Fonts.body, fontSize: 13, color: Colors.textFaint, marginVertical: Spacing.sm },

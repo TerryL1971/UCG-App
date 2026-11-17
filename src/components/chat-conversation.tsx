@@ -66,7 +66,7 @@ export function ChatConversation({
   initialDraft?: string;
   placeholder?: string;
   emptyNote?: string;
-  /** Rendered under the input (e.g. the customer's deposit/warranty CTAs). */
+  /** Optional content rendered under the input. */
   footer?: ReactNode;
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);

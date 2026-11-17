@@ -14,8 +14,7 @@ import Svg, { G, Path } from 'react-native-svg';
 
 import { CarSideIcon, CheckIcon, PackageIcon } from '@/components/icons';
 import { Colors, Fonts, Radius, Shadow } from '@/constants/theme';
-import type { DealStep } from '@/constants/mock-data';
-import type { InventoryDetail } from '@/lib/ucg-inventory';
+import type { DealStep } from '@/lib/deal-flow';
 
 const AnimatedG = Animated.createAnimatedComponent(G);
 
@@ -221,7 +220,8 @@ const signStyles = StyleSheet.create({
 
 interface TimelineRoadProps {
   steps: DealStep[];
-  car: InventoryDetail | null;
+  /** Optional photo shown at the final stop once the car is delivered. */
+  car: { thumbnail: string } | null;
   /** Which stop the car is currently sitting at / showing detail for —
    * controlled by the parent so a back/forward control can drive it. */
   viewedIndex: number;

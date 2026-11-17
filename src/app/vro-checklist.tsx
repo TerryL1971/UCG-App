@@ -7,15 +7,14 @@ import { CheckCircleIcon, MapPinIcon } from '@/components/icons';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import {
-  guessVehicleSpec,
   sellBackChecklist,
   vroBaseline,
   vroOfficeForBase,
   type VehicleSpec,
   type VroItem,
 } from '@/constants/vro-checklists';
-import { useDeal } from '@/lib/deal-context';
-import { useDealIntake } from '@/lib/deal-intake-context';
+import { vehicleLabel } from '@/lib/deal-flow';
+import { useMyDeals } from '@/lib/my-deals-context';
 import { openUrlWithFeedback } from '@/lib/linking';
 
 /**
@@ -30,13 +29,17 @@ import { openUrlWithFeedback } from '@/lib/linking';
 export default function VroChecklistScreen() {
   const { mode } = useLocalSearchParams<{ mode?: string }>();
   const selling = mode === 'sell';
-  const { car } = useDeal();
-  const { intake } = useDealIntake();
-  const carLabel = car ? `${car.year} ${car.title}` : 'your car';
-  const base = intake?.base;
+  const { selected } = useMyDeals();
+  const deal = selected?.deal;
+  const carLabel = deal ? vehicleLabel(deal) : 'your car';
+  // The base isn't on the deal paperwork, so the office isn't known yet;
+  // the screen already falls back to "your salesperson gives you the
+  // office details".
+  const base: string | undefined = undefined;
   const office = vroOfficeForBase(base);
 
-  const [spec, setSpec] = useState<VehicleSpec>(guessVehicleSpec(car?.stockNumber));
+  // A DEN car has never been on the USAREUR system, so it's EU-spec.
+  const [spec, setSpec] = useState<VehicleSpec>(deal?.is_den ? 'eu' : 'us');
   const buyChecklist = vroBaseline[spec];
 
   const ucgProvides = selling ? sellBackChecklist.ucgProvides : buyChecklist.ucgProvides;
@@ -61,8 +64,8 @@ export default function VroChecklistScreen() {
               <SegOption label="EU-spec car" active={spec === 'eu'} onPress={() => setSpec('eu')} />
             </View>
             <Text style={styles.segHint}>
-              {car?.stockNumber?.toUpperCase().startsWith('DEN')
-                ? 'Your stock number starts with DEN, so this is most likely an EU-spec car. Your salesperson will confirm.'
+              {deal?.is_den
+                ? 'Your car has never been on the USAREUR system, so this is an EU-spec car. Your salesperson will confirm.'
                 : 'Not sure which? Check your Purchase Order or Cost Estimate — it states this. US-spec usually means a mph speedometer; EU-spec means km/h. Your salesperson knows for certain.'}
             </Text>
             <Text style={styles.segHint}>
@@ -157,18 +160,10 @@ function ChecklistRow({ item, done }: { item: VroItem; done?: boolean }) {
       <View style={{ flex: 1 }}>
         <Text style={styles.rowLabel}>{item.label}</Text>
         {item.detail ? <Text style={styles.rowDetail}>{item.detail}</Text> : null}
-        {item.link ? <Text style={styles.rowLink}>See American Auto Nation  →</Text> : null}
       </View>
     </View>
   );
 
-  if (item.link) {
-    return (
-      <Pressable style={styles.row} onPress={() => router.push(item.link!)}>
-        {body}
-      </Pressable>
-    );
-  }
   return <View style={styles.row}>{body}</View>;
 }
 

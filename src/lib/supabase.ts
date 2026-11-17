@@ -22,8 +22,7 @@ import { Platform } from 'react-native';
  * app — that one stays server-only, for whenever a real `+api.ts` route
  * needs elevated access.
  *
- * Same "fake the APIs we don't control yet, real ones we do" strategy as
- * `chat+api.ts`/`paypal-server.ts`: `isSupabaseConfigured` is false until
+ * `isSupabaseConfigured` is false until
  * real project credentials exist, and every consumer (starting with
  * `auth-context.tsx`) is expected to fall back to today's local-only
  * behavior when it is. Nothing breaks for Terry testing in Expo Go

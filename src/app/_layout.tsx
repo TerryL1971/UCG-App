@@ -17,13 +17,7 @@ import { StatusBar } from 'react-native';
 import { AnimatedSplash } from '@/components/animated-splash';
 import { AuthProvider } from '@/lib/auth-context';
 import { ChatProvider } from '@/lib/chat-context';
-import { DealProvider } from '@/lib/deal-context';
-import { DealIntakeProvider } from '@/lib/deal-intake-context';
-import { DealSyncProvider } from '@/lib/deal-sync';
-import { DealDocumentsProvider } from '@/lib/documents-context';
-import { LicenseCaptureProvider } from '@/lib/license-capture-context';
-import { WarrantyProvider } from '@/lib/warranty-context';
-import { SavedProvider } from '@/lib/saved-context';
+import { MyDealsProvider } from '@/lib/my-deals-context';
 import { VinScanProvider } from '@/lib/vin-scan-context';
 
 SplashScreen.preventAutoHideAsync();
@@ -65,27 +59,17 @@ function AppShell({ fontsLoaded }: { fontsLoaded: boolean }) {
         <Stack.Screen name="verify-email" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="reset-password" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="car/[id]" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="deal-intake" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="salesperson" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="deposit" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="warranty" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="insurance" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="add-ons" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="winter-tires" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="paint-protection" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="payment" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="road-to-plates" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="vro-checklist" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="service" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="wire-instructions" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="deal-paperwork" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="road-to-plates" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="staff/index" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="staff/[threadId]" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="staff/deals" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="staff/deal-form" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="staff/deal/[id]" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="scan-vin" options={{ animation: 'slide_from_bottom', presentation: 'fullScreenModal' }} />
-        <Stack.Screen
-          name="capture-license"
-          options={{ animation: 'slide_from_bottom', presentation: 'fullScreenModal' }}
-        />
       </Stack>
       {showAnimatedSplash && <AnimatedSplash onFinish={() => setShowAnimatedSplash(false)} />}
     </>
@@ -104,25 +88,13 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <DealProvider>
-        <DealIntakeProvider>
-          <DealSyncProvider>
-            <ChatProvider>
-              <DealDocumentsProvider>
-                <WarrantyProvider>
-                  <SavedProvider>
-                    <VinScanProvider>
-                      <LicenseCaptureProvider>
-                        <AppShell fontsLoaded={fontsLoaded} />
-                      </LicenseCaptureProvider>
-                    </VinScanProvider>
-                  </SavedProvider>
-                </WarrantyProvider>
-              </DealDocumentsProvider>
-            </ChatProvider>
-          </DealSyncProvider>
-        </DealIntakeProvider>
-      </DealProvider>
+      <MyDealsProvider>
+        <ChatProvider>
+          <VinScanProvider>
+            <AppShell fontsLoaded={fontsLoaded} />
+          </VinScanProvider>
+        </ChatProvider>
+      </MyDealsProvider>
     </AuthProvider>
   );
 }

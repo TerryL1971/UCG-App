@@ -11,7 +11,7 @@ import Animated, {
 
 import { CheckIcon, PackageIcon } from '@/components/icons';
 import { Colors } from '@/constants/theme';
-import type { DealStepStatus } from '@/constants/mock-data';
+import type { StepStatus as DealStepStatus } from '@/lib/deal-flow';
 
 const DONE_SIZE = 34;
 const CURRENT_SIZE = 40;

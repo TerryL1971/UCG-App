@@ -18,9 +18,6 @@ export type VehicleSpec = 'us' | 'eu';
 export interface VroItem {
   label: string;
   detail?: string;
-  /** When set, this line links to another screen (e.g. the insurance
-   * line points customers at American Auto Nation). */
-  link?: '/insurance';
 }
 
 export interface VroChecklist {
@@ -51,8 +48,7 @@ const SHARED_YOU_BRING: VroItem[] = [
   {
     label: 'Proof of Insurance for Germany',
     detail:
-      'An eVB / Blank ICC / Deckungskarte from a German-market policy. American Auto Nation — UCG’s own insurance, built for USAREUR drivers — can set this up, and your first month’s premium is reimbursed.',
-    link: '/insurance',
+      'An eVB / Blank ICC / Deckungskarte from a German-market policy. You arrange this yourself with the insurer of your choice.',
   },
   { label: 'POV limit waiver (AE Form 190-1AG)', detail: 'Only if you’re over the vehicle limit — approved by your commander (O-3 / GS equivalent or above).' },
 ];
@@ -87,7 +83,7 @@ export const vroBaseline: Record<VehicleSpec, VroChecklist> = {
       {
         label: 'VAT form',
         detail:
-          'For a never-USAREUR-registered car (DEN stock number): UCG gives you a Cost Estimate; you take 3–5 copies to the VAT Office and to Service Federal Credit Union or Community Bank for an official cashier’s check; the VAT Office issues the form; UCG stamps it. Your salesperson walks you through this.',
+          'For a never-USAREUR-registered (DEN) car: you take your Cost Estimate to your bank for a cashier’s check for the Total Price (or get approved loan paperwork), then take it with the Cost Estimate to the VAT office on base, which issues the VAT forms ($100). Your salesperson walks you through this.',
       },
       { label: 'German title book (Fahrzeugbrief) and registration (Fahrzeugschein)' },
       {
@@ -183,33 +179,4 @@ export function vroOfficeForBase(base: string | undefined | null): VroOffice | n
   if (!base) return null;
   const b = base.toLowerCase();
   return vroOffices.find((o) => b.includes(o.base.toLowerCase())) ?? null;
-}
-
-/** A "DEN" prefix means an EU-spec car that has **never been registered
- * on the USAREUR-AF system** (see docs/purchase-paperwork.md). These are
- * the cars that go through the Cost Estimate → VAT Form process, and the
- * hold payment on them can't legally be a "deposit" — it's a refundable
- * reservation fee. A plain "DE" prefix is a car that was USAREUR-
- * registered (or is US-spec), and a normal deposit is fine. */
-export function isDenStock(stockNumber: string | undefined | null): boolean {
-  return !!stockNumber && /^den/i.test(stockNumber);
-}
-
-/** Best guess at US-spec vs EU-spec from the stock number: `DEN` → EU-spec
- * (never USAREUR-registered). Anything else defaults to US-spec. The VRO
- * screen lets the customer flip it — the salesperson knows for sure. */
-export function guessVehicleSpec(stockNumber: string | undefined | null): VehicleSpec {
-  return isDenStock(stockNumber) ? 'eu' : 'us';
-}
-
-/** The word for the $300 hold payment, anywhere it's mentioned outside
- * deposit.tsx itself (which has its own local `feeNoun`/`feeNounTitle` —
- * this is the same wording, centralized for the other screens that also
- * need it). Never "deposit"/"Deposit" on a DEN-stock car — see
- * isDenStock's doc comment and docs/purchase-paperwork.md's "The deposit
- * is not a deposit". */
-export function holdFeeNoun(stockNumber: string | undefined | null, capitalized = false): string {
-  const isFee = isDenStock(stockNumber);
-  if (capitalized) return isFee ? 'Reservation Fee' : 'Deposit';
-  return isFee ? 'reservation fee' : 'deposit';
 }

@@ -2,36 +2,28 @@ import { router } from 'expo-router';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Alert } from 'react-native';
 
-import { specialistWhatsapp, whatsappChatUrl } from '@/constants/mock-data';
+import { SUPPORT_WHATSAPP, whatsappChatUrl } from '@/constants/ucg-info';
 import { useAuth } from '@/lib/auth-context';
 import { fetchMyStaffProfile, getOrCreateCustomerThread, sendChatMessage, type StaffProfile } from '@/lib/chat';
-import { useDeal } from '@/lib/deal-context';
-import { useDealIntake } from '@/lib/deal-intake-context';
-import { useDealSync } from '@/lib/deal-sync';
+import { vehicleLabel } from '@/lib/deal-flow';
 import { openUrlWithFeedback } from '@/lib/linking';
+import { useMyDeals } from '@/lib/my-deals-context';
 import { isSupabaseConfigured } from '@/lib/supabase';
 
 /**
- * Decides, in one place, where a customer's "message my specialist" goes
- * (Terry, 2026-11-09: the customer should stay inside the app until they
- * pick up their car):
+ * Decides, in one place, where a customer's "message my salesperson" goes
+ * (Terry, 2026-11-09: the customer stays inside the app):
  *
- *  - Logged in with a real Supabase account → the private in-app chat
- *    (chat.ts / the private_chat migration). The message is posted into
- *    their thread and they land on the chat screen — they never leave
- *    the app.
- *  - Guest browsing, or no Supabase configured → today's WhatsApp
- *    hand-off, unchanged (Trengo by default, the specialist's own number
- *    once `onPersonalWhatsapp` is set — see specialistWhatsapp()).
- *
- * Every screen that used to build its own wa.me link (insurance, winter
- * tires, PPF, deposit trouble, documents code) calls `messageSpecialist`
- * instead, so the routing rule can't drift between screens.
+ *  - Signed in with Supabase → the private in-app chat. Connecting a deal
+ *    hands that chat straight to the deal's salesperson (link_my_deal in
+ *    the deals migration).
+ *  - No Supabase configured (local testing only) → UCG's WhatsApp inbox,
+ *    since there's no in-app chat to use.
  */
 interface ChatContextValue {
   /** True when this user can use the in-app chat as a customer. */
   available: boolean;
-  /** Non-null when the logged-in account is active UCG staff. */
+  /** Non-null when the signed-in account is active UCG staff. */
   staffProfile: StaffProfile | null;
   /** The customer's name/car snapshot written onto a new thread. */
   threadDetails: { customerName: string | null; carLabel: string | null };
@@ -42,9 +34,7 @@ const ChatContext = createContext<ChatContextValue | null>(null);
 
 export function ChatProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const { car } = useDeal();
-  const { intake } = useDealIntake();
-  const { state: dealState } = useDealSync();
+  const { selected } = useMyDeals();
   const userId = user?.id;
   const available = isSupabaseConfigured && Boolean(userId);
   // Keyed by the user it was fetched for, so logging out (or switching
@@ -69,21 +59,22 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     };
   }, [available, userId]);
 
+  const deal = selected?.deal;
   const threadDetails = useMemo(
     () => ({
-      customerName: intake?.fullName?.trim() || user?.name || null,
-      carLabel: car ? `${car.year} ${car.title}` : null,
+      customerName: deal?.customer_name || user?.name || null,
+      carLabel: deal ? vehicleLabel(deal) : null,
     }),
-    [intake?.fullName, user?.name, car],
+    [deal, user?.name],
   );
 
   const openWhatsApp = useCallback(
     (text: string) =>
       openUrlWithFeedback(
-        whatsappChatUrl(specialistWhatsapp(dealState.salesperson, dealState.onPersonalWhatsapp), text),
+        whatsappChatUrl(SUPPORT_WHATSAPP, text),
         "Couldn't open WhatsApp — make sure it's installed, then try again. Your message wasn't sent.",
       ),
-    [dealState.salesperson, dealState.onPersonalWhatsapp],
+    [],
   );
 
   const messageSpecialist = useCallback(
@@ -98,12 +89,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         router.push('/salesperson');
       } catch (error) {
         console.error('In-app chat send failed:', error);
-        // Never strand the customer: offer the old path rather than just
-        // saying "failed" (matters most in a live demo or on base Wi-Fi).
-        Alert.alert("Couldn't send that in the app", 'Check your connection and try again, or send it on WhatsApp instead.', [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Send on WhatsApp', onPress: () => openWhatsApp(text) },
-        ]);
+        Alert.alert("Couldn't send that", 'Check your connection and try again.');
       }
     },
     [available, userId, threadDetails, openWhatsApp],
