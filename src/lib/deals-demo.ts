@@ -9,7 +9,6 @@ import type {
   DealFile,
   DealMilestone,
   DocType,
-  LinkResult,
   Milestone,
   NewDeal,
   SaveDealResult,
@@ -34,7 +33,7 @@ interface DemoStore {
   files: DealFile[];
 }
 
-const STORAGE_KEY = 'ucg.demoDeals.v2';
+const STORAGE_KEY = 'ucg.demoDeals.v3';
 const DEMO_PREFIX = 'demo:';
 
 let store: DemoStore | null = null;
@@ -53,8 +52,12 @@ function seed(): DemoStore {
     customer_name: 'Taylor Buyer',
     customer_last_name: 'Buyer',
     customer_id: DEMO_CUSTOMER_ID,
-    salesperson_id: DEMO_STAFF_ID,
-    salesperson_name: DEMO_STAFF_NAME,
+    salesperson_id: null,
+    salesperson_name: 'Demo Salesperson',
+    // No WhatsApp on demo deals: "Message my salesperson" goes to UCG's
+    // general WhatsApp instead of a made-up number.
+    salesperson_whatsapp: null,
+    dealership: 'Ramstein',
     lender: null,
     pay_in_full_days: 5,
   };
@@ -191,7 +194,6 @@ function bundle(s: DemoStore, deal: Deal): DealBundle {
   };
 }
 
-const normalizeName = (name: string) => name.toLowerCase().replace(/[^a-z]/g, '');
 
 export async function demoFetchMyDeals(): Promise<DealBundle[]> {
   const s = await load();
@@ -207,25 +209,6 @@ export async function demoFetchDealBundle(dealId: string): Promise<DealBundle | 
   return deal ? bundle(s, deal) : null;
 }
 
-export async function demoFetchStaffDeals(): Promise<Deal[]> {
-  const s = await load();
-  return [...s.deals].sort((a, b) => b.created_at.localeCompare(a.created_at));
-}
-
-export async function demoLinkMyDeal(dealNumber: string, lastName: string): Promise<LinkResult> {
-  const s = await load();
-  const deal = s.deals.find(
-    (d) =>
-      d.deal_number === dealNumber.trim() &&
-      normalizeName(d.customer_last_name) === normalizeName(lastName) &&
-      (d.customer_id === null || d.customer_id === DEMO_CUSTOMER_ID),
-  );
-  if (!deal) return { ok: false, reason: 'not_found' };
-  deal.customer_id = DEMO_CUSTOMER_ID;
-  save();
-  return { ok: true, deal };
-}
-
 function clean(input: Partial<NewDeal>): Partial<NewDeal> {
   return {
     ...input,
@@ -238,14 +221,12 @@ function clean(input: Partial<NewDeal>): Partial<NewDeal> {
 export async function demoCreateDeal(input: NewDeal): Promise<SaveDealResult> {
   const s = await load();
   const c = clean(input) as NewDeal;
-  if (s.deals.some((d) => d.deal_number === c.deal_number)) return { ok: false, reason: 'duplicate_deal_number' };
   const now = new Date().toISOString();
   const deal: Deal = {
     ...c,
     id: `demo-deal-${id()}`,
-    customer_id: null,
-    salesperson_id: DEMO_STAFF_ID,
-    salesperson_name: DEMO_STAFF_NAME,
+    customer_id: DEMO_CUSTOMER_ID,
+    salesperson_id: null,
     created_at: now,
     updated_at: now,
   };
@@ -257,14 +238,19 @@ export async function demoCreateDeal(input: NewDeal): Promise<SaveDealResult> {
 export async function demoUpdateDeal(dealId: string, input: Partial<NewDeal>): Promise<SaveDealResult> {
   const s = await load();
   const c = clean(input);
-  if (c.deal_number && s.deals.some((d) => d.deal_number === c.deal_number && d.id !== dealId)) {
-    return { ok: false, reason: 'duplicate_deal_number' };
-  }
   const deal = s.deals.find((d) => d.id === dealId);
   if (!deal) return { ok: false, reason: 'error', message: 'Deal not found' };
   Object.assign(deal, c, { updated_at: new Date().toISOString() });
   save();
   return { ok: true, deal };
+}
+
+export async function demoDeleteDeal(dealId: string): Promise<void> {
+  const s = await load();
+  s.deals = s.deals.filter((d) => d.id !== dealId);
+  s.milestones = s.milestones.filter((m) => m.deal_id !== dealId);
+  s.files = s.files.filter((f) => f.deal_id !== dealId);
+  save();
 }
 
 export async function demoSetMilestone(dealId: string, milestone: Milestone, done: boolean, happenedOn?: string) {
@@ -276,8 +262,8 @@ export async function demoSetMilestone(dealId: string, milestone: Milestone, don
       milestone,
       happened_on: happenedOn ?? toIsoDate(new Date()),
       marked_at: new Date().toISOString(),
-      marked_by: DEMO_STAFF_ID,
-      marked_by_name: DEMO_STAFF_NAME,
+      marked_by: DEMO_CUSTOMER_ID,
+      marked_by_name: 'You',
     });
   }
   save();

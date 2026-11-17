@@ -1,10 +1,9 @@
 import {
   demoCreateDeal,
+  demoDeleteDeal,
   demoFetchDealBundle,
   demoFetchMyDeals,
-  demoFetchStaffDeals,
   demoFileUri,
-  demoLinkMyDeal,
   demoSetMilestone,
   demoSubscribe,
   demoUpdateDeal,
@@ -36,6 +35,10 @@ export interface Deal {
   customer_id: string | null;
   salesperson_id: string | null;
   salesperson_name: string | null;
+  /** The salesperson's WhatsApp, digits with country code, no '+'. */
+  salesperson_whatsapp: string | null;
+  /** Which UCG location sold the car (constants/salespeople.ts). */
+  dealership: string | null;
   vehicle_year: number | null;
   vehicle_make: string | null;
   vehicle_model: string | null;
@@ -169,49 +172,6 @@ export async function fetchDealBundle(dealId: string): Promise<DealBundle | null
   return bundle;
 }
 
-export type LinkResult =
-  | { ok: true; deal: Deal }
-  | { ok: false; reason: 'not_found' | 'too_many_attempts' | 'error' };
-
-/** Deal # + last name → connects the deal to the signed-in account. */
-export async function linkMyDeal(dealNumber: string, lastName: string): Promise<LinkResult> {
-  if (isDemoMode()) return demoLinkMyDeal(dealNumber, lastName);
-  const { data, error } = await client().rpc('link_my_deal', {
-    p_deal_number: dealNumber.trim(),
-    p_last_name: lastName.trim(),
-  });
-  if (error) {
-    if (error.message.includes('not_found')) return { ok: false, reason: 'not_found' };
-    if (error.message.includes('too_many_attempts')) return { ok: false, reason: 'too_many_attempts' };
-    console.error('link_my_deal failed:', error.message);
-    return { ok: false, reason: 'error' };
-  }
-  return { ok: true, deal: data as Deal };
-}
-
-// ---------------------------------------------------------------------
-// Staff
-// ---------------------------------------------------------------------
-
-/** All deals (RLS returns everything to active staff), newest first. */
-export async function fetchStaffDeals(): Promise<Deal[]> {
-  if (isDemoMode()) return demoFetchStaffDeals();
-  const { data, error } = await client().from('deals').select('*').order('created_at', { ascending: false }).limit(200);
-  if (error) throw error;
-  return data as Deal[];
-}
-
-/** All deals with their status marks and documents — for the staff
- * "Waiting on you" list, which needs to know each deal's current step. */
-export async function fetchStaffDealBundles(): Promise<DealBundle[]> {
-  if (isDemoMode()) {
-    const deals = await demoFetchStaffDeals();
-    const bundles = await Promise.all(deals.map((d) => demoFetchDealBundle(d.id)));
-    return bundles.filter((b): b is DealBundle => b !== null);
-  }
-  return bundlesFor(await fetchStaffDeals());
-}
-
 export type NewDeal = Pick<
   Deal,
   | 'kind'
@@ -232,18 +192,25 @@ export type NewDeal = Pick<
   | 'lender'
   | 'document_date'
   | 'pay_in_full_days'
+  | 'salesperson_name'
+  | 'salesperson_whatsapp'
+  | 'dealership'
 >;
 
-export type SaveDealResult = { ok: true; deal: Deal } | { ok: false; reason: 'duplicate_deal_number' | 'error'; message?: string };
+export type SaveDealResult = { ok: true; deal: Deal } | { ok: false; reason: 'error'; message?: string };
 
 function saveError(error: { code?: string; message: string }): SaveDealResult {
-  if (error.code === '23505') return { ok: false, reason: 'duplicate_deal_number' };
   return { ok: false, reason: 'error', message: error.message };
 }
 
-export async function createDeal(input: NewDeal): Promise<SaveDealResult> {
+/** The customer sets up their own deal from their paperwork. */
+export async function createMyDeal(input: NewDeal, userId: string): Promise<SaveDealResult> {
   if (isDemoMode()) return demoCreateDeal(input);
-  const { data, error } = await client().from('deals').insert(input).select('*').single();
+  const { data, error } = await client()
+    .from('deals')
+    .insert({ ...input, customer_id: userId })
+    .select('*')
+    .single();
   if (error) return saveError(error);
   return { ok: true, deal: data as Deal };
 }
@@ -253,6 +220,14 @@ export async function updateDeal(dealId: string, input: Partial<NewDeal>): Promi
   const { data, error } = await client().from('deals').update(input).eq('id', dealId).select('*').single();
   if (error) return saveError(error);
   return { ok: true, deal: data as Deal };
+}
+
+/** Removes a deal the customer set up (e.g. by mistake). Its documents
+ * go with it. */
+export async function deleteMyDeal(dealId: string): Promise<void> {
+  if (isDemoMode()) return demoDeleteDeal(dealId);
+  const { error } = await client().from('deals').delete().eq('id', dealId);
+  if (error) throw error;
 }
 
 export async function setMilestone(
@@ -267,7 +242,7 @@ export async function setMilestone(
     const { error } = await client()
       .from('deal_milestones')
       .insert({ deal_id: dealId, milestone, marked_by: userId, ...(happenedOn ? { happened_on: happenedOn } : {}) });
-    // Already marked (e.g. two taps, or a colleague got there first) is fine.
+    // Already ticked (e.g. a double tap) is fine.
     if (error && error.code !== '23505') throw error;
   } else {
     const { error } = await client().from('deal_milestones').delete().eq('deal_id', dealId).eq('milestone', milestone);

@@ -4,6 +4,7 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } fr
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BasePicker } from '@/components/base-picker';
+import { normalizeWhatsapp } from '@/constants/salespeople';
 import { Field } from '@/components/ui/field';
 import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/ui/screen-header';
@@ -19,7 +20,9 @@ export default function CreateAccountScreen() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [errors, setErrors] = useState<{ name?: string; email?: string; password?: string; base?: string }>({});
+  // Required (Terry, 2026-11-17): WhatsApp is how UCG talks to customers.
+  const [whatsapp, setWhatsapp] = useState('');
+  const [errors, setErrors] = useState<{ name?: string; email?: string; password?: string; base?: string; whatsapp?: string }>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -29,15 +32,17 @@ export default function CreateAccountScreen() {
     if (!isValidEmail(email)) next.email = 'Enter a valid email address.';
     if (password.length < 6) next.password = 'Use at least 6 characters.';
     if (!base) next.base = 'Pick the base you’re stationed at.';
+    const whatsappDigits = normalizeWhatsapp(whatsapp);
+    if (!whatsappDigits) next.whatsapp = 'Enter your WhatsApp number, with country code (e.g. +49 151 2345 6789).';
     setErrors(next);
     setFormError(null);
-    if (Object.keys(next).length > 0 || !base) return;
+    if (Object.keys(next).length > 0 || !base || !whatsappDigits) return;
 
     setIsSubmitting(true);
     try {
       // Async either way — a stub in local stand-in mode, a real network
       // call once real Supabase credentials exist (see auth-context.tsx).
-      const result = await signUp(name.trim(), email.trim(), password, base);
+      const result = await signUp(name.trim(), email.trim(), password, base, whatsappDigits);
       if (result.error) {
         setFormError(friendlyAuthError(result.error));
         return;
@@ -64,7 +69,7 @@ export default function CreateAccountScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent} keyboardShouldPersistTaps="handled">
           <Text style={styles.intro}>
-            Create an account to follow your deal, keep your paperwork, and chat with your salesperson.
+            Create an account to follow your deal step by step, keep your paperwork, and reach your salesperson on WhatsApp.
           </Text>
 
           <Field
@@ -83,6 +88,15 @@ export default function CreateAccountScreen() {
             autoCapitalize="none"
             keyboardType="email-address"
             error={errors.email}
+          />
+          <Field
+            label="WhatsApp Number"
+            value={whatsapp}
+            onChangeText={setWhatsapp}
+            placeholder="+49 151 2345 6789"
+            keyboardType="phone-pad"
+            autoComplete="tel"
+            error={errors.whatsapp}
           />
           <Field
             label="Password"

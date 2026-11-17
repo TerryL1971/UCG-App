@@ -6,23 +6,27 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
 import { ScreenHeader } from '@/components/ui/screen-header';
+import { DEALERSHIPS, normalizeWhatsapp, SALESPEOPLE } from '@/constants/salespeople';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
-import { useChat } from '@/lib/chat-context';
-import { useDemoMode } from '@/lib/demo-mode';
+import { useAuth } from '@/lib/auth-context';
 import { toIsoDate } from '@/lib/deal-flow';
-import { createDeal, fetchDealBundle, updateDeal, type DealKind, type NewDeal, type PaymentMethod } from '@/lib/deals';
+import { createMyDeal, deleteMyDeal, fetchDealBundle, updateDeal, type DealKind, type NewDeal, type PaymentMethod } from '@/lib/deals';
+import { DEMO_CUSTOMER_ID } from '@/lib/demo-mode';
+import { useMyDeals } from '@/lib/my-deals-context';
 
 /**
- * A salesperson types the handful of fields the app needs straight off
- * the paperwork: Purchase Order (buying), Cost Estimate (DEN) or Bill of
- * Sale (selling). This is the stand-in until the app can read those PDFs
- * by itself — the same fields, filled automatically, later.
+ * "Start my car plan" — the customer copies a few things off the
+ * paperwork their salesperson gave them once the $300 deposit was taken
+ * (Purchase Order, Cost Estimate for DEN cars, or Bill of Sale when
+ * selling), and picks their salesperson. No UCG employee uses the app
+ * (Terry, 2026-11-17), so this is how a deal gets into it. Later the app
+ * can read these fields off the PDF by itself.
  */
-export default function StaffDealFormScreen() {
+export default function DealSetupScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const editing = Boolean(id);
-  const { staffProfile } = useChat();
-  const demo = useDemoMode();
+  const { user } = useAuth();
+  const { refresh, selectDeal } = useMyDeals();
 
   const [loading, setLoading] = useState(editing);
   const [saving, setSaving] = useState(false);
@@ -32,9 +36,6 @@ export default function StaffDealFormScreen() {
   const [isDen, setIsDen] = useState(false);
   const [dealNumber, setDealNumber] = useState('');
   const [stockNumber, setStockNumber] = useState('');
-  const [customerName, setCustomerName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [lastNameTouched, setLastNameTouched] = useState(false);
   const [year, setYear] = useState('');
   const [make, setMake] = useState('');
   const [model, setModel] = useState('');
@@ -46,8 +47,10 @@ export default function StaffDealFormScreen() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [lender, setLender] = useState('');
   const [documentDate, setDocumentDate] = useState(toIsoDate(new Date()));
-  // UCG's pay-in-full window: 5 days for now (Terry, 2026-11-17).
-  const [payDays, setPayDays] = useState('5');
+  const [salespersonName, setSalespersonName] = useState('');
+  const [salespersonWhatsapp, setSalespersonWhatsapp] = useState('');
+  const [dealership, setDealership] = useState<string | null>(null);
+  const [payDays, setPayDays] = useState(5);
 
   useEffect(() => {
     if (!id) return;
@@ -59,9 +62,6 @@ export default function StaffDealFormScreen() {
         setIsDen(d.is_den);
         setDealNumber(d.deal_number);
         setStockNumber(d.stock_number);
-        setCustomerName(d.customer_name);
-        setLastName(d.customer_last_name);
-        setLastNameTouched(true);
         setYear(d.vehicle_year ? String(d.vehicle_year) : '');
         setMake(d.vehicle_make ?? '');
         setModel(d.vehicle_model ?? '');
@@ -73,59 +73,51 @@ export default function StaffDealFormScreen() {
         setPaymentMethod(d.payment_method ?? 'cash');
         setLender(d.lender ?? '');
         setDocumentDate(d.document_date);
-        setPayDays(String(d.pay_in_full_days));
+        setSalespersonName(d.salesperson_name ?? '');
+        setSalespersonWhatsapp(d.salesperson_whatsapp ?? '');
+        setDealership(d.dealership);
+        setPayDays(d.pay_in_full_days);
       })
-      .catch(() => Alert.alert("Couldn't load that deal", 'Go back and try again.'))
+      .catch(() => Alert.alert("Couldn't load your deal", 'Go back and try again.'))
       .finally(() => setLoading(false));
   }, [id]);
 
   const purchaseNonDen = kind === 'purchase' && !isDen;
-
-  const onNameChange = (value: string) => {
-    setCustomerName(value);
-    if (!lastNameTouched) {
-      const parts = value.trim().split(/\s+/);
-      setLastName(parts.length > 1 ? parts[parts.length - 1] : '');
-    }
-  };
-
+  const paperwork = kind === 'sale' ? 'Bill of Sale' : isDen ? 'Cost Estimate' : 'Purchase Order';
   const parseMoney = (value: string) => Number(value.replace(/[^0-9.]/g, ''));
+
+  const pickSalesperson = (name: string) => {
+    const person = SALESPEOPLE.find((p) => p.name === name);
+    if (!person) return;
+    setSalespersonName(person.name);
+    setSalespersonWhatsapp(person.whatsapp);
+    setDealership(person.dealership);
+  };
 
   const save = async () => {
     const next: Record<string, string> = {};
-    if (!dealNumber.trim()) next.dealNumber = 'Required — top right of the paperwork.';
-    if (!stockNumber.trim()) next.stockNumber = 'Required.';
-    if (!customerName.trim()) next.customerName = 'Required.';
-    if (!lastName.trim()) next.lastName = 'Required — the customer types this to connect.';
+    if (!dealNumber.trim()) next.dealNumber = `Top right of your ${paperwork}.`;
+    if (!stockNumber.trim()) next.stockNumber = `On your ${paperwork}.`;
     const cleanVin = vin.replace(/\s/g, '').toUpperCase();
-    if (cleanVin.length < 11 || cleanVin.length > 17) next.vin = 'A VIN is 17 characters (older cars can be shorter).';
+    if (cleanVin.length < 11 || cleanVin.length > 17) next.vin = 'The VIN is 17 characters (older cars can be shorter).';
     const price = parseMoney(totalPrice);
-    if (!totalPrice.trim() || !Number.isFinite(price)) next.totalPrice = 'Required.';
+    if (!totalPrice.trim() || !Number.isFinite(price)) next.totalPrice = 'Copy it from your paperwork.';
     if (!/^\d{4}-\d{2}-\d{2}$/.test(documentDate.trim())) next.documentDate = 'Use YYYY-MM-DD, e.g. 2026-11-17.';
     const yearNum = year.trim() ? Number(year) : null;
     if (yearNum !== null && (!Number.isInteger(yearNum) || yearNum < 1950 || yearNum > 2100)) next.year = 'Four digits.';
-    const days = Number(payDays);
-    if (purchaseNonDen && (!Number.isInteger(days) || days < 1 || days > 60)) next.payDays = 'Days, from term 2.';
+    const whatsappDigits = salespersonWhatsapp.trim() ? normalizeWhatsapp(salespersonWhatsapp) : null;
+    if (salespersonWhatsapp.trim() && !whatsappDigits) next.salespersonWhatsapp = 'Include the country code, e.g. +49 151 2345 6789.';
     setErrors(next);
     if (Object.keys(next).length > 0) return;
 
-    if (cleanVin.length !== 17) {
-      const go = await new Promise<boolean>((resolve) =>
-        Alert.alert('VIN is not 17 characters', `"${cleanVin}" has ${cleanVin.length}. Save anyway?`, [
-          { text: 'Fix it', style: 'cancel', onPress: () => resolve(false) },
-          { text: 'Save', onPress: () => resolve(true) },
-        ]),
-      );
-      if (!go) return;
-    }
-
+    const name = user?.name?.trim() || 'Customer';
     const input: NewDeal = {
       kind,
       is_den: kind === 'purchase' && isDen,
       deal_number: dealNumber.trim(),
       stock_number: stockNumber.trim(),
-      customer_name: customerName.trim(),
-      customer_last_name: lastName.trim(),
+      customer_name: name,
+      customer_last_name: name.split(/\s+/).pop() ?? name,
       vehicle_year: yearNum,
       vehicle_make: make.trim() || null,
       vehicle_model: model.trim() || null,
@@ -133,76 +125,83 @@ export default function StaffDealFormScreen() {
       vin: cleanVin,
       odometer: odometer.trim() ? Math.round(parseMoney(odometer)) : null,
       total_price: price,
-      // No deposit is ever recorded on a DEN deal (VAT rules) or a sale.
+      // Never a deposit on a DEN deal (VAT rules) or a sale.
       deposit: purchaseNonDen ? parseMoney(deposit) || 0 : 0,
       payment_method: kind === 'purchase' ? paymentMethod : null,
       lender: kind === 'purchase' && paymentMethod === 'finance' ? lender.trim() || null : null,
       document_date: documentDate.trim(),
-      pay_in_full_days: purchaseNonDen ? days : 5,
+      pay_in_full_days: payDays,
+      salesperson_name: salespersonName.trim() || null,
+      salesperson_whatsapp: whatsappDigits,
+      dealership,
     };
 
     setSaving(true);
-    const result = editing && id ? await updateDeal(id, input) : await createDeal(input);
+    const result = editing && id ? await updateDeal(id, input) : await createMyDeal(input, user?.id ?? DEMO_CUSTOMER_ID);
     setSaving(false);
     if (!result.ok) {
-      if (result.reason === 'duplicate_deal_number') {
-        setErrors({ dealNumber: 'A deal with this Deal # is already in the app.' });
-      } else {
-        Alert.alert("Couldn't save", result.message ?? 'Check your connection and try again.');
-      }
+      Alert.alert("Couldn't save", result.message ?? 'Check your connection and try again.');
       return;
     }
-    if (editing) {
-      router.back();
-    } else {
-      router.replace({ pathname: '/staff/deal/[id]', params: { id: result.deal.id } });
-    }
+    selectDeal(result.deal.id);
+    await refresh();
+    router.back();
   };
 
-  if (!staffProfile && !demo) {
-    return (
-      <SafeAreaView style={styles.screen} edges={['top']}>
-        <ScreenHeader title="Deal" />
-        <Text style={styles.note}>This screen is only for UCG staff accounts.</Text>
-      </SafeAreaView>
-    );
-  }
-
-  const paperwork = kind === 'sale' ? 'Bill of Sale' : isDen ? 'Cost Estimate' : 'Purchase Order';
+  const remove = () => {
+    if (!id) return;
+    Alert.alert('Remove this deal?', 'It and its documents are removed from the app. Your real deal with UCG is not affected.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteMyDeal(id);
+            await refresh();
+            router.back();
+          } catch {
+            Alert.alert("Couldn't remove it", 'Check your connection and try again.');
+          }
+        },
+      },
+    ]);
+  };
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
-      <ScreenHeader title={editing ? 'Edit Deal' : 'New Deal'} subtitle={`Copy these from the ${paperwork}`} />
+      <ScreenHeader title={editing ? 'Edit My Deal' : 'Start My Car Plan'} subtitle={`Copy these from your ${paperwork}`} />
       {loading ? (
         <ActivityIndicator color={Colors.navy} style={{ marginTop: 32 }} />
       ) : (
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-            <Text style={styles.label}>Deal type</Text>
+            {!editing && (
+              <Text style={styles.intro}>
+                Your salesperson gave you your paperwork when you put down your deposit. Copy these details from it and
+                the app builds your step-by-step plan for your base.
+              </Text>
+            )}
+            <Text style={styles.label}>Are you…</Text>
             <Segmented
               options={[
-                { value: 'purchase', label: 'Customer buying' },
-                { value: 'sale', label: 'Customer selling' },
+                { value: 'purchase', label: 'Buying a car from UCG' },
+                { value: 'sale', label: 'Selling my car to UCG' },
               ]}
               value={kind}
               onChange={(v) => setKind(v as DealKind)}
             />
             {kind === 'purchase' && (
               <>
-                <Text style={styles.label}>Car</Text>
+                <Text style={styles.label}>Your paperwork is called…</Text>
                 <Segmented
                   options={[
-                    { value: 'no', label: 'Regular (Purchase Order)' },
-                    { value: 'yes', label: 'DEN (Cost Estimate)' },
+                    { value: 'no', label: 'Purchase Order' },
+                    { value: 'yes', label: 'Cost Estimate' },
                   ]}
                   value={isDen ? 'yes' : 'no'}
                   onChange={(v) => setIsDen(v === 'yes')}
                 />
-                {isDen && (
-                  <Text style={styles.hint}>
-                    DEN deals never show a deposit or reservation to the customer — no deposit is recorded.
-                  </Text>
-                )}
               </>
             )}
 
@@ -214,24 +213,6 @@ export default function StaffDealFormScreen() {
                 <Field label="Stock #" value={stockNumber} onChangeText={setStockNumber} autoCapitalize="characters" error={errors.stockNumber} />
               </View>
             </View>
-
-            <Field
-              label={kind === 'sale' ? 'Seller (customer) name' : 'Purchaser name'}
-              value={customerName}
-              onChangeText={onNameChange}
-              autoCapitalize="words"
-              error={errors.customerName}
-            />
-            <Field
-              label="Last name (for connecting)"
-              value={lastName}
-              onChangeText={(v) => {
-                setLastNameTouched(true);
-                setLastName(v);
-              }}
-              autoCapitalize="words"
-              error={errors.lastName}
-            />
 
             <View style={styles.row}>
               <View style={{ flex: 1 }}>
@@ -253,27 +234,24 @@ export default function StaffDealFormScreen() {
             <Field label="Odometer" value={odometer} onChangeText={setOdometer} keyboardType="number-pad" />
 
             <Field
-              label={
-                kind === 'sale'
-                  ? 'Total Vehicle Price (AE550), $'
-                  : isDen
-                    ? 'Total Price, $ (not the Total Amount with MWST)'
-                    : 'Total Price (AE550/VAT Form), $'
-              }
+              label={kind === 'sale' ? 'Total Vehicle Price, $' : 'Total Price, $'}
               value={totalPrice}
               onChangeText={setTotalPrice}
               keyboardType="decimal-pad"
               error={errors.totalPrice}
             />
-            {purchaseNonDen && <Field label="Deposit taken, $" value={deposit} onChangeText={setDeposit} keyboardType="decimal-pad" />}
+            {isDen && kind === 'purchase' && (
+              <Text style={styles.hint}>Use the Total Price — not the larger Total Amount that includes MWST.</Text>
+            )}
+            {purchaseNonDen && <Field label="Deposit paid, $" value={deposit} onChangeText={setDeposit} keyboardType="decimal-pad" />}
 
             {kind === 'purchase' && (
               <>
-                <Text style={styles.label}>Payment (Finance Company line)</Text>
+                <Text style={styles.label}>Paying</Text>
                 <Segmented
                   options={[
-                    { value: 'cash', label: 'Cash' },
-                    { value: 'finance', label: 'Financed' },
+                    { value: 'cash', label: 'Myself (cash / wire)' },
+                    { value: 'finance', label: 'With a loan' },
                   ]}
                   value={paymentMethod}
                   onChange={(v) => setPaymentMethod(v as PaymentMethod)}
@@ -283,23 +261,56 @@ export default function StaffDealFormScreen() {
             )}
 
             <Field
-              label={kind === 'sale' ? 'Purchase Date (YYYY-MM-DD)' : isDen ? 'Cost Estimate Date (YYYY-MM-DD)' : 'Deal Date (YYYY-MM-DD)'}
+              label={kind === 'sale' ? 'Purchase Date (YYYY-MM-DD)' : isDen ? 'Date (YYYY-MM-DD)' : 'Deal Date (YYYY-MM-DD)'}
               value={documentDate}
               onChangeText={setDocumentDate}
               autoCorrect={false}
               error={errors.documentDate}
             />
-            {purchaseNonDen && (
-              <Field
-                label="Days to pay in full (term 2)"
-                value={payDays}
-                onChangeText={setPayDays}
-                keyboardType="number-pad"
-                error={errors.payDays}
-              />
-            )}
 
-            <Button label={saving ? 'Saving…' : editing ? 'Save Changes' : 'Create Deal'} onPress={save} disabled={saving} />
+            <Text style={styles.section}>Your salesperson</Text>
+            <Text style={styles.sectionHint}>
+              Their name and number are at the top right of your {paperwork}. &quot;Message my salesperson&quot; opens
+              WhatsApp to them.
+            </Text>
+            {SALESPEOPLE.length > 0 && (
+              <View style={styles.chips}>
+                {SALESPEOPLE.map((p) => (
+                  <Pressable
+                    key={p.name}
+                    onPress={() => pickSalesperson(p.name)}
+                    style={[styles.chip, salespersonName === p.name && styles.chipActive]}>
+                    <Text style={[styles.chipLabel, salespersonName === p.name && styles.chipLabelActive]}>
+                      {p.name} · {p.dealership}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+            <Field label="Salesperson's name" value={salespersonName} onChangeText={setSalespersonName} autoCapitalize="words" />
+            <Field
+              label="Salesperson's WhatsApp"
+              value={salespersonWhatsapp}
+              onChangeText={setSalespersonWhatsapp}
+              keyboardType="phone-pad"
+              placeholder="+49 151 2345 6789"
+              error={errors.salespersonWhatsapp}
+            />
+            <Text style={styles.label}>Dealership</Text>
+            <View style={[styles.chips, { marginBottom: 18 }]}>
+              {DEALERSHIPS.map((d) => (
+                <Pressable key={d} onPress={() => setDealership(d)} style={[styles.chip, dealership === d && styles.chipActive]}>
+                  <Text style={[styles.chipLabel, dealership === d && styles.chipLabelActive]}>{d}</Text>
+                </Pressable>
+              ))}
+            </View>
+
+            <Button label={saving ? 'Saving…' : editing ? 'Save Changes' : 'Build My Plan'} onPress={save} disabled={saving} />
+            {editing && (
+              <Text style={styles.remove} onPress={remove}>
+                Remove this deal from the app
+              </Text>
+            )}
           </ScrollView>
         </KeyboardAvoidingView>
       )}
@@ -333,7 +344,7 @@ function Segmented({
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: Colors.bg },
   content: { paddingHorizontal: Spacing.xl, paddingBottom: Spacing.xxxl },
-  note: { fontFamily: Fonts.body, fontSize: 14, color: Colors.textMuted, textAlign: 'center', margin: Spacing.xl },
+  intro: { fontFamily: Fonts.body, fontSize: 13.5, color: Colors.textMuted, lineHeight: 19, marginBottom: 16 },
   label: {
     fontFamily: Fonts.bodyBold,
     fontSize: 12.5,
@@ -343,6 +354,8 @@ const styles = StyleSheet.create({
     marginBottom: 7,
   },
   hint: { fontFamily: Fonts.body, fontSize: 12.5, color: Colors.amber, marginTop: -8, marginBottom: 14, lineHeight: 17 },
+  section: { fontFamily: Fonts.display, fontSize: 18, color: Colors.text, marginTop: Spacing.md },
+  sectionHint: { fontFamily: Fonts.body, fontSize: 12.5, color: Colors.textMuted, lineHeight: 17, marginTop: 2, marginBottom: 12 },
   row: { flexDirection: 'row', gap: 10 },
   segmented: { flexDirection: 'row', gap: 8, marginBottom: 16 },
   segment: {
@@ -359,4 +372,24 @@ const styles = StyleSheet.create({
   segmentActive: { backgroundColor: Colors.navy, borderColor: Colors.navy },
   segmentLabel: { fontFamily: Fonts.bodySemibold, fontSize: 13, color: Colors.text, textAlign: 'center' },
   segmentLabelActive: { color: '#fff' },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
+  chip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: Radius.pill,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    backgroundColor: '#fff',
+  },
+  chipActive: { backgroundColor: Colors.navy, borderColor: Colors.navy },
+  chipLabel: { fontFamily: Fonts.bodySemibold, fontSize: 13, color: Colors.text },
+  chipLabelActive: { color: '#fff' },
+  remove: {
+    fontFamily: Fonts.bodySemibold,
+    fontSize: 13,
+    color: Colors.red,
+    textDecorationLine: 'underline',
+    textAlign: 'center',
+    marginTop: 18,
+  },
 });

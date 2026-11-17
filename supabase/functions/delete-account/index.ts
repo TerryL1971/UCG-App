@@ -12,11 +12,10 @@ import { createClient } from "@supabase/supabase-js";
  * the server (Supabase provides it to Edge Functions automatically) —
  * never in the app.
  *
- * What happens to their data (database foreign keys do this):
- *  - their private chat thread and its messages are deleted
- *  - their deals stay — UCG's record of a vehicle sale — but are no
- *    longer linked to any account (customer_id becomes null)
- *  - documents stay with the deal; the uploader link becomes null
+ * What gets deleted: the customer's car plans (deals they set up), their
+ * ticks, every document they added (database rows and the files in
+ * storage), and the account itself. Customers own their plans since
+ * 2026-11-17 (no UCG employee uses the app), so nothing is kept back.
  *
  * Deploy: `supabase functions deploy delete-account --use-api` (deployed
  * 2026-11-17).
@@ -53,6 +52,32 @@ Deno.serve(async (req) => {
   const admin = createClient(url, serviceKey);
   const { data: staff } = await admin.from("staff_members").select("user_id").eq("user_id", user.id).maybeSingle();
   if (staff) return json({ error: "staff_account" }, 403);
+
+  // Their car plans and documents first (files in storage aren't removed
+  // by the database cascade).
+  const { data: deals, error: dealsError } = await admin.from("deals").select("id").eq("customer_id", user.id);
+  if (dealsError) {
+    console.error("delete-account: listing deals failed:", dealsError.message);
+    return json({ error: "delete_failed" }, 500);
+  }
+  for (const deal of deals ?? []) {
+    const { data: files } = await admin.storage.from("deal-files").list(deal.id, { limit: 1000 });
+    const paths = (files ?? []).map((f) => `${deal.id}/${f.name}`);
+    if (paths.length > 0) {
+      const { error: removeError } = await admin.storage.from("deal-files").remove(paths);
+      if (removeError) {
+        console.error("delete-account: removing files failed:", removeError.message);
+        return json({ error: "delete_failed" }, 500);
+      }
+    }
+  }
+  if ((deals ?? []).length > 0) {
+    const { error: delDealsError } = await admin.from("deals").delete().eq("customer_id", user.id);
+    if (delDealsError) {
+      console.error("delete-account: deleting deals failed:", delDealsError.message);
+      return json({ error: "delete_failed" }, 500);
+    }
+  }
 
   const { error } = await admin.auth.admin.deleteUser(user.id);
   if (error) {

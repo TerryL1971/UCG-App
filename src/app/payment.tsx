@@ -15,7 +15,7 @@ import {
   wiseAccount,
 } from '@/constants/payment-instructions';
 import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
-import { useChat } from '@/lib/chat-context';
+import { messageSalesperson } from '@/lib/whatsapp';
 import { balanceDue, currentDeadline, flowOf, formatMoney } from '@/lib/deal-flow';
 import { useMyDeals } from '@/lib/my-deals-context';
 
@@ -32,7 +32,6 @@ import { useMyDeals } from '@/lib/my-deals-context';
  */
 export default function PaymentScreen() {
   const { selected } = useMyDeals();
-  const { messageSpecialist } = useChat();
 
   if (!selected) {
     return (
@@ -78,9 +77,7 @@ export default function PaymentScreen() {
             reference={reference}
             paid={paid}
             onSent={() =>
-              messageSpecialist(
-                `I've sent my wire of ${formatMoney(balanceDue(deal))} for Deal #${deal.deal_number} (${deal.stock_number}).`,
-              )
+              messageSalesperson(deal, `I've sent my wire of ${formatMoney(balanceDue(deal))}.`)
             }
           />
         )}
@@ -145,7 +142,7 @@ function WireInstructions({
         <Button
           label="I've Sent the Payment"
           onPress={() =>
-            Alert.alert('Tell your salesperson?', 'This sends a message in your private chat so they know to look out for it.', [
+            Alert.alert('Tell your salesperson?', 'This opens WhatsApp with a message to your salesperson, so they know to look out for it.', [
               { text: 'Cancel', style: 'cancel' },
               { text: 'Send', onPress: onSent },
             ])

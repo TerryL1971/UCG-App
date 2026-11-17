@@ -3,19 +3,17 @@ import { router } from 'expo-router';
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { MapPinIcon, MessageIcon, UserIcon, WrenchIcon } from '@/components/icons';
+import { MapPinIcon, UserIcon, WhatsAppIcon, WrenchIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { baseName } from '@/constants/bases';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
-import { useChat } from '@/lib/chat-context';
 import { resetDemoData } from '@/lib/deals-demo';
 import { DEMO_SWITCH_AVAILABLE, setDemoMode, useDemoMode } from '@/lib/demo-mode';
 import { useVinScan } from '@/lib/vin-scan-context';
 
 export default function AccountScreen() {
   const { user, logOut, base, deleteAccount } = useAuth();
-  const { staffProfile } = useChat();
   const demo = useDemoMode();
   const { clearLastScannedVin } = useVinScan();
 
@@ -47,7 +45,7 @@ export default function AccountScreen() {
   const confirmDelete = () => {
     Alert.alert(
       'Delete Your Account?',
-      'This permanently deletes your UCG app account and your private chat, and logs you out. Your deal paperwork stays with UCG, as the law requires for a vehicle sale. This cannot be undone.',
+      'This permanently deletes your UCG app account, your car plans and the documents you added, and logs you out. Your real deal with UCG is not affected. This cannot be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -127,14 +125,12 @@ export default function AccountScreen() {
         </View>
       )}
 
-      {/* Only for accounts an admin has added to staff_members — see the
-          private_chat migration. Customers never see this row. */}
-      {(staffProfile || demo) && (
-        <Pressable style={styles.linkRow} onPress={() => router.push('/staff')}>
-          <MessageIcon size={18} color={Colors.navy} />
+      {user && (
+        <Pressable style={styles.linkRow} onPress={() => router.push('/edit-whatsapp')}>
+          <WhatsAppIcon size={18} color={Colors.green} />
           <View style={{ flex: 1 }}>
-            <Text style={styles.linkRowTitle}>{staffProfile ? 'Staff' : 'Staff (demo)'}</Text>
-            <Text style={styles.linkRowSub}>Deals, status marks, scans and customer chats</Text>
+            <Text style={styles.linkRowTitle}>{user.whatsapp ? `WhatsApp +${user.whatsapp}` : 'Add your WhatsApp number'}</Text>
+            <Text style={styles.linkRowSub}>How UCG reaches you about your car</Text>
           </View>
           <Text style={styles.linkRowChevron}>›</Text>
         </Pressable>

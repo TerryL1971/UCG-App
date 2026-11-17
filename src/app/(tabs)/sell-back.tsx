@@ -16,7 +16,7 @@ import { useAuth } from '@/lib/auth-context';
 import { docTypeInfo, liveFiles, vehicleLabel } from '@/lib/deal-flow';
 import type { DealBundle } from '@/lib/deals';
 import { useMyDeals } from '@/lib/my-deals-context';
-import { useChat } from '@/lib/chat-context';
+import { messageSalesperson } from '@/lib/whatsapp';
 import { compressPhoto } from '@/lib/image';
 import { isValidEmail } from '@/lib/validation';
 import { useVinScan } from '@/lib/vin-scan-context';
@@ -74,7 +74,6 @@ interface SellBackDraft {
 
 export default function SellBackScreen() {
   const { lastScannedVin, clearLastScannedVin } = useVinScan();
-  const { messageSpecialist } = useChat();
   const { user, base } = useAuth();
   const { deals } = useMyDeals();
   // Cars the customer bought from UCG — selling one back means all of its
@@ -367,9 +366,10 @@ export default function SellBackScreen() {
     ]
       .filter(Boolean)
       .join('\n');
-    // Goes into the customer's private in-app chat (Terry, 2026-11-09:
-    // keep the customer inside the app) instead of opening WhatsApp.
-    await messageSpecialist(message);
+    // WhatsApp to the salesperson on that car's deal, or UCG's general
+    // WhatsApp for a car not bought from UCG (Terry, 2026-11-17: WhatsApp
+    // is how UCG talks to customers).
+    await messageSalesperson(sourceDeal?.deal ?? null, message);
     setOfferStatus('awaitingAccept');
     // The submission succeeded — nothing left to recover a draft of.
     AsyncStorage.removeItem(SELL_BACK_DRAFT_KEY).catch(() => {});
@@ -817,7 +817,7 @@ function OfferStatusView({
         <>
           <Text style={styles.statusTitle}>Your Request Is In</Text>
           <Text style={styles.statusBody}>
-            A UCG salesperson will reply in your in-app chat with a real offer within one business day. Once you&apos;ve accepted it, come back here to confirm and book your inspection.
+            A UCG salesperson will reply on WhatsApp with a real offer within one business day. Once you&apos;ve accepted it, come back here to confirm and book your inspection.
           </Text>
           <Button label="I've Accepted My Offer" onPress={onAccept} style={styles.statusButton} />
         </>

@@ -92,7 +92,7 @@ const REGISTRATION_STEP: StepDef = {
   explainer: (ctx) =>
     ctx.milestone('registration_packet')
       ? 'Your registration packet is ready. Take it to the Vehicle Registration Office (VRO) for your Transfer Title Document (TT Doc), plates and environmental sticker, then scan your TT Doc into the app.'
-      : 'Once customs is cleared, your salesperson gives you a registration packet with everything the Vehicle Registration Office (VRO) needs. At the VRO you get your Transfer Title Document (TT Doc), plates and environmental sticker.',
+      : 'Once customs is cleared, your salesperson gives you a registration packet with everything the Vehicle Registration Office (VRO) needs. Tick it below when you have it. At the VRO you get your Transfer Title Document (TT Doc), plates and environmental sticker.',
   isDone: (ctx) => ctx.hasFile('tt_doc', 'hand_over') || Boolean(ctx.milestone('delivered')),
 };
 
@@ -101,7 +101,7 @@ const DELIVERY_STEP: StepDef = {
   title: 'Pick Up Your Car',
   waitingOn: () => 'you',
   explainer: () =>
-    'Bring your new plates, the environmental sticker and your TT Doc to UCG. You sign the Vehicle Hand-Over Document and get your Warranty Certificate, and the car is yours.',
+    'Bring your new plates, the environmental sticker and your TT Doc to UCG. You sign the Vehicle Hand-Over Document and get your Warranty Certificate, and the car is yours. Scan the signed Hand-Over Document, or tick it below.',
   // The signed Hand-Over Document being scanned IS the delivery — no
   // separate tap needed (Terry, 2026-11-17: keep the salesperson's taps
   // to a minimum).
@@ -122,7 +122,7 @@ const PURCHASE_STEPS: StepDef[] = [
     title: 'Car Being Prepared',
     waitingOn: () => 'ucg',
     explainer: (ctx) =>
-      `UCG gets your car Retail Ready. Your ${ctx.deal.pay_in_full_days}-day window to pay in full starts the moment it is, and you'll see the exact date here.`,
+      `UCG gets your car Retail Ready. Your salesperson tells you on WhatsApp when it is — tick it below, and your ${ctx.deal.pay_in_full_days}-day window to pay in full starts, with the exact date shown here.`,
     isDone: (ctx) => Boolean(ctx.milestone('retail_ready')),
   },
   {
@@ -131,8 +131,8 @@ const PURCHASE_STEPS: StepDef[] = [
     waitingOn: (ctx) => (isFinanced(ctx) ? 'bank' : 'you'),
     explainer: (ctx) =>
       isFinanced(ctx)
-        ? `Your lender${ctx.deal.lender ? ` (${ctx.deal.lender})` : ''} pays UCG the balance of ${ctx.balanceText} directly. This step completes once UCG has received the funds.`
-        : `Wire the balance of ${ctx.balanceText} to UCG using the payment details in this app. This step completes once UCG has received the funds.`,
+        ? `Your lender${ctx.deal.lender ? ` (${ctx.deal.lender})` : ''} pays UCG the balance of ${ctx.balanceText} directly. When your salesperson confirms UCG has received it, tick it below.`
+        : `Wire the balance of ${ctx.balanceText} to UCG using the payment details in this app. When your salesperson confirms UCG has received it, tick it below.`,
     isDone: (ctx) => Boolean(ctx.milestone('paid_in_full')),
   },
   {
@@ -151,7 +151,8 @@ const PURCHASE_STEPS: StepDef[] = [
     id: 'zollamt',
     title: 'German Customs (Zollamt)',
     waitingOn: () => 'ucg',
-    explainer: () => 'Your salesperson takes your 550-175A copies to the German Zollamt to be cleared.',
+    explainer: () =>
+      'Your salesperson takes your 550-175A copies to the German Zollamt to be cleared. They tell you on WhatsApp when it is — tick it below, or add the stamped 550 if they send it to you.',
     isDone: (ctx) => ctx.hasFile('ae550a_stamped') || Boolean(ctx.milestone('customs_cleared')),
   },
   REGISTRATION_STEP,
@@ -186,14 +187,16 @@ const PURCHASE_DEN_STEPS: StepDef[] = [
     id: 'paid',
     title: 'Payment Received',
     waitingOn: (ctx) => (ctx.hasFile('loan_approval') ? 'bank' : 'ucg'),
-    explainer: () => 'UCG deposits your cashier\'s check, or receives the payment from your lender.',
+    explainer: () =>
+      "UCG deposits your cashier's check, or receives the payment from your lender. When your salesperson confirms it, tick it below.",
     isDone: (ctx) => Boolean(ctx.milestone('paid_in_full')),
   },
   {
     id: 'tuv',
     title: 'TÜV & Release',
     waitingOn: () => 'ucg',
-    explainer: () => "UCG gets the car's TÜV safety inspection and its release number.",
+    explainer: () =>
+      "UCG gets the car's TÜV safety inspection and its release number. Your salesperson tells you on WhatsApp when they're done — tick it below.",
     isDone: (ctx) => Boolean(ctx.milestone('tuv_release')),
   },
   REGISTRATION_STEP,
@@ -220,7 +223,8 @@ const SALE_STEPS: StepDef[] = [
     id: 'zollamt',
     title: 'German Customs (Zollamt)',
     waitingOn: () => 'ucg',
-    explainer: () => 'UCG takes the 550-175B to the German Zollamt to be cleared.',
+    explainer: () =>
+      'UCG takes the 550-175B to the German Zollamt to be cleared. Your salesperson tells you on WhatsApp when it is — tick it below.',
     isDone: (ctx) => ctx.hasFile('ae550b_stamped') || Boolean(ctx.milestone('customs_cleared')),
   },
   {
@@ -243,7 +247,7 @@ const SALE_STEPS: StepDef[] = [
     title: 'You Get Paid',
     waitingOn: () => 'ucg',
     explainer: () =>
-      'UCG pays you, or pays off your lender, within 30 days of the deregistration date, once it has the car, all keys and all documents.',
+      'UCG pays you, or pays off your lender, within 30 days of the deregistration date, once it has the car, all keys and all documents. Tick it below when you have the money.',
     isDone: (ctx) => Boolean(ctx.milestone('paid_out')),
   },
 ];
@@ -564,3 +568,40 @@ export function dealTitle(deal: Pick<Deal, 'kind' | 'is_den'>): string {
   if (deal.kind === 'sale') return 'Selling to UCG';
   return 'Buying from UCG';
 }
+
+// ---------------------------------------------------------------------
+// Customer ticks
+// ---------------------------------------------------------------------
+
+/**
+ * Steps the customer ticks off themselves, after their salesperson tells
+ * them on WhatsApp (Terry, 2026-11-17: no UCG employee uses the app). The
+ * app is the customer's own checklist, like the Boris PCS app — these say
+ * plainly that it's what the salesperson told them.
+ */
+export interface CustomerTick {
+  milestone: Milestone;
+  label: string;
+}
+
+export const CUSTOMER_TICKS: Record<Flow, Partial<Record<string, CustomerTick>>> = {
+  purchase: {
+    retail_ready: { milestone: 'retail_ready', label: 'My salesperson says my car is Retail Ready' },
+    payment: { milestone: 'paid_in_full', label: 'UCG has confirmed they received my payment' },
+    zollamt: { milestone: 'customs_cleared', label: 'My salesperson says customs is cleared' },
+    registration: { milestone: 'registration_packet', label: 'I have my registration packet' },
+    delivered: { milestone: 'delivered', label: "I've picked up my car" },
+  },
+  purchase_den: {
+    paid: { milestone: 'paid_in_full', label: 'UCG has confirmed they received my payment' },
+    tuv: { milestone: 'tuv_release', label: 'My salesperson says the TÜV and release are done' },
+    registration: { milestone: 'registration_packet', label: 'I have my registration packet' },
+    delivered: { milestone: 'delivered', label: "I've picked up my car" },
+  },
+  sale: {
+    zollamt: { milestone: 'customs_cleared', label: 'My salesperson says customs is cleared' },
+    handover: { milestone: 'vehicle_received', label: "I've handed over the car, keys and title documents" },
+    deregister: { milestone: 'deregistered', label: 'My car is deregistered' },
+    paid_out: { milestone: 'paid_out', label: 'UCG has paid me' },
+  },
+};

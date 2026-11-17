@@ -25,6 +25,9 @@ export interface AuthUser {
   /** Base id from constants/bases.ts — where they're stationed. Drives
    * which base's registration/deregistration rules their roadmap uses. */
   base?: string | null;
+  /** WhatsApp number (digits, country code first) — required at sign-up;
+   * it's how UCG reaches the customer. */
+  whatsapp?: string | null;
 }
 
 export interface AuthResult {
@@ -43,9 +46,10 @@ interface AuthContextValue {
    * logged in — e.g. demo mode). Null until they've picked one. */
   base: string | null;
   setBase: (baseId: string) => Promise<AuthResult>;
+  setWhatsapp: (whatsapp: string) => Promise<AuthResult>;
   /** Permanently deletes the account (App Store requirement). */
   deleteAccount: () => Promise<AuthResult>;
-  signUp: (name: string, email: string, password: string, base: string) => Promise<AuthResult>;
+  signUp: (name: string, email: string, password: string, base: string, whatsapp: string) => Promise<AuthResult>;
   logIn: (email: string, password: string) => Promise<AuthResult>;
   logOut: () => void;
   /** Email confirmation and password reset by 6-digit code typed into
@@ -75,7 +79,8 @@ function authUserFromSupabase(user: { id: string; email?: string | null; user_me
   const email = user.email ?? '';
   const metaName = typeof user.user_metadata?.name === 'string' ? (user.user_metadata.name as string) : undefined;
   const metaBase = typeof user.user_metadata?.base === 'string' ? (user.user_metadata.base as string) : null;
-  return { id: user.id, name: metaName ?? email.split('@')[0], email, base: metaBase };
+  const metaWhatsapp = typeof user.user_metadata?.whatsapp === 'string' ? (user.user_metadata.whatsapp as string) : null;
+  return { id: user.id, name: metaName ?? email.split('@')[0], email, base: metaBase, whatsapp: metaWhatsapp };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -164,6 +169,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         persistLocal({ ...user, base: baseId });
         return { error: null };
       },
+      setWhatsapp: async (whatsapp) => {
+        if (!user) return { error: null };
+        if (isSupabaseConfigured && supabase && user.id) {
+          const { data, error } = await supabase.auth.updateUser({ data: { whatsapp } });
+          if (error) return { error: error.message };
+          if (data.user) setUser(authUserFromSupabase(data.user));
+          return { error: null };
+        }
+        persistLocal({ ...user, whatsapp });
+        return { error: null };
+      },
       deleteAccount: async () => {
         if (isSupabaseConfigured && supabase) {
           // Deleting an account needs Supabase admin rights, which must
@@ -184,14 +200,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         persistLocal(null);
         return { error: null };
       },
-      signUp: async (name, email, password, base) => {
+      signUp: async (name, email, password, base, whatsapp) => {
         setGuestBase(base);
         AsyncStorage.setItem(GUEST_BASE_KEY, base).catch(() => {});
         if (isSupabaseConfigured && supabase) {
           const { data, error } = await supabase.auth.signUp({
             email,
             password,
-            options: { data: { name, base } },
+            options: { data: { name, base, whatsapp } },
           });
           if (error) return { error: error.message };
           // A project with "Confirm email" turned on (Supabase's default
@@ -202,7 +218,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (!data.session) return { error: null, needsEmailConfirmation: true };
           return { error: null };
         }
-        persistLocal({ name, email, base });
+        persistLocal({ name, email, base, whatsapp });
         return { error: null };
       },
       logIn: async (email, password) => {

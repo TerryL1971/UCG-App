@@ -16,7 +16,6 @@ import { StatusBar } from 'react-native';
 
 import { AnimatedSplash } from '@/components/animated-splash';
 import { AuthProvider } from '@/lib/auth-context';
-import { ChatProvider } from '@/lib/chat-context';
 import { MyDealsProvider } from '@/lib/my-deals-context';
 import { VinScanProvider } from '@/lib/vin-scan-context';
 
@@ -59,17 +58,16 @@ function AppShell({ fontsLoaded }: { fontsLoaded: boolean }) {
         <Stack.Screen name="verify-email" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="reset-password" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="salesperson" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="deal-setup" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="payment" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="choose-base" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="edit-whatsapp" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="road-to-plates" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="vro-checklist" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="key-dates" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="currency" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="insurance" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="service" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="staff/index" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="staff/[threadId]" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="staff/deals" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="staff/deal-form" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="staff/deal/[id]" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="scan-vin" options={{ animation: 'slide_from_bottom', presentation: 'fullScreenModal' }} />
       </Stack>
       {showAnimatedSplash && <AnimatedSplash onFinish={() => setShowAnimatedSplash(false)} />}
@@ -90,11 +88,9 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <MyDealsProvider>
-        <ChatProvider>
-          <VinScanProvider>
-            <AppShell fontsLoaded={fontsLoaded} />
-          </VinScanProvider>
-        </ChatProvider>
+        <VinScanProvider>
+          <AppShell fontsLoaded={fontsLoaded} />
+        </VinScanProvider>
       </MyDealsProvider>
     </AuthProvider>
   );

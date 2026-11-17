@@ -1,40 +1,41 @@
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ConnectDealForm } from '@/components/connect-deal-form';
 import { DealSummaryCard, DeadlineBanner, DealSwitcher, ScanUploadButton } from '@/components/deal-ui';
-import { LockIcon, MessageIcon } from '@/components/icons';
+import { CheckCircleIcon, LockIcon, WhatsAppIcon } from '@/components/icons';
 import { TimelineRoad } from '@/components/timeline-road';
-import { baseName } from '@/constants/bases';
 import { Button } from '@/components/ui/button';
+import { baseName } from '@/constants/bases';
 import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
-import { useChat } from '@/lib/chat-context';
-import { useDemoMode } from '@/lib/demo-mode';
 import {
   computeSteps,
   currentDeadline,
+  CUSTOMER_TICKS,
   docTypeInfo,
   flowOf,
+  toIsoDate,
   waitingOnLabel,
   type Flow,
   type FlowStep,
 } from '@/lib/deal-flow';
-import type { DealBundle } from '@/lib/deals';
+import { setMilestone, type DealBundle, type DocType } from '@/lib/deals';
+import { DEMO_CUSTOMER_ID, useDemoMode } from '@/lib/demo-mode';
 import { useMyDeals } from '@/lib/my-deals-context';
+import { messageSalesperson, salespersonLabel } from '@/lib/whatsapp';
 
 /**
- * My Deal — the live tracker for the customer's deal. Everything here is
- * worked out from what the salesperson marked and which documents are in
- * (lib/deal-flow.ts); nothing is simulated.
+ * My Deal — the customer's own step-by-step plan for buying or selling a
+ * car with UCG, for their base (like the Boris PCS app is for a move).
+ * The customer sets up the deal from their paperwork, ticks steps their
+ * salesperson tells them about on WhatsApp, and scans documents, which
+ * tick their steps by themselves. No UCG employee uses the app.
  */
 export default function MyDealScreen() {
   const { user, base } = useAuth();
   const { available, isLoading, loadFailed, deals, selected, selectDeal, refresh } = useMyDeals();
-  const { staffProfile } = useChat();
-  const [connectingAnother, setConnectingAnother] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = () => {
@@ -46,10 +47,8 @@ export default function MyDealScreen() {
   if (!available) {
     body = (
       <View style={[styles.card, Shadow.card]}>
-        <Text style={styles.cardTitle}>Log in to see your deal</Text>
-        <Text style={styles.cardBody}>
-          Your deal, your documents and your private chat with your salesperson live in your UCG account.
-        </Text>
+        <Text style={styles.cardTitle}>Log in to see your plan</Text>
+        <Text style={styles.cardBody}>Your car plan and your paperwork live in your UCG account.</Text>
         <View style={{ gap: 10, marginTop: 14 }}>
           <Button label="Log In" onPress={() => router.push('/log-in')} />
           <Button label="Create Account" variant="secondary" onPress={() => router.push('/create-account')} />
@@ -59,22 +58,17 @@ export default function MyDealScreen() {
   } else if (isLoading) {
     body = <ActivityIndicator color={Colors.navy} style={{ marginTop: 40 }} />;
   } else if (loadFailed && deals.length === 0) {
-    body = <Text style={styles.note}>Couldn&apos;t load your deal. Pull down to try again.</Text>;
-  } else if (deals.length === 0 || connectingAnother) {
+    body = <Text style={styles.note}>Couldn&apos;t load your plan. Pull down to try again.</Text>;
+  } else if (deals.length === 0) {
     body = (
-      <View style={{ gap: Spacing.md }}>
-        {deals.length === 0 && (
-          <Text style={styles.intro}>
-            Welcome{user?.name ? `, ${user.name}` : ''}! Once your salesperson has opened your deal, connect it here to
-            follow every step and keep all your paperwork in one place.
-          </Text>
-        )}
-        <ConnectDealForm onConnected={() => setConnectingAnother(false)} />
-        {connectingAnother && (
-          <Text style={styles.link} onPress={() => setConnectingAnother(false)}>
-            Cancel
-          </Text>
-        )}
+      <View style={[styles.card, Shadow.card]}>
+        <Text style={styles.cardTitle}>Welcome{user?.name ? `, ${user.name.split(' ')[0]}` : ''}!</Text>
+        <Text style={styles.cardBody}>
+          Bought a car from UCG, or selling yours to UCG? Copy a few details from the paperwork your salesperson gave
+          you, and the app builds your step-by-step plan for your base: what to do next, what to bring, your deadlines,
+          and all your documents in one place.
+        </Text>
+        <Button label="Start My Car Plan" onPress={() => router.push('/deal-setup')} style={{ marginTop: 14 }} />
       </View>
     );
   } else if (selected) {
@@ -82,14 +76,14 @@ export default function MyDealScreen() {
       <>
         <Pressable style={styles.baseRow} onPress={() => router.push('/choose-base')}>
           <Text style={styles.baseText}>
-            {base ? `Roadmap for ${baseName(base)}` : 'Where are you stationed? Your roadmap depends on it.'}
+            {base ? `Plan for ${baseName(base)}` : 'Where are you stationed? Your plan depends on it.'}
           </Text>
           <Text style={styles.baseChange}>{base ? 'Change' : 'Choose'}</Text>
         </Pressable>
         <DealSwitcher deals={deals} selectedId={selected.deal.id} onSelect={selectDeal} />
-        <DealView bundle={selected} userId={user?.id ?? ''} baseId={base} onChanged={refresh} />
-        <Text style={styles.link} onPress={() => setConnectingAnother(true)}>
-          Selling or buying another car with UCG? Connect another deal
+        <DealView bundle={selected} userId={user?.id ?? DEMO_CUSTOMER_ID} baseId={base} onChanged={refresh} />
+        <Text style={styles.link} onPress={() => router.push('/deal-setup')}>
+          Buying or selling another car with UCG? Add it
         </Text>
       </>
     );
@@ -100,9 +94,11 @@ export default function MyDealScreen() {
       <View style={styles.navbar}>
         <Text style={styles.title}>My Deal</Text>
         {selected && (
-          <Pressable hitSlop={8} onPress={() => router.push('/salesperson')} style={styles.chatButton}>
-            <MessageIcon size={18} color={Colors.red} />
-            <Text style={styles.chatLabel}>{selected.deal.salesperson_name ?? 'Salesperson'}</Text>
+          <Pressable hitSlop={8} onPress={() => messageSalesperson(selected.deal, 'Hi! ')} style={styles.chatButton}>
+            <WhatsAppIcon size={16} color="#fff" />
+            <Text style={styles.chatLabel} numberOfLines={1}>
+              Message {salespersonLabel(selected.deal)}
+            </Text>
           </Pressable>
         )}
       </View>
@@ -111,17 +107,6 @@ export default function MyDealScreen() {
         refreshControl={
           available ? <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.navy} /> : undefined
         }>
-        {/* Salespeople log into this same app with their staff account —
-            send them straight to their deals. */}
-        {staffProfile && (
-          <Pressable style={({ pressed }) => [styles.staffCard, pressed && { opacity: 0.85 }]} onPress={() => router.push('/staff/deals')}>
-            <Text style={styles.staffTitle}>Your deals  →</Text>
-            <Text style={styles.staffBody}>
-              Logged in as UCG staff ({staffProfile.display_name}). Tap Retail Ready and Paid in Full, add scans, and see
-              who&apos;s waiting on you.
-            </Text>
-          </Pressable>
-        )}
         {body}
       </ScrollView>
     </SafeAreaView>
@@ -152,25 +137,31 @@ function DealView({
   const targetIndex = allDone ? steps.length - 1 : currentIndex;
 
   const [viewedIndex, setViewedIndex] = useState(targetIndex);
-  // Snap back to the live step whenever the deal moves on (a salesperson
-  // mark or a new document arriving).
+  // Snap back to the live step whenever the deal moves on.
   const [prevTarget, setPrevTarget] = useState(targetIndex);
   if (prevTarget !== targetIndex) {
     setPrevTarget(targetIndex);
     setViewedIndex(targetIndex);
   }
   const viewed = steps[Math.min(viewedIndex, steps.length - 1)];
+  const tick = CUSTOMER_TICKS[flow][viewed.id];
+  const ticked = tick ? milestones.some((m) => m.milestone === tick.milestone) : false;
+
+  const setTick = async (done: boolean) => {
+    if (!tick) return;
+    try {
+      await setMilestone(deal.id, tick.milestone, done, userId, done ? toIsoDate(new Date()) : undefined);
+      onChanged();
+    } catch {
+      Alert.alert("Couldn't save that", 'Check your connection and try again.');
+    }
+  };
 
   return (
     <View style={{ gap: Spacing.md }}>
       {demo && (
         <View style={styles.demoBanner}>
-          <Text style={styles.demoText}>Demo deal with sample data.</Text>
-          <Text
-            style={styles.demoLink}
-            onPress={() => router.push({ pathname: '/staff/deal/[id]', params: { id: deal.id } })}>
-            Act as the salesperson →
-          </Text>
+          <Text style={styles.demoText}>Demo plan with sample data. Turn Demo Mode off in Account for your real plan.</Text>
         </View>
       )}
       <DealSummaryCard deal={deal} />
@@ -196,9 +187,36 @@ function DealView({
             <Text style={styles.lockedText}>{viewed.lockedReason}</Text>
           </View>
         )}
+
         {viewed.status === 'current' && !viewed.lockedReason && (
           <StepActions step={viewed} flow={flow} bundle={bundle} userId={userId} onChanged={onChanged} />
         )}
+
+        {viewed.status !== 'upcoming' && !viewed.lockedReason && tick && !ticked && (
+          <Pressable style={styles.tickButton} onPress={() => setTick(true)}>
+            <View style={styles.tickBox} />
+            <Text style={styles.tickLabel}>{tick.label}</Text>
+          </Pressable>
+        )}
+        {tick && ticked && (
+          <View style={styles.tickedRow}>
+            <CheckCircleIcon size={16} />
+            <Text style={styles.tickedLabel}>{tick.label}</Text>
+            <Text style={styles.undo} onPress={() => setTick(false)}>
+              Undo
+            </Text>
+          </View>
+        )}
+
+        {viewed.status !== 'done' && (
+          <Pressable
+            style={styles.whatsappRow}
+            onPress={() => messageSalesperson(deal, `I have a question about "${viewed.title}".`)}>
+            <WhatsAppIcon size={16} color={Colors.green} />
+            <Text style={styles.whatsappLabel}>Ask {salespersonLabel(deal)} about this step on WhatsApp</Text>
+          </Pressable>
+        )}
+
         {viewedIndex !== targetIndex && (
           <Text style={styles.link} onPress={() => setViewedIndex(targetIndex)}>
             Back to where my deal is now
@@ -212,12 +230,16 @@ function DealView({
 
       <Pressable style={[styles.linkCard, Shadow.card]} onPress={() => router.push('/road-to-plates')}>
         <Text style={styles.linkCardTitle}>Every step, explained  →</Text>
-        <Text style={styles.linkCardBody}>What happens from here to driving away, and who does what.</Text>
+        <Text style={styles.linkCardBody}>What happens from here to the end, and who does what.</Text>
       </Pressable>
+      <Text style={styles.link} onPress={() => router.push({ pathname: '/deal-setup', params: { id: deal.id } })}>
+        Edit my deal details
+      </Text>
     </View>
   );
 }
 
+/** Scans and links for the step the customer is on. */
 function StepActions({
   step,
   flow,
@@ -232,7 +254,7 @@ function StepActions({
   onChanged: () => void;
 }) {
   const { deal, milestones } = bundle;
-  const scan = (type: Parameters<typeof docTypeInfo>[0], label: string) => (
+  const scan = (type: DocType, label: string) => (
     <ScanUploadButton deal={deal} info={docTypeInfo(type)} role="customer" userId={userId} label={label} onUploaded={onChanged} />
   );
 
@@ -251,11 +273,20 @@ function StepActions({
       <View key="scan">{scan(flow === 'sale' ? 'ae550b' : 'ae550a', `Scan AE Form 550-175${flow === 'sale' ? 'B' : 'A'} (front & back)`)}</View>,
     );
   }
+  if (step.id === 'zollamt') {
+    actions.push(<View key="stamped">{scan(flow === 'sale' ? 'ae550b_stamped' : 'ae550a_stamped', 'Add My Stamped 550 (front & back)')}</View>);
+  }
+  if (step.id === 'vat_office') {
+    actions.push(<View key="vat">{scan('vat_form', 'Scan My VAT Forms')}</View>);
+  }
   if (step.id === 'registration') {
     if (milestones.some((m) => m.milestone === 'registration_packet')) {
       actions.push(<Button key="vro" label="What to Bring to the VRO" variant="secondary" onPress={() => router.push('/vro-checklist')} />);
     }
     actions.push(<View key="tt">{scan('tt_doc', 'Scan My TT Doc (front & back)')}</View>);
+  }
+  if (step.id === 'delivered') {
+    actions.push(<View key="ho">{scan('hand_over', 'Scan My Signed Hand-Over Document')}</View>);
   }
   if (step.id === 'handover' && flow === 'sale') {
     actions.push(
@@ -289,12 +320,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: Radius.pill,
-    backgroundColor: Colors.redTint,
-    maxWidth: '60%',
+    backgroundColor: '#25D366',
+    maxWidth: '62%',
   },
-  chatLabel: { fontFamily: Fonts.bodyBold, fontSize: 12.5, color: Colors.red, flexShrink: 1 },
+  chatLabel: { fontFamily: Fonts.bodyBold, fontSize: 12.5, color: '#fff', flexShrink: 1 },
   content: { padding: Spacing.xl, paddingBottom: Spacing.xxxl, gap: Spacing.md },
-  intro: { fontFamily: Fonts.body, fontSize: 14, color: Colors.textMuted, lineHeight: 20 },
   note: { fontFamily: Fonts.body, fontSize: 14, color: Colors.textMuted, textAlign: 'center', marginTop: 40 },
   link: {
     fontFamily: Fonts.bodySemibold,
@@ -323,10 +353,32 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   lockedText: { flex: 1, fontFamily: Fonts.bodySemibold, fontSize: 13, color: Colors.amber, lineHeight: 18 },
+  tickButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderWidth: 1.5,
+    borderColor: Colors.navy,
+    borderRadius: Radius.md,
+    padding: 12,
+    marginTop: 14,
+  },
+  tickBox: { width: 20, height: 20, borderRadius: 5, borderWidth: 2, borderColor: Colors.navy },
+  tickLabel: { flex: 1, fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.navy },
+  tickedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: Colors.greenTint,
+    borderRadius: Radius.md,
+    padding: 10,
+    marginTop: 14,
+  },
+  tickedLabel: { flex: 1, fontFamily: Fonts.bodySemibold, fontSize: 13, color: Colors.green },
+  undo: { fontFamily: Fonts.bodySemibold, fontSize: 12.5, color: Colors.textMuted, textDecorationLine: 'underline' },
+  whatsappRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 14 },
+  whatsappLabel: { fontFamily: Fonts.bodySemibold, fontSize: 13, color: Colors.green, flexShrink: 1 },
   roadWrap: { alignItems: 'center' },
-  staffCard: { backgroundColor: Colors.navy, borderRadius: Radius.lg, padding: 16 },
-  staffTitle: { fontFamily: Fonts.display, fontSize: 19, color: '#fff' },
-  staffBody: { fontFamily: Fonts.body, fontSize: 13, color: 'rgba(255,255,255,0.85)', marginTop: 2, lineHeight: 18 },
   baseRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -352,19 +404,8 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     overflow: 'hidden',
   },
-  demoBanner: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
-    backgroundColor: Colors.amberTint,
-    borderRadius: Radius.md,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  demoText: { fontFamily: Fonts.bodySemibold, fontSize: 12.5, color: Colors.amber },
-  demoLink: { fontFamily: Fonts.bodyBold, fontSize: 12.5, color: Colors.navy, textDecorationLine: 'underline' },
+  demoBanner: { backgroundColor: Colors.amberTint, borderRadius: Radius.md, paddingHorizontal: 12, paddingVertical: 10 },
+  demoText: { fontFamily: Fonts.bodySemibold, fontSize: 12.5, color: Colors.amber, lineHeight: 17 },
   linkCard: { backgroundColor: '#fff', borderRadius: Radius.lg, padding: 14 },
   linkCardTitle: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.navy },
   linkCardBody: { fontFamily: Fonts.body, fontSize: 12.5, color: Colors.textMuted, marginTop: 2 },

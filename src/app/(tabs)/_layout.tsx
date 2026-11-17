@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
-import { CarSideIcon, DocumentIcon, DrivetrainIcon, UserIcon } from '@/components/icons';
+import { CarSideIcon, DocumentIcon, DrivetrainIcon, GridIcon, UserIcon } from '@/components/icons';
 import { Colors, Fonts } from '@/constants/theme';
 
 function TabIcon({ focused, children }: { focused: boolean; children: React.ReactNode }) {
@@ -42,9 +42,20 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="tools"
+        options={{
+          title: 'Tools',
+          tabBarIcon: ({ focused }) => (
+            <TabIcon focused={focused}>
+              <GridIcon size={18} color="#fff" />
+            </TabIcon>
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="sell-back"
         options={{
-          title: 'Sell Back',
+          title: 'Sell',
           tabBarIcon: ({ focused }) => (
             <TabIcon focused={focused}>
               <DrivetrainIcon size={18} color="#fff" strokeWidth={2.2} />

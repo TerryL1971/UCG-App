@@ -2,15 +2,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import { useAuth } from '@/lib/auth-context';
-import { fetchMyDeals, linkMyDeal, subscribeToDealChanges, type DealBundle, type LinkResult } from '@/lib/deals';
+import { fetchMyDeals, subscribeToDealChanges, type DealBundle } from '@/lib/deals';
 import { DEMO_CUSTOMER_ID, useDemoMode } from '@/lib/demo-mode';
 import { isSupabaseConfigured } from '@/lib/supabase';
 
 /**
  * The signed-in customer's deals (usually one; two when they're buying
- * one car and selling another to UCG — always separate deals). Kept live:
- * when a salesperson taps "Paid in Full" or uploads a scan, the customer's
- * screen updates without a refresh.
+ * one car and selling another to UCG — always separate deals). The
+ * customer sets them up and ticks their steps (deal-setup.tsx).
  */
 interface MyDealsValue {
   /** False when there's no account or no Supabase — nothing to load. */
@@ -21,7 +20,6 @@ interface MyDealsValue {
   selected: DealBundle | null;
   selectDeal: (dealId: string) => void;
   refresh: () => Promise<void>;
-  connectDeal: (dealNumber: string, lastName: string) => Promise<LinkResult>;
 }
 
 const MyDealsContext = createContext<MyDealsValue | null>(null);
@@ -100,18 +98,6 @@ export function MyDealsProvider({ children }: { children: ReactNode }) {
     AsyncStorage.setItem(SELECTED_KEY, dealId).catch(() => {});
   }, []);
 
-  const connectDeal = useCallback(
-    async (dealNumber: string, lastName: string) => {
-      const result = await linkMyDeal(dealNumber, lastName);
-      if (result.ok) {
-        selectDeal(result.deal.id);
-        await refresh();
-      }
-      return result;
-    },
-    [refresh, selectDeal],
-  );
-
   // Never show another account's deals (e.g. right after logging out).
   const visibleDeals = useMemo(() => (available && loadedFor === loadKey ? deals : []), [available, loadedFor, loadKey, deals]);
   const selected = useMemo(
@@ -120,8 +106,8 @@ export function MyDealsProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo<MyDealsValue>(
-    () => ({ available, isLoading, loadFailed, deals: visibleDeals, selected, selectDeal, refresh, connectDeal }),
-    [available, isLoading, loadFailed, visibleDeals, selected, selectDeal, refresh, connectDeal],
+    () => ({ available, isLoading, loadFailed, deals: visibleDeals, selected, selectDeal, refresh }),
+    [available, isLoading, loadFailed, visibleDeals, selected, selectDeal, refresh],
   );
 
   return <MyDealsContext.Provider value={value}>{children}</MyDealsContext.Provider>;

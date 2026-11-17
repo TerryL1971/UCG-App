@@ -1,147 +1,100 @@
-# The companion app (Nov 2026)
+# The UCG app — how it works (Nov 2026)
 
-After Terry's meeting with David and Michelle, the website inventory feed
-and any DealerTeam API were dropped (cost, and DealerTeam said no). The
-app is now a **companion that starts after the deposit**: DealerTeam stays
-the official record, and the app tracks the deal, holds every document,
-and connects the customer with their salesperson. Nothing syncs with
-DealerTeam.
+**In one line:** the customer's own step-by-step plan for buying or selling
+a car with UCG, for their base — like the Boris PCS Guide is for a move —
+with every document in one place and WhatsApp straight to their
+salesperson.
 
-## What's in the app
+Decisions (Terry, David and Michelle, Nov 2026):
+- No website inventory feed and no DealerTeam API (cost; DealerTeam said no).
+- **Only the customer logs into the app. No UCG employee does.** Salespeople
+  keep working in DealerTeam and WhatsApp exactly as today.
+- **WhatsApp is how UCG and the customer talk.** Every "message my
+  salesperson" opens WhatsApp with the Deal # already written.
+- The app starts when the salesperson has sold the car and taken the $300
+  deposit — the customer has their paperwork from then on.
+- Car only: buying, selling, registration, service — plus American Auto
+  Nation insurance (UCG's own).
+- Every base has its own registration/deregistration rules.
 
-**Customer**
-- **My Deal**: connect a deal with the **Deal # + last name** printed on
-  the paperwork, then follow it step by step. The step that's waiting on
-  the customer has its action right there (how to pay, scan the 550,
-  scan the TT Doc…). Deadlines show as a banner.
-- **Documents**: every scan for the deal, view / share / print, older
-  versions kept. The customer scans their own: AE 550-175A/B, TT Doc,
-  license, proof of deregistration. "Paperwork that stays with the car"
-  checklist for when they sell it.
-- **Payment**: the right instructions for the deal — Wise for cash
-  buyers, "your lender pays" (with the two-step sheet for a loan
-  officer) for financed, cashier's check for the Total Price for DEN.
-  Copy buttons, and a wire-fraud warning.
-- **Chat**: private chat with their salesperson. Connecting a deal hands
-  the chat straight to that deal's salesperson.
-- **Sell Back**: the offer request now goes into the in-app chat.
+## What the customer does
 
-**Staff** — salespeople log into the same app with their staff account
-(@usedcarguys.net, added to `staff_members`). My Deal shows them a
-"Your deals" card; Staff → Deals lists **Waiting on you** (their deals
-where UCG has the next move) above all deals. Per purchase deal they tap
-just **Retail Ready** and **Paid in Full**; every other step completes
-from a scan (550, stamped 550, VAT form, TT Doc), and **Delivered**
-completes when the signed Hand-Over Document is scanned. Customers never
-mark UCG's steps.
+1. **Create Account** — name, email, password, **WhatsApp number (required)**,
+   **base (required)**. Both can be changed later in Account.
+2. **Start My Car Plan** — copy a few details off the Purchase Order (or Cost
+   Estimate for DEN cars, or Bill of Sale when selling) and pick their
+   salesperson. The app builds the plan.
+3. **Follow the plan (My Deal)** — one step at a time, with deadlines.
+   Steps move forward two ways:
+   - **Scanning a document** ticks its step: 550-175A/B, stamped 550, VAT
+     forms, TT Doc, signed Hand-Over Document, proof of deregistration.
+   - **Ticking what the salesperson said on WhatsApp**, e.g. "My
+     salesperson says my car is Retail Ready" (starts the 5-day pay-in-full
+     countdown) or "UCG has confirmed they received my payment" (unlocks
+     the customs step).
+4. **Documents** — every PDF and scan for the car, view / share / print,
+   older versions kept; "paperwork that stays with the car" checklist.
+5. **Tools** — How to Pay (Wise / lender / DEN cashier's check), Key Dates,
+   Every Step Explained, VRO Checklist, Currency Converter, American Auto
+   Nation, Service Center, Message my salesperson.
+6. **Sell** — pick a car bought from UCG; the offer request goes to the
+   salesperson on WhatsApp with the car and its documents listed.
 
-**Staff screens** (Account → Staff)
-- **Deals → New Deal**: type the fields off the Purchase Order / Cost
-  Estimate / Bill of Sale. (Stand-in until the app can read the PDFs.)
-- **A deal**: tap the status marks and add scans (camera or attach PDF).
+## The three plans
 
-## The three flows
-
-| Purchase (regular) | Purchase (DEN) | Sale (UCG buys) |
+| Buying (regular) | Buying (DEN) | Selling to UCG |
 |---|---|---|
 | Deal opened ($300 deposit) | Cost Estimate ready | Bill of Sale signed |
-| Car being prepared → **Retail Ready** starts the pay-in-full countdown | Cashier's check (Total Price, not MWST total) or loan approval | AE 550-175B at base customs (customer scans) |
-| Pay the balance (Wise / lender) → **Paid in Full** | VAT office ($100) → VAT forms scanned | German Zollamt |
-| AE 550-175A at base customs — **locked until Paid in Full**; customer scans at the counter | Payment received → **Paid in Full** | Hand over car, keys, title docs → **Received** |
-| German Zollamt → **Customs Cleared** (or stamped 550 scan) | **TÜV & Release** | Deregister → **Deregistered** (date) |
-| Registration packet → VRO → customer scans TT Doc | Registration packet → VRO → TT Doc | UCG pays within 30 days of deregistration → **Paid Out** |
-| Pick up → **Delivered** starts the 5-business-day inspection guarantee | Pick up → **Delivered** | |
+| Car being prepared — tick **Retail Ready** | Cashier's check (Total Price, not MWST total) or loan approval | 550-175B at base customs — scan it |
+| Pay the balance — tick **payment confirmed** | VAT office ($100) — scan VAT forms | Zollamt — tick **customs cleared** |
+| 550-175A at base customs (locked until paid) — scan it | Payment received — tick | Hand over car, keys, title docs — tick |
+| Zollamt — tick, or add stamped 550 | TÜV & release — tick | Deregister — scan proof or tick |
+| Registration packet — tick; VRO; scan TT Doc | Registration — same | UCG pays within 30 days — tick |
+| Pick up — scan signed Hand-Over Document, or tick (starts 5-business-day inspection guarantee) | Pick up — same | |
 
-DEN deals never mention a deposit, a reservation or $300 anywhere — the
-database refuses a deposit on a DEN deal, and a check in the logic
-tests makes sure the wording never slips in.
+DEN plans never mention a deposit, a reservation or $300 (VAT rules).
+The rules live in `src/lib/deal-flow.ts`.
 
-The rules live in `src/lib/deal-flow.ts` (pure functions). Data and
-privacy rules live in `supabase/migrations/20261117120000_deals.sql`.
+## Adding information as it arrives
 
-## Demo mode (on until launch)
+- **Salespeople** → `src/constants/salespeople.ts`
+  (`{ name, dealership, whatsapp }`). Until then customers type their
+  salesperson's name and WhatsApp number from the paperwork.
+- **Each base's registration rules** → `src/constants/bases.ts`,
+  `BASE_RULES`: per-base instructions added to any step. Until a base has
+  rules, its steps say "your salesperson confirms how it works at <base>".
 
-The app runs on **sample deals stored on the phone** by default
-(`src/lib/demo-mode.ts`, `src/lib/deals-demo.ts`): no migration, no login,
-no network. Three made-up deals: 90001 regular purchase (Retail Ready,
-pay-by countdown), 90002 DEN purchase, 90003 selling to UCG. "Act as the
-salesperson" on My Deal opens the staff screen for that deal, so one
-phone can demo both sides. Account → Reset Demo Data puts them back.
+## Demo mode
 
-**Account → Demo Mode** switches it per phone: on to show the app, off to
-use real deals from Supabase (the migration is applied and the
-`delete-account` function is deployed as of 2026-11-17).
+On by default: sample deals on the phone, no login needed. **Account →
+Demo Mode** switches it per phone (off = the real plan). For launch:
+`EXPO_PUBLIC_DEMO_MODE=false` in `.env` forces it off and hides the switch.
 
-**At launch:** add `EXPO_PUBLIC_DEMO_MODE=false` to `.env` and restart
-Expo — that forces real data everywhere and hides the switch.
+## Backend (Supabase, project "UCG App")
 
-## Setup — once (real data)
+- Migrations `20261117120000_deals.sql`, `20261117150000_pay_in_full_5_days.sql`,
+  `20261117170000_customer_owned_deals.sql` — applied. Customers can only
+  ever see and change their own plans and documents (row-level security).
+- Edge Function `delete-account` — deployed. Deletes the account, its car
+  plans and every document the customer added.
+- The older staff tables/policies and the private-chat tables are unused
+  by the app now (no staff users); left in place, harmless.
 
-1. **Apply the migration.** Supabase dashboard → SQL Editor → paste all of
-   `supabase/migrations/20261117120000_deals.sql` → Run. It creates the
-   deals tables, the private `deal-files` storage bucket and its access
-   rules. (Needs the private_chat migration applied first — it is.)
-2. **Staff accounts** are the same as for the chat (`staff_members`).
-   Every active staff member can see and work on every deal.
+## Later options
 
-## Test it end to end
-
-1. Simulator, logged in as staff → Account → Staff → Deals → **New Deal**.
-   Use made-up data, e.g. Deal # `90001`, Stock # `DE9001`, customer
-   `Test Buyer`, a 17-character VIN, Total Price `25499`, Deal Date today.
-2. iPhone, logged in as a customer → My Deal → connect with `90001` +
-   `Buyer`.
-3. Staff: mark **Retail Ready** → the customer sees "pay by …" and the
-   balance ($25,199.00). Mark **Paid in Full** → the customer's 550 step
-   unlocks. Add a scan on either side → it appears on the other phone.
-
-## Bases
-
-Every base has its own rules for registering and deregistering a car.
-The customer picks their base at sign-up (required) and can change it in
-Account or from My Deal ("Roadmap for Stuttgart · Change") — e.g. bought
-in Wiesbaden, moved to Stuttgart, now selling there. The roadmap always
-follows the CURRENT base.
-
-**Adding a base's rules:** `src/constants/bases.ts` → `BASE_RULES`. Each
-base can add its own instructions to any roadmap step (flow + step id),
-e.g. `stuttgart: { stepNotes: { purchase: { registration: '…' } } }`.
-Until a base has rules, its customs/registration/deregistration steps say
-"your salesperson confirms exactly how it works at <base>".
-
-## Deleting an account
-
-Account → Delete My Account (asked twice). It runs the `delete-account`
-Edge Function (`supabase/functions/delete-account/`), which deletes only
-the signed-in user: their chat is deleted, their deals and documents stay
-with UCG (sale records) but are unlinked. Staff accounts can't delete
-themselves this way. **Deploy it once:** Supabase dashboard → Edge
-Functions → Deploy a new function → name `delete-account` → paste
-`index.ts` → Deploy.
-
-## Not built yet (and why)
-
-- **Salespeople sending scans by WhatsApp** — needs a WhatsApp Business
-  account (Meta) for UCG. Until then, staff add scans in the app.
-- **The app reading documents and checking them** (VIN, names, prices,
-  Deal #, Stock # must match; mileage is a "check" alert) — needs AI
-  document reading on the server. The deal fields staff type in today
-  are exactly what those checks will compare against.
-- **A true document scanner** (edge detection) — needs an EAS
-  development build, on hold. Scans are color photos turned into a PDF
-  until then; only `src/lib/scan.ts` changes later.
-- **Notifications** (e.g. "your car is Retail Ready") — push needs the
-  EAS build too.
-- **Account deletion** for the App Store — server-side job, still to do.
+- **WhatsApp Business** (Meta account, per-conversation fee): the
+  salesperson texts the UCG number "17724 retail ready" and the customer's
+  app ticks itself; the salesperson gets a WhatsApp when the customer scans
+  a document.
+- **Read the Purchase Order PDF automatically** to fill in the plan.
+- **Document checks** (VIN, names, prices must match; mileage = alert).
+- **True scanner** and push notifications — need an EAS build.
+- **Team Up**: a spouse follows the same plan on their own phone.
 
 ## Open questions for Michelle
 
-- Pay-in-full term: the app now uses **5** days by default (Terry,
-  2026-11-17); the Purchase Order's printed term 2 still says seven.
-  Staff can change it per deal.
-- Payment reference format she wants on wires (app uses
-  `DE8261 Deal 17724`).
-- The newest two-step wire sheet dropped the "RECIPIENT: THE USED CAR
-  GUYS GMBH" line — banks usually need it.
-- The Cost Estimate's printed terms mention "reservation", which the VAT
-  agreements don't allow for DEN cars.
+- Pay-in-full: the app uses **5** days; the Purchase Order's printed term 2
+  still says seven.
+- Payment reference format she wants on wires (app: `DE8261 Deal 17724`).
+- The newest two-step wire sheet dropped the "RECIPIENT" line.
+- The Cost Estimate's printed terms mention "reservation" (not allowed for DEN).
