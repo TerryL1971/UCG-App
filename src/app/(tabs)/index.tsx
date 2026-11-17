@@ -361,7 +361,6 @@ function StepActions({
   }
   if (step.id === 'insurance') {
     actions.push(<Button key="aan" label="Get My American Auto Nation Quote" onPress={() => requestAanQuote(deal)} />);
-    actions.push(<View key="card">{scan('insurance', 'Add My Insurance Card (eVB)')}</View>);
   }
   if (step.id === 'customs_office') {
     actions.push(

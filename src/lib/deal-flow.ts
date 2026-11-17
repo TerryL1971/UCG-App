@@ -94,8 +94,8 @@ const INSURANCE_STEP: StepDef = {
   parallel: true,
   waitingOn: () => 'you',
   explainer: () =>
-    "Start your insurance as soon as you send your wire or your loan is complete. The VRO won't register your car without proof of German insurance (an eVB). American Auto Nation, UCG's own insurance for USAREUR drivers, sets it up, and your first month's premium is on UCG. Tick it below once you're insured, or add your insurance card.",
-  isDone: (ctx) => Boolean(ctx.milestone('insured')) || ctx.hasFile('insurance'),
+    "Start your insurance as soon as you send your wire or your loan is complete. The VRO won't register your car until it has proof of insurance, which your insurance company sends to the VRO for you. American Auto Nation, UCG's own insurance for USAREUR drivers, sets it all up, and your first month's premium is on UCG. Tick it below once you're insured.",
+  isDone: (ctx) => Boolean(ctx.milestone('insured')),
 };
 
 const REGISTRATION_STEP: StepDef = {
@@ -539,7 +539,6 @@ export const DOC_TYPES: DocTypeInfo[] = [
   { type: 'loan_approval', label: 'Loan Approval', scannedBy: 'salesperson', pages: null, flows: ['purchase_den'], originalStaysWithCar: false },
   { type: 'vat_form', label: 'VAT Forms', scannedBy: 'salesperson', pages: null, flows: ['purchase_den'], originalStaysWithCar: true },
   { type: 'tuv', label: 'TÜV / GTU Inspection Report', scannedBy: 'salesperson', pages: null, flows: BUYING, originalStaysWithCar: true },
-  { type: 'insurance', label: 'Insurance Card (eVB)', scannedBy: 'customer', pages: null, flows: BUYING, originalStaysWithCar: false },
   { type: 'tt_doc', label: 'Transfer Title Document (TT Doc)', scannedBy: 'customer', pages: FRONT_BACK, flows: ALL, originalStaysWithCar: true },
   { type: 'warranty_certificate', label: 'Warranty Certificate', scannedBy: 'salesperson', pages: null, flows: BUYING, originalStaysWithCar: true },
   { type: 'hand_over', label: 'Vehicle Hand-Over Document (signed)', scannedBy: 'salesperson', pages: null, flows: BUYING, originalStaysWithCar: true },
@@ -634,7 +633,6 @@ export const CUSTOMER_TICKS: Record<Flow, Partial<Record<string, CustomerTick>>>
  * be backed up by removing that scan. */
 export const STEP_DOC_TYPES: Record<Flow, Partial<Record<string, DocType[]>>> = {
   purchase: {
-    insurance: ['insurance'],
     customs_office: ['ae550a', 'ae550a_stamped'],
     zollamt: ['ae550a_stamped'],
     registration: ['tt_doc', 'hand_over'],
@@ -643,7 +641,6 @@ export const STEP_DOC_TYPES: Record<Flow, Partial<Record<string, DocType[]>>> = 
   purchase_den: {
     payment: ['cashiers_check', 'loan_approval', 'vat_form'],
     vat_office: ['vat_form'],
-    insurance: ['insurance'],
     registration: ['tt_doc', 'hand_over'],
     delivered: ['hand_over'],
   },

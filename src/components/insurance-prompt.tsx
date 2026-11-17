@@ -48,7 +48,8 @@ export function InsurancePrompt({ deal, userId, onChanged }: { deal: Deal; userI
       </View>
       <Text style={styles.body}>
         Start your insurance as soon as you send your wire or your loan is complete. The VRO won&apos;t register your car
-        without proof of German insurance. {AAN.name} is UCG&apos;s own insurance for USAREUR drivers, and{' '}
+        until your insurance company sends it proof of insurance. {AAN.name} is UCG&apos;s own insurance for USAREUR
+        drivers, and{' '}
         <Text style={styles.bold}>your first month&apos;s premium is on us</Text>.
       </Text>
       <Pressable style={({ pressed }) => [styles.primary, pressed && { opacity: 0.85 }]} onPress={() => requestAanQuote(deal)}>

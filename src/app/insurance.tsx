@@ -51,8 +51,9 @@ export default function InsuranceScreen() {
         </View>
 
         <Text style={styles.why}>
-          You need a German insurance card (eVB) to register your car anyway, and the policyholder has to be at the
-          registration office in person, so it&apos;s worth sorting early.
+          Start your policy as soon as you send your wire or your loan is complete. The VRO won&apos;t register your car
+          until your insurance company has sent it proof of insurance, and the policyholder has to be at the
+          registration office in person.
         </Text>
 
         <Button label="Request a Quote on WhatsApp" onPress={requestQuote} />
