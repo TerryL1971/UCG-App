@@ -46,7 +46,8 @@ export default function StaffDealFormScreen() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [lender, setLender] = useState('');
   const [documentDate, setDocumentDate] = useState(toIsoDate(new Date()));
-  const [payDays, setPayDays] = useState('7');
+  // UCG's pay-in-full window: 5 days for now (Terry, 2026-11-17).
+  const [payDays, setPayDays] = useState('5');
 
   useEffect(() => {
     if (!id) return;
@@ -137,7 +138,7 @@ export default function StaffDealFormScreen() {
       payment_method: kind === 'purchase' ? paymentMethod : null,
       lender: kind === 'purchase' && paymentMethod === 'finance' ? lender.trim() || null : null,
       document_date: documentDate.trim(),
-      pay_in_full_days: purchaseNonDen ? days : 7,
+      pay_in_full_days: purchaseNonDen ? days : 5,
     };
 
     setSaving(true);

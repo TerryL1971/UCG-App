@@ -34,7 +34,7 @@ interface DemoStore {
   files: DealFile[];
 }
 
-const STORAGE_KEY = 'ucg.demoDeals.v1';
+const STORAGE_KEY = 'ucg.demoDeals.v2';
 const DEMO_PREFIX = 'demo:';
 
 let store: DemoStore | null = null;
@@ -56,7 +56,7 @@ function seed(): DemoStore {
     salesperson_id: DEMO_STAFF_ID,
     salesperson_name: DEMO_STAFF_NAME,
     lender: null,
-    pay_in_full_days: 7,
+    pay_in_full_days: 5,
   };
   const deals: Deal[] = [
     {

@@ -127,8 +127,9 @@ Functions → Deploy a new function → name `delete-account` → paste
 
 ## Open questions for Michelle
 
-- Pay-in-full term: still **7** calendar days, or now **5**? (Staff can set
-  it per deal; the Purchase Order's term 2 still says seven.)
+- Pay-in-full term: the app now uses **5** days by default (Terry,
+  2026-11-17); the Purchase Order's printed term 2 still says seven.
+  Staff can change it per deal.
 - Payment reference format she wants on wires (app uses
   `DE8261 Deal 17724`).
 - The newest two-step wire sheet dropped the "RECIPIENT: THE USED CAR
