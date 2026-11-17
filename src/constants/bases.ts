@@ -57,11 +57,22 @@ export interface BaseRules {
 }
 
 export const BASE_RULES: Record<string, BaseRules> = {
-  // Add each base here as its rules come in, e.g.:
-  // stuttgart: { stepNotes: { purchase: { registration: '…' } } },
+  // Add each base here as its rules come in from Home Office.
+  stuttgart: {
+    // Terry, 2026-11-17: in Stuttgart, clearing customs means UCG takes the
+    // 550s to the German Zollamt. Other bases: waiting on Home Office.
+    stepNotes: {
+      purchase: {
+        zollamt: 'In Stuttgart, your salesperson takes your 550-175A copies to the German Zollamt to be stamped.',
+      },
+      sale: {
+        zollamt: 'In Stuttgart, UCG takes your 550-175B to the German Zollamt to be stamped.',
+      },
+    },
+  },
 };
 
 /** The steps where a base's own rules matter most — they get a "your
  * salesperson confirms the local details" note while a base's rules
  * haven't been added yet. */
-export const BASE_SENSITIVE_STEPS = ['customs_office', 'registration', 'deregister'];
+export const BASE_SENSITIVE_STEPS = ['customs_office', 'zollamt', 'registration', 'deregister'];

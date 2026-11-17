@@ -163,10 +163,12 @@ const PURCHASE_STEPS: StepDef[] = [
   },
   {
     id: 'zollamt',
-    title: 'German Customs (Zollamt)',
+    title: 'UCG Clears Customs',
     waitingOn: () => 'ucg',
+    // How UCG clears customs depends on the base (Stuttgart: the German
+    // Zollamt — constants/bases.ts), so this stays general.
     explainer: () =>
-      'Your salesperson takes your 550-175A copies to the German Zollamt to be cleared. They tell you on WhatsApp when it is — tick it below, or add the stamped 550 if they send it to you.',
+      "Your salesperson takes your 550-175A copies and gets customs cleared for you. When they tell you on WhatsApp that it's all done and you can come get your registration packet, tick it below.",
     isDone: (ctx) => ctx.hasFile('ae550a_stamped') || Boolean(ctx.milestone('customs_cleared')),
   },
   REGISTRATION_STEP,
@@ -236,10 +238,10 @@ const SALE_STEPS: StepDef[] = [
   },
   {
     id: 'zollamt',
-    title: 'German Customs (Zollamt)',
+    title: 'UCG Clears Customs',
     waitingOn: () => 'ucg',
     explainer: () =>
-      'UCG takes the 550-175B to the German Zollamt to be cleared. Your salesperson tells you on WhatsApp when it is — tick it below.',
+      "UCG takes your 550-175B and gets customs cleared. When your salesperson tells you on WhatsApp that it's done, tick it below.",
     isDone: (ctx) => ctx.hasFile('ae550b_stamped') || Boolean(ctx.milestone('customs_cleared')),
   },
   {
@@ -603,6 +605,8 @@ export function dealTitle(deal: Pick<Deal, 'kind' | 'is_den'>): string {
 export interface CustomerTick {
   milestone: Milestone;
   label: string;
+  /** Also ticked (and unticked) together with `milestone`. */
+  alsoMarks?: Milestone[];
 }
 
 export const CUSTOMER_TICKS: Record<Flow, Partial<Record<string, CustomerTick>>> = {
@@ -610,7 +614,11 @@ export const CUSTOMER_TICKS: Record<Flow, Partial<Record<string, CustomerTick>>>
     retail_ready: { milestone: 'retail_ready', label: 'My salesperson says my car is Retail Ready' },
     payment: { milestone: 'paid_in_full', label: 'UCG has confirmed they received my payment' },
     insurance: { milestone: 'insured', label: 'My car is insured' },
-    zollamt: { milestone: 'customs_cleared', label: 'My salesperson says customs is cleared' },
+    zollamt: {
+      milestone: 'customs_cleared',
+      label: 'UCG has cleared customs — my registration packet is ready',
+      alsoMarks: ['registration_packet'],
+    },
     registration: { milestone: 'registration_packet', label: 'I have my registration packet' },
     delivered: { milestone: 'delivered', label: "I've picked up my car" },
   },
@@ -622,7 +630,7 @@ export const CUSTOMER_TICKS: Record<Flow, Partial<Record<string, CustomerTick>>>
     delivered: { milestone: 'delivered', label: "I've picked up my car" },
   },
   sale: {
-    zollamt: { milestone: 'customs_cleared', label: 'My salesperson says customs is cleared' },
+    zollamt: { milestone: 'customs_cleared', label: 'UCG has cleared customs' },
     handover: { milestone: 'vehicle_received', label: "I've handed over the car, keys and title documents" },
     deregister: { milestone: 'deregistered', label: 'My car is deregistered' },
     paid_out: { milestone: 'paid_out', label: 'UCG has paid me' },

@@ -49,7 +49,7 @@ Decisions (Terry, David and Michelle, Nov 2026):
 | Pay the balance — tick **payment confirmed** | VAT office ($100) — scan VAT forms | Zollamt — tick **customs cleared** |
 | **Insure your car** — American Auto Nation suggested first; tick or add insurance card (can be done any time) | Payment received — tick | |
 | 550-175A at base customs (locked until paid) — scan it | **Insure your car** — same | Hand over car, keys, title docs — tick |
-| Zollamt — tick, or add stamped 550 | TÜV & release — tick | Deregister — scan proof or tick |
+| UCG clears customs — tick "UCG has cleared customs — my registration packet is ready" (Stuttgart: German Zollamt) | TÜV & release — tick | Deregister — scan proof or tick |
 | Registration packet — tick; VRO; scan TT Doc | Registration — same | UCG pays within 30 days — tick |
 | Pick up — scan signed Hand-Over Document, or tick (starts 5-business-day inspection guarantee) | Pick up — same | |
 

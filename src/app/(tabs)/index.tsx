@@ -203,7 +203,11 @@ function DealView({
   const setTick = async (done: boolean) => {
     if (!tick) return;
     try {
-      await setMilestone(deal.id, tick.milestone, done, userId, done ? toIsoDate(new Date()) : undefined);
+      const date = done ? toIsoDate(new Date()) : undefined;
+      // e.g. "UCG has cleared customs" also marks the registration packet ready.
+      for (const m of [tick.milestone, ...(tick.alsoMarks ?? [])]) {
+        await setMilestone(deal.id, m, done, userId, date);
+      }
       onChanged();
     } catch {
       Alert.alert("Couldn't save that", 'Check your connection and try again.');
@@ -283,7 +287,10 @@ function DealView({
             </View>
           ))}
 
-        {viewed.status !== 'upcoming' && !viewed.lockedReason && tick && !ticked && (
+        {/* Also offered one step ahead: the salesperson's WhatsApp ("customs
+            is all done") can arrive before the customer finished the step
+            they're on. */}
+        {(viewed.status !== 'upcoming' || viewedIndex === currentIndex + 1) && !viewed.lockedReason && tick && !ticked && (
           <Pressable style={styles.tickButton} onPress={() => setTick(true)}>
             <View style={styles.tickBox} />
             <Text style={styles.tickLabel}>{tick.label}</Text>
