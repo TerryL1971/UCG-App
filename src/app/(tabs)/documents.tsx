@@ -71,7 +71,7 @@ export default function DocumentsScreen() {
         ) : (
           <View style={{ gap: 8 }}>
             {current.map((f) => (
-              <FileRow key={f.id} file={f} />
+              <FileRow key={f.id} file={f} onRemoved={refresh} />
             ))}
           </View>
         )}
@@ -83,7 +83,7 @@ export default function DocumentsScreen() {
         {showOlder && (
           <View style={{ gap: 8 }}>
             {older.map((f) => (
-              <FileRow key={f.id} file={f} />
+              <FileRow key={f.id} file={f} onRemoved={refresh} />
             ))}
           </View>
         )}

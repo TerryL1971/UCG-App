@@ -1,6 +1,8 @@
 import {
   demoCreateDeal,
   demoDeleteDeal,
+  demoDeleteDealFile,
+  demoResetSteps,
   demoFetchDealBundle,
   demoFetchMyDeals,
   demoFileUri,
@@ -299,6 +301,22 @@ export async function uploadDealFile(params: {
     .single();
   if (error) throw error;
   return data as DealFile;
+}
+
+/** Removes one document (file and record). If it was the current copy,
+ * the previous version becomes current again (database trigger). */
+export async function deleteDealFile(file: DealFile): Promise<void> {
+  if (isDemoMode()) return demoDeleteDealFile(file.id);
+  await client().storage.from(BUCKET).remove([file.storage_path]);
+  const { error } = await client().from('deal_files').delete().eq('id', file.id);
+  if (error) throw error;
+}
+
+/** Clears every tick on a deal (back to the start); documents stay. */
+export async function resetDealSteps(dealId: string): Promise<void> {
+  if (isDemoMode()) return demoResetSteps(dealId);
+  const { error } = await client().from('deal_milestones').delete().eq('deal_id', dealId);
+  if (error) throw error;
 }
 
 /** A short-lived link for viewing or sharing one document. */

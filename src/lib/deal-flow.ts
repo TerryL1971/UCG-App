@@ -629,3 +629,27 @@ export const CUSTOMER_TICKS: Record<Flow, Partial<Record<string, CustomerTick>>>
     paid_out: { milestone: 'paid_out', label: 'UCG has paid me' },
   },
 };
+
+/** Which documents complete each step — so a step finished by a scan can
+ * be backed up by removing that scan. */
+export const STEP_DOC_TYPES: Record<Flow, Partial<Record<string, DocType[]>>> = {
+  purchase: {
+    insurance: ['insurance'],
+    customs_office: ['ae550a', 'ae550a_stamped'],
+    zollamt: ['ae550a_stamped'],
+    registration: ['tt_doc', 'hand_over'],
+    delivered: ['hand_over'],
+  },
+  purchase_den: {
+    payment: ['cashiers_check', 'loan_approval', 'vat_form'],
+    vat_office: ['vat_form'],
+    insurance: ['insurance'],
+    registration: ['tt_doc', 'hand_over'],
+    delivered: ['hand_over'],
+  },
+  sale: {
+    customs_office: ['ae550b', 'ae550b_stamped'],
+    zollamt: ['ae550b_stamped'],
+    deregister: ['deregistration'],
+  },
+};

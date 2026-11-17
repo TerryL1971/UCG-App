@@ -253,6 +253,26 @@ export async function demoDeleteDeal(dealId: string): Promise<void> {
   save();
 }
 
+export async function demoDeleteDealFile(fileId: string): Promise<void> {
+  const s = await load();
+  const file = s.files.find((f) => f.id === fileId);
+  if (!file) return;
+  s.files = s.files.filter((f) => f.id !== fileId);
+  if (!file.replaced_at && file.doc_type !== 'other') {
+    const previous = s.files
+      .filter((f) => f.deal_id === file.deal_id && f.doc_type === file.doc_type)
+      .sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
+    if (previous) previous.replaced_at = null;
+  }
+  save();
+}
+
+export async function demoResetSteps(dealId: string): Promise<void> {
+  const s = await load();
+  s.milestones = s.milestones.filter((m) => m.deal_id !== dealId);
+  save();
+}
+
 export async function demoSetMilestone(dealId: string, milestone: Milestone, done: boolean, happenedOn?: string) {
   const s = await load();
   s.milestones = s.milestones.filter((m) => !(m.deal_id === dealId && m.milestone === milestone));

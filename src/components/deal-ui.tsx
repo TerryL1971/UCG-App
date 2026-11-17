@@ -6,7 +6,7 @@ import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'rea
 import { ClockIcon, DocumentIcon, UploadIcon } from '@/components/icons';
 import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
 import { dealTitle, docTypeInfo, type DealDeadline, type DocTypeInfo, vehicleLabel } from '@/lib/deal-flow';
-import { signedFileUrl, uploadDealFile, type Deal, type DealBundle, type DealFile } from '@/lib/deals';
+import { deleteDealFile, signedFileUrl, uploadDealFile, type Deal, type DealBundle, type DealFile } from '@/lib/deals';
 import { openUrlWithFeedback } from '@/lib/linking';
 import { pickPdf, scanPages } from '@/lib/scan';
 
@@ -113,7 +113,28 @@ async function shareFile(file: DealFile) {
   }
 }
 
-export function FileRow({ file }: { file: DealFile }) {
+/** Asks, then removes a document — the way to back up a step that a scan
+ * completed (wrong document, switched insurance, changed car…). */
+export function confirmRemoveFile(file: DealFile, onRemoved?: () => void) {
+  const label = docTypeInfo(file.doc_type).label;
+  Alert.alert(`Remove ${label}?`, 'It’s deleted from the app. If you scanned an earlier version, that one becomes current again.', [
+    { text: 'Cancel', style: 'cancel' },
+    {
+      text: 'Remove',
+      style: 'destructive',
+      onPress: async () => {
+        try {
+          await deleteDealFile(file);
+          onRemoved?.();
+        } catch {
+          Alert.alert("Couldn't remove it", 'Check your connection and try again.');
+        }
+      },
+    },
+  ]);
+}
+
+export function FileRow({ file, onRemoved }: { file: DealFile; onRemoved?: () => void }) {
   const info = docTypeInfo(file.doc_type);
   const who = file.uploaded_by_role === 'staff' ? (file.uploaded_by_name ?? 'UCG') : 'You';
   return (
@@ -126,9 +147,16 @@ export function FileRow({ file }: { file: DealFile }) {
           {who} · {formatUploaded(file.created_at)} · {file.page_count} page{file.page_count === 1 ? '' : 's'}
         </Text>
       </Pressable>
-      <Pressable hitSlop={8} onPress={() => shareFile(file)} style={styles.shareButton}>
-        <Text style={styles.shareLabel}>Share</Text>
-      </Pressable>
+      <View style={{ alignItems: 'flex-end', gap: 6 }}>
+        <Pressable hitSlop={8} onPress={() => shareFile(file)} style={styles.shareButton}>
+          <Text style={styles.shareLabel}>Share</Text>
+        </Pressable>
+        {onRemoved && (
+          <Text style={styles.removeLabel} onPress={() => confirmRemoveFile(file, onRemoved)}>
+            Remove
+          </Text>
+        )}
+      </View>
     </View>
   );
 }
@@ -237,6 +265,7 @@ const styles = StyleSheet.create({
   fileMeta: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textMuted, marginTop: 2 },
   shareButton: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: Radius.sm, backgroundColor: Colors.navyTint },
   shareLabel: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.navy },
+  removeLabel: { fontFamily: Fonts.bodySemibold, fontSize: 11.5, color: Colors.textMuted, textDecorationLine: 'underline' },
   scanButton: {
     minHeight: 46,
     borderRadius: Radius.md,
