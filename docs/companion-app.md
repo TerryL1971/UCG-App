@@ -26,7 +26,16 @@ DealerTeam.
   the chat straight to that deal's salesperson.
 - **Sell Back**: the offer request now goes into the in-app chat.
 
-**Staff** (Account → Staff)
+**Staff** — salespeople log into the same app with their staff account
+(@usedcarguys.net, added to `staff_members`). My Deal shows them a
+"Your deals" card; Staff → Deals lists **Waiting on you** (their deals
+where UCG has the next move) above all deals. Per purchase deal they tap
+just **Retail Ready** and **Paid in Full**; every other step completes
+from a scan (550, stamped 550, VAT form, TT Doc), and **Delivered**
+completes when the signed Hand-Over Document is scanned. Customers never
+mark UCG's steps.
+
+**Staff screens** (Account → Staff)
 - **Deals → New Deal**: type the fields off the Purchase Order / Cost
   Estimate / Bill of Sale. (Stand-in until the app can read the PDFs.)
 - **A deal**: tap the status marks and add scans (camera or attach PDF).

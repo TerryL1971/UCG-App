@@ -11,6 +11,7 @@ import { baseName } from '@/constants/bases';
 import { Button } from '@/components/ui/button';
 import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
+import { useChat } from '@/lib/chat-context';
 import { useDemoMode } from '@/lib/demo-mode';
 import {
   computeSteps,
@@ -32,6 +33,7 @@ import { useMyDeals } from '@/lib/my-deals-context';
 export default function MyDealScreen() {
   const { user, base } = useAuth();
   const { available, isLoading, loadFailed, deals, selected, selectDeal, refresh } = useMyDeals();
+  const { staffProfile } = useChat();
   const [connectingAnother, setConnectingAnother] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -109,6 +111,17 @@ export default function MyDealScreen() {
         refreshControl={
           available ? <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.navy} /> : undefined
         }>
+        {/* Salespeople log into this same app with their staff account —
+            send them straight to their deals. */}
+        {staffProfile && (
+          <Pressable style={({ pressed }) => [styles.staffCard, pressed && { opacity: 0.85 }]} onPress={() => router.push('/staff/deals')}>
+            <Text style={styles.staffTitle}>Your deals  →</Text>
+            <Text style={styles.staffBody}>
+              Logged in as UCG staff ({staffProfile.display_name}). Tap Retail Ready and Paid in Full, add scans, and see
+              who&apos;s waiting on you.
+            </Text>
+          </Pressable>
+        )}
         {body}
       </ScrollView>
     </SafeAreaView>
@@ -130,7 +143,7 @@ function DealView({
   const demo = useDemoMode();
   const flow = flowOf(deal);
   const steps = useMemo(() => computeSteps(deal, milestones, files, baseId), [deal, milestones, files, baseId]);
-  const deadline = currentDeadline(deal, milestones);
+  const deadline = currentDeadline(deal, milestones, undefined, files);
   const currentIndex = Math.max(
     0,
     steps.findIndex((s) => s.status === 'current'),
@@ -311,6 +324,9 @@ const styles = StyleSheet.create({
   },
   lockedText: { flex: 1, fontFamily: Fonts.bodySemibold, fontSize: 13, color: Colors.amber, lineHeight: 18 },
   roadWrap: { alignItems: 'center' },
+  staffCard: { backgroundColor: Colors.navy, borderRadius: Radius.lg, padding: 16 },
+  staffTitle: { fontFamily: Fonts.display, fontSize: 19, color: '#fff' },
+  staffBody: { fontFamily: Fonts.body, fontSize: 13, color: 'rgba(255,255,255,0.85)', marginTop: 2, lineHeight: 18 },
   baseRow: {
     flexDirection: 'row',
     alignItems: 'center',

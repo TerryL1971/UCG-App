@@ -45,7 +45,7 @@ export default function PaymentScreen() {
 
   const { deal, milestones } = selected;
   const flow = flowOf(deal);
-  const deadline = currentDeadline(deal, milestones);
+  const deadline = currentDeadline(deal, milestones, undefined, selected.files);
   const paid = milestones.some((m) => m.milestone === 'paid_in_full');
   const reference = paymentReference(deal.stock_number, deal.deal_number);
 

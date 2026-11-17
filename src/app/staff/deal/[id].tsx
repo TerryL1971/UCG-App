@@ -56,7 +56,7 @@ const MARKS: Record<Flow, MarkDef[]> = {
     {
       milestone: 'delivered',
       label: 'Delivered',
-      detail: 'Hand-Over Document signed. Starts the 5-business-day inspection guarantee.',
+      detail: 'Scanning the signed Hand-Over Document marks this automatically. Starts the 5-business-day inspection guarantee.',
       askDate: 'Date of delivery',
     },
   ],
@@ -67,7 +67,7 @@ const MARKS: Record<Flow, MarkDef[]> = {
     {
       milestone: 'delivered',
       label: 'Delivered',
-      detail: 'Hand-Over Document signed. Starts the 5-business-day inspection guarantee.',
+      detail: 'Scanning the signed Hand-Over Document marks this automatically. Starts the 5-business-day inspection guarantee.',
       askDate: 'Date of delivery',
     },
   ],
@@ -173,11 +173,16 @@ export default function StaffDealScreen() {
 
         <Text style={styles.section}>Status marks</Text>
         <Text style={styles.hint}>Only you can know these. The customer&apos;s app updates the moment you mark one.</Text>
-        {MARKS[flow].map((def) => (
+        {MARKS[flow].map((def) => {
+          const mark = milestones.find((m) => m.milestone === def.milestone);
+          // Delivered also completes from the signed Hand-Over Document scan.
+          const handOver = def.milestone === 'delivered' && !mark ? live.find((f) => f.doc_type === 'hand_over') : undefined;
+          return (
           <MarkRow
             key={def.milestone}
             def={def}
-            done={milestones.find((m) => m.milestone === def.milestone)}
+            done={mark ?? (handOver ? { happened_on: toIsoDate(new Date(handOver.created_at)), marked_by_name: null } : undefined)}
+            auto={Boolean(handOver)}
             onSet={async (done, date) => {
               if (!user?.id) return;
               try {
@@ -189,7 +194,8 @@ export default function StaffDealScreen() {
               }
             }}
           />
-        ))}
+          );
+        })}
 
         <Text style={styles.section}>Documents</Text>
         <Text style={styles.hint}>
@@ -263,10 +269,13 @@ function Line({ label, value }: { label: string; value: string }) {
 function MarkRow({
   def,
   done,
+  auto = false,
   onSet,
 }: {
   def: MarkDef;
   done: { happened_on: string; marked_by_name: string | null } | undefined;
+  /** Done by a document scan rather than a tap — nothing to undo. */
+  auto?: boolean;
   onSet: (done: boolean, date?: string) => Promise<void>;
 }) {
   const [date, setDate] = useState(toIsoDate(new Date()));
@@ -301,7 +310,11 @@ function MarkRow({
       <View style={{ flex: 1 }}>
         <Text style={styles.markLabel}>{def.label}</Text>
         <Text style={styles.markDetail}>
-          {done ? `Marked by ${done.marked_by_name ?? 'staff'} · ${formatDate(parseDate(done.happened_on))}` : def.detail}
+          {done
+            ? auto
+              ? `Done: signed Hand-Over Document scanned · ${formatDate(parseDate(done.happened_on))}`
+              : `Marked by ${done.marked_by_name ?? 'staff'} · ${formatDate(parseDate(done.happened_on))}`
+            : def.detail}
         </Text>
         {!done && def.askDate && (
           <View style={styles.dateRow}>
@@ -312,7 +325,7 @@ function MarkRow({
       </View>
       {busy ? (
         <ActivityIndicator color={Colors.navy} />
-      ) : done ? (
+      ) : done && auto ? null : done ? (
         <Pressable onPress={undo} hitSlop={8}>
           <Text style={styles.undo}>Undo</Text>
         </Pressable>

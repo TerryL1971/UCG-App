@@ -93,7 +93,7 @@ const REGISTRATION_STEP: StepDef = {
     ctx.milestone('registration_packet')
       ? 'Your registration packet is ready. Take it to the Vehicle Registration Office (VRO) for your Transfer Title Document (TT Doc), plates and environmental sticker, then scan your TT Doc into the app.'
       : 'Once customs is cleared, your salesperson gives you a registration packet with everything the Vehicle Registration Office (VRO) needs. At the VRO you get your Transfer Title Document (TT Doc), plates and environmental sticker.',
-  isDone: (ctx) => ctx.hasFile('tt_doc') || Boolean(ctx.milestone('delivered')),
+  isDone: (ctx) => ctx.hasFile('tt_doc', 'hand_over') || Boolean(ctx.milestone('delivered')),
 };
 
 const DELIVERY_STEP: StepDef = {
@@ -102,7 +102,10 @@ const DELIVERY_STEP: StepDef = {
   waitingOn: () => 'you',
   explainer: () =>
     'Bring your new plates, the environmental sticker and your TT Doc to UCG. You sign the Vehicle Hand-Over Document and get your Warranty Certificate, and the car is yours.',
-  isDone: (ctx) => Boolean(ctx.milestone('delivered')),
+  // The signed Hand-Over Document being scanned IS the delivery — no
+  // separate tap needed (Terry, 2026-11-17: keep the salesperson's taps
+  // to a minimum).
+  isDone: (ctx) => Boolean(ctx.milestone('delivered')) || ctx.hasFile('hand_over'),
 };
 
 const PURCHASE_STEPS: StepDef[] = [
@@ -383,12 +386,23 @@ export interface DealDeadline {
 }
 
 /** The one deadline that matters right now, if any. */
+/** When the car was handed over: the Delivered mark's date, or else the
+ * day the signed Hand-Over Document was scanned. */
+export function deliveredOn(milestones: DealMilestone[], files: DealFile[]): string | null {
+  const mark = milestones.find((x) => x.milestone === 'delivered');
+  if (mark) return mark.happened_on;
+  const handOver = liveFiles(files).find((f) => f.doc_type === 'hand_over');
+  return handOver ? toIsoDate(new Date(handOver.created_at)) : null;
+}
+
 export function currentDeadline(
   deal: Deal,
   milestones: DealMilestone[],
   today: Date = new Date(),
+  files: DealFile[] = [],
 ): DealDeadline | null {
   const m = (id: Milestone) => milestones.find((x) => x.milestone === id);
+  const deliveredDate = deliveredOn(milestones, files);
   const tone = (date: Date): DealDeadline['tone'] => {
     const left = daysUntil(date, today);
     if (left < 0) return 'overdue';
@@ -397,9 +411,8 @@ export function currentDeadline(
   const flow = flowOf(deal);
 
   if (flow === 'purchase') {
-    const delivered = m('delivered');
-    if (delivered) {
-      const until = addBusinessDays(parseDate(delivered.happened_on), 5);
+    if (deliveredDate) {
+      const until = addBusinessDays(parseDate(deliveredDate), 5);
       if (daysUntil(until, today) < 0) return null;
       return {
         id: 'inspection_guarantee',
@@ -427,9 +440,8 @@ export function currentDeadline(
   }
 
   if (flow === 'purchase_den') {
-    const delivered = m('delivered');
-    if (delivered) {
-      const until = addBusinessDays(parseDate(delivered.happened_on), 5);
+    if (deliveredDate) {
+      const until = addBusinessDays(parseDate(deliveredDate), 5);
       if (daysUntil(until, today) < 0) return null;
       return {
         id: 'inspection_guarantee',

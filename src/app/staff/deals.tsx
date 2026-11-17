@@ -10,8 +10,8 @@ import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
 import { useChat } from '@/lib/chat-context';
 import { useDemoMode } from '@/lib/demo-mode';
-import { dealTitle, vehicleLabel } from '@/lib/deal-flow';
-import { fetchStaffDeals, subscribeToDealChanges, type Deal } from '@/lib/deals';
+import { computeSteps, dealTitle, vehicleLabel } from '@/lib/deal-flow';
+import { fetchStaffDealBundles, subscribeToDealChanges, type DealBundle } from '@/lib/deals';
 
 /**
  * Every deal in the app (all active staff see all deals — salespeople
@@ -22,16 +22,16 @@ export default function StaffDealsScreen() {
   const { user } = useAuth();
   const { staffProfile } = useChat();
   const demo = useDemoMode();
-  const [deals, setDeals] = useState<Deal[]>([]);
+  const [bundles, setBundles] = useState<DealBundle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [query, setQuery] = useState('');
 
   const load = useCallback(() => {
-    return fetchStaffDeals()
+    return fetchStaffDealBundles()
       .then((rows) => {
-        setDeals(rows);
+        setBundles(rows);
         setLoadFailed(false);
       })
       .catch((error) => {
@@ -52,6 +52,19 @@ export default function StaffDealsScreen() {
       load();
     });
   }, [staffProfile, demo, load]);
+
+  const deals = useMemo(() => bundles.map((b) => b.deal), [bundles]);
+
+  // The salesperson's own deals where UCG has the next move — what they
+  // need to tap (Retail Ready, Paid in Full…) or chase.
+  const waiting = useMemo(
+    () =>
+      bundles
+        .filter((b) => demo || b.deal.salesperson_id === user?.id)
+        .map((b) => ({ deal: b.deal, step: computeSteps(b.deal, b.milestones, b.files).find((s) => s.status === 'current') }))
+        .filter((x) => x.step && x.step.waitingOn !== 'you'),
+    [bundles, demo, user?.id],
+  );
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -90,6 +103,27 @@ export default function StaffDealsScreen() {
           />
         }>
         <Button label="New Deal" onPress={() => router.push('/staff/deal-form')} />
+
+        {!isLoading && !query && waiting.length > 0 && (
+          <>
+            <Text style={styles.section}>Waiting on you ({waiting.length})</Text>
+            {waiting.map(({ deal, step }) => (
+              <Pressable
+                key={deal.id}
+                style={({ pressed }) => [styles.row, styles.rowWaiting, pressed && { opacity: 0.7 }]}
+                onPress={() => router.push({ pathname: '/staff/deal/[id]', params: { id: deal.id } })}>
+                <View style={styles.rowTop}>
+                  <Text style={styles.rowName} numberOfLines={1}>
+                    {deal.customer_name}
+                  </Text>
+                  <Text style={styles.rowDeal}>#{deal.deal_number}</Text>
+                </View>
+                <Text style={styles.rowNext}>Next: {step!.title}</Text>
+              </Pressable>
+            ))}
+            <Text style={styles.section}>All deals</Text>
+          </>
+        )}
         <View style={styles.search}>
           <SearchIcon />
           <TextInput
@@ -157,5 +191,8 @@ const styles = StyleSheet.create({
   rowName: { flex: 1, fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.text },
   rowDeal: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.navy },
   rowCar: { fontFamily: Fonts.bodySemibold, fontSize: 13, color: Colors.navy, marginTop: 2 },
+  section: { fontFamily: Fonts.display, fontSize: 17, color: Colors.text, marginTop: Spacing.md },
+  rowWaiting: { borderColor: Colors.amber, backgroundColor: Colors.amberTint },
+  rowNext: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.amber, marginTop: 4 },
   rowMeta: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textMuted, marginTop: 4 },
 });

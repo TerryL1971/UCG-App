@@ -201,6 +201,17 @@ export async function fetchStaffDeals(): Promise<Deal[]> {
   return data as Deal[];
 }
 
+/** All deals with their status marks and documents — for the staff
+ * "Waiting on you" list, which needs to know each deal's current step. */
+export async function fetchStaffDealBundles(): Promise<DealBundle[]> {
+  if (isDemoMode()) {
+    const deals = await demoFetchStaffDeals();
+    const bundles = await Promise.all(deals.map((d) => demoFetchDealBundle(d.id)));
+    return bundles.filter((b): b is DealBundle => b !== null);
+  }
+  return bundlesFor(await fetchStaffDeals());
+}
+
 export type NewDeal = Pick<
   Deal,
   | 'kind'
