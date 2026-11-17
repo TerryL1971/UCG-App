@@ -1,8 +1,7 @@
-// Full package specifiers (not the deno.json import map) so this file
-// can be pasted straight into the Supabase dashboard's function editor,
-// which doesn't read deno.json.
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "npm:@supabase/supabase-js@2";
+// Versions live in this function's deno.json. Deploy with the CLI:
+//   supabase functions deploy delete-account --use-api
+import "@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "@supabase/supabase-js";
 
 /**
  * Deletes the signed-in customer's own account (Apple requires in-app
@@ -19,9 +18,8 @@ import { createClient } from "npm:@supabase/supabase-js@2";
  *    longer linked to any account (customer_id becomes null)
  *  - documents stay with the deal; the uploader link becomes null
  *
- * Deploy: Supabase dashboard → Edge Functions → Deploy a new function →
- * name it `delete-account`, paste this file, deploy. (Or, once the CLI
- * can log in: `supabase functions deploy delete-account`.)
+ * Deploy: `supabase functions deploy delete-account --use-api` (deployed
+ * 2026-11-17).
  */
 
 const cors = {
