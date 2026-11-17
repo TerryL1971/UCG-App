@@ -60,6 +60,7 @@ export interface Deal {
 export type Milestone =
   | 'retail_ready'
   | 'paid_in_full'
+  | 'insured'
   | 'customs_cleared'
   | 'tuv_release'
   | 'registration_packet'
@@ -92,6 +93,7 @@ export type DocType =
   | 'cashiers_check'
   | 'loan_approval'
   | 'tuv'
+  | 'insurance'
   | 'tt_doc'
   | 'registration'
   | 'title'

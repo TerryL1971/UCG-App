@@ -48,7 +48,7 @@ const SHARED_YOU_BRING: VroItem[] = [
   {
     label: 'Proof of Insurance for Germany',
     detail:
-      'An eVB / Blank ICC / Deckungskarte from a German-market policy. You arrange this yourself with the insurer of your choice.',
+      'An eVB / Blank ICC / Deckungskarte from a German-market policy. American Auto Nation, UCG’s own insurance for USAREUR drivers, can set this up (Tools → American Auto Nation), and your first month is on UCG.',
   },
   { label: 'POV limit waiver (AE Form 190-1AG)', detail: 'Only if you’re over the vehicle limit — approved by your commander (O-3 / GS equivalent or above).' },
 ];

@@ -47,10 +47,17 @@ Decisions (Terry, David and Michelle, Nov 2026):
 | Deal opened ($300 deposit) | Cost Estimate ready | Bill of Sale signed |
 | Car being prepared — tick **Retail Ready** | Cashier's check (Total Price, not MWST total) or loan approval | 550-175B at base customs — scan it |
 | Pay the balance — tick **payment confirmed** | VAT office ($100) — scan VAT forms | Zollamt — tick **customs cleared** |
-| 550-175A at base customs (locked until paid) — scan it | Payment received — tick | Hand over car, keys, title docs — tick |
+| **Insure your car** — American Auto Nation suggested first; tick or add insurance card (can be done any time) | Payment received — tick | |
+| 550-175A at base customs (locked until paid) — scan it | **Insure your car** — same | Hand over car, keys, title docs — tick |
 | Zollamt — tick, or add stamped 550 | TÜV & release — tick | Deregister — scan proof or tick |
 | Registration packet — tick; VRO; scan TT Doc | Registration — same | UCG pays within 30 days — tick |
 | Pick up — scan signed Hand-Over Document, or tick (starts 5-business-day inspection guarantee) | Pick up — same | |
+
+Insurance is a "parallel" step: arranging it early never marks payment
+done, and it counts as done once registration is done. From the payment
+step until it's done, My Deal and the Payment screen show a big American
+Auto Nation card ("Get My Quote" → WhatsApp to the salesperson; first
+month's premium on UCG).
 
 DEN plans never mention a deposit, a reservation or $300 (VAT rules).
 The rules live in `src/lib/deal-flow.ts`.
@@ -73,7 +80,7 @@ Demo Mode** switches it per phone (off = the real plan). For launch:
 ## Backend (Supabase, project "UCG App")
 
 - Migrations `20261117120000_deals.sql`, `20261117150000_pay_in_full_5_days.sql`,
-  `20261117170000_customer_owned_deals.sql` — applied. Customers can only
+  `20261117170000_customer_owned_deals.sql`, `20261117190000_insurance_step.sql` — applied. Customers can only
   ever see and change their own plans and documents (row-level security).
 - Edge Function `delete-account` — deployed. Deletes the account, its car
   plans and every document the customer added.

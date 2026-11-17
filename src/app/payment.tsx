@@ -4,6 +4,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DeadlineBanner } from '@/components/deal-ui';
+import { InsurancePrompt } from '@/components/insurance-prompt';
 import { ShieldIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/ui/screen-header';
@@ -31,7 +32,7 @@ import { useMyDeals } from '@/lib/my-deals-context';
  * from a message — that's the wire-fraud protection.
  */
 export default function PaymentScreen() {
-  const { selected } = useMyDeals();
+  const { selected, refresh } = useMyDeals();
 
   if (!selected) {
     return (
@@ -80,6 +81,10 @@ export default function PaymentScreen() {
               messageSalesperson(deal, `I've sent my wire of ${formatMoney(balanceDue(deal))}.`)
             }
           />
+        )}
+
+        {flow !== 'sale' && !milestones.some((m) => m.milestone === 'insured') && (
+          <InsurancePrompt deal={deal} userId={deal.customer_id ?? ''} onChanged={refresh} />
         )}
 
         <View style={[styles.card, styles.fraudCard]}>

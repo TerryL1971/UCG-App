@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DealSummaryCard, DeadlineBanner, DealSwitcher, ScanUploadButton } from '@/components/deal-ui';
 import { CheckCircleIcon, LockIcon, WhatsAppIcon } from '@/components/icons';
+import { INSURANCE_STEPS, InsurancePrompt, requestAanQuote } from '@/components/insurance-prompt';
 import { TimelineRoad } from '@/components/timeline-road';
 import { Button } from '@/components/ui/button';
 import { baseName } from '@/constants/bases';
@@ -166,6 +167,14 @@ function DealView({
       )}
       <DealSummaryCard deal={deal} />
       {deadline && <DeadlineBanner deadline={deadline} />}
+      {/* American Auto Nation, front and centre from the moment they pay
+          until the car is registered. */}
+      {flow !== 'sale' &&
+        !allDone &&
+        INSURANCE_STEPS.includes(steps[currentIndex]?.id) &&
+        steps.find((s) => s.id === 'insurance')?.status !== 'done' && (
+          <InsurancePrompt deal={deal} userId={userId} onChanged={onChanged} />
+        )}
 
       <View style={[styles.card, Shadow.card]}>
         <View style={styles.stepHead}>
@@ -267,6 +276,10 @@ function StepActions({
         onPress={() => router.push('/payment')}
       />,
     );
+  }
+  if (step.id === 'insurance') {
+    actions.push(<Button key="aan" label="Get My American Auto Nation Quote" onPress={() => requestAanQuote(deal)} />);
+    actions.push(<View key="card">{scan('insurance', 'Add My Insurance Card (eVB)')}</View>);
   }
   if (step.id === 'customs_office') {
     actions.push(

@@ -76,6 +76,9 @@ interface StepContext {
 
 interface StepDef {
   id: string;
+  /** Can happen any time (insurance): it neither pushes earlier steps to
+   * done nor holds later ones back. */
+  parallel?: boolean;
   title: string;
   waitingOn: (ctx: StepContext) => WaitingOn;
   explainer: (ctx: StepContext) => string;
@@ -84,6 +87,16 @@ interface StepDef {
 }
 
 const isFinanced = (ctx: StepContext) => ctx.deal.payment_method === 'finance';
+
+const INSURANCE_STEP: StepDef = {
+  id: 'insurance',
+  title: 'Insure Your Car',
+  parallel: true,
+  waitingOn: () => 'you',
+  explainer: () =>
+    "Start your insurance as soon as you send your wire or your loan is complete. The VRO won't register your car without proof of German insurance (an eVB). American Auto Nation, UCG's own insurance for USAREUR drivers, sets it up, and your first month's premium is on UCG. Tick it below once you're insured, or add your insurance card.",
+  isDone: (ctx) => Boolean(ctx.milestone('insured')) || ctx.hasFile('insurance'),
+};
 
 const REGISTRATION_STEP: StepDef = {
   id: 'registration',
@@ -135,6 +148,7 @@ const PURCHASE_STEPS: StepDef[] = [
         : `Wire the balance of ${ctx.balanceText} to UCG using the payment details in this app. When your salesperson confirms UCG has received it, tick it below.`,
     isDone: (ctx) => Boolean(ctx.milestone('paid_in_full')),
   },
+  INSURANCE_STEP,
   {
     id: 'customs_office',
     title: 'Base Customs Office',
@@ -191,6 +205,7 @@ const PURCHASE_DEN_STEPS: StepDef[] = [
       "UCG deposits your cashier's check, or receives the payment from your lender. When your salesperson confirms it, tick it below.",
     isDone: (ctx) => Boolean(ctx.milestone('paid_in_full')),
   },
+  INSURANCE_STEP,
   {
     id: 'tuv',
     title: 'TÜV & Release',
@@ -297,12 +312,18 @@ export function computeSteps(
   const ctx = contextFor(deal, milestones, files);
   const flow = flowOf(deal);
   const defs = STEP_DEFS[flow];
+  // Ordinary steps are monotonic; parallel ones (insurance) count only
+  // when actually done, and never move the others.
   let lastDone = -1;
   defs.forEach((def, i) => {
-    if (def.isDone(ctx)) lastDone = i;
+    if (!def.parallel && def.isDone(ctx)) lastDone = i;
   });
+  // A parallel step is done when done — or when a later ordinary step is
+  // (registration is impossible without insurance).
+  const done = defs.map((def, i) => (def.parallel ? def.isDone(ctx) || i < lastDone : i <= lastDone));
+  const currentIndex = done.findIndex((d) => !d);
   return defs.map((def, i) => {
-    const status: StepStatus = i <= lastDone ? 'done' : i === lastDone + 1 ? 'current' : 'upcoming';
+    const status: StepStatus = done[i] ? 'done' : i === currentIndex ? 'current' : 'upcoming';
     return {
       id: def.id,
       title: def.title,
@@ -518,6 +539,7 @@ export const DOC_TYPES: DocTypeInfo[] = [
   { type: 'loan_approval', label: 'Loan Approval', scannedBy: 'salesperson', pages: null, flows: ['purchase_den'], originalStaysWithCar: false },
   { type: 'vat_form', label: 'VAT Forms', scannedBy: 'salesperson', pages: null, flows: ['purchase_den'], originalStaysWithCar: true },
   { type: 'tuv', label: 'TÜV / GTU Inspection Report', scannedBy: 'salesperson', pages: null, flows: BUYING, originalStaysWithCar: true },
+  { type: 'insurance', label: 'Insurance Card (eVB)', scannedBy: 'customer', pages: null, flows: BUYING, originalStaysWithCar: false },
   { type: 'tt_doc', label: 'Transfer Title Document (TT Doc)', scannedBy: 'customer', pages: FRONT_BACK, flows: ALL, originalStaysWithCar: true },
   { type: 'warranty_certificate', label: 'Warranty Certificate', scannedBy: 'salesperson', pages: null, flows: BUYING, originalStaysWithCar: true },
   { type: 'hand_over', label: 'Vehicle Hand-Over Document (signed)', scannedBy: 'salesperson', pages: null, flows: BUYING, originalStaysWithCar: true },
@@ -588,12 +610,14 @@ export const CUSTOMER_TICKS: Record<Flow, Partial<Record<string, CustomerTick>>>
   purchase: {
     retail_ready: { milestone: 'retail_ready', label: 'My salesperson says my car is Retail Ready' },
     payment: { milestone: 'paid_in_full', label: 'UCG has confirmed they received my payment' },
+    insurance: { milestone: 'insured', label: 'My car is insured' },
     zollamt: { milestone: 'customs_cleared', label: 'My salesperson says customs is cleared' },
     registration: { milestone: 'registration_packet', label: 'I have my registration packet' },
     delivered: { milestone: 'delivered', label: "I've picked up my car" },
   },
   purchase_den: {
     paid: { milestone: 'paid_in_full', label: 'UCG has confirmed they received my payment' },
+    insurance: { milestone: 'insured', label: 'My car is insured' },
     tuv: { milestone: 'tuv_release', label: 'My salesperson says the TÜV and release are done' },
     registration: { milestone: 'registration_packet', label: 'I have my registration packet' },
     delivered: { milestone: 'delivered', label: "I've picked up my car" },
