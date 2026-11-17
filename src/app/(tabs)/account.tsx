@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
 import { useChat } from '@/lib/chat-context';
+import { resetDemoData } from '@/lib/deals-demo';
+import { DEMO_MODE } from '@/lib/demo-mode';
 import { useVinScan } from '@/lib/vin-scan-context';
 
 export default function AccountScreen() {
@@ -71,11 +73,11 @@ export default function AccountScreen() {
 
       {/* Only for accounts an admin has added to staff_members — see the
           private_chat migration. Customers never see this row. */}
-      {staffProfile && (
+      {(staffProfile || DEMO_MODE) && (
         <Pressable style={styles.linkRow} onPress={() => router.push('/staff')}>
           <MessageIcon size={18} color={Colors.navy} />
           <View style={{ flex: 1 }}>
-            <Text style={styles.linkRowTitle}>Staff</Text>
+            <Text style={styles.linkRowTitle}>{staffProfile ? 'Staff' : 'Staff (demo)'}</Text>
             <Text style={styles.linkRowSub}>Deals, status marks, scans and customer chats</Text>
           </View>
           <Text style={styles.linkRowChevron}>›</Text>
@@ -90,6 +92,23 @@ export default function AccountScreen() {
         </View>
         <Text style={styles.linkRowChevron}>›</Text>
       </Pressable>
+
+      {DEMO_MODE && (
+        <Pressable
+          style={styles.linkRow}
+          onPress={() =>
+            Alert.alert('Reset Demo Data?', 'Puts the three demo deals back to how they started.', [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Reset', style: 'destructive', onPress: () => resetDemoData() },
+            ])
+          }>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.linkRowTitle}>Reset Demo Data</Text>
+            <Text style={styles.linkRowSub}>Demo mode is on: deals are sample data on this phone</Text>
+          </View>
+          <Text style={styles.linkRowChevron}>›</Text>
+        </Pressable>
+      )}
 
       <View style={styles.spacer} />
 

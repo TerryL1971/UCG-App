@@ -10,6 +10,7 @@ import { TimelineRoad } from '@/components/timeline-road';
 import { Button } from '@/components/ui/button';
 import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
+import { DEMO_MODE } from '@/lib/demo-mode';
 import {
   computeSteps,
   currentDeadline,
@@ -131,6 +132,16 @@ function DealView({ bundle, userId, onChanged }: { bundle: DealBundle; userId: s
 
   return (
     <View style={{ gap: Spacing.md }}>
+      {DEMO_MODE && (
+        <View style={styles.demoBanner}>
+          <Text style={styles.demoText}>Demo deal with sample data.</Text>
+          <Text
+            style={styles.demoLink}
+            onPress={() => router.push({ pathname: '/staff/deal/[id]', params: { id: deal.id } })}>
+            Act as the salesperson →
+          </Text>
+        </View>
+      )}
       <DealSummaryCard deal={deal} />
       {deadline && <DeadlineBanner deadline={deadline} />}
 
@@ -281,6 +292,19 @@ const styles = StyleSheet.create({
   },
   lockedText: { flex: 1, fontFamily: Fonts.bodySemibold, fontSize: 13, color: Colors.amber, lineHeight: 18 },
   roadWrap: { alignItems: 'center' },
+  demoBanner: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    backgroundColor: Colors.amberTint,
+    borderRadius: Radius.md,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  demoText: { fontFamily: Fonts.bodySemibold, fontSize: 12.5, color: Colors.amber },
+  demoLink: { fontFamily: Fonts.bodyBold, fontSize: 12.5, color: Colors.navy, textDecorationLine: 'underline' },
   linkCard: { backgroundColor: '#fff', borderRadius: Radius.lg, padding: 14 },
   linkCardTitle: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.navy },
   linkCardBody: { fontFamily: Fonts.body, fontSize: 12.5, color: Colors.textMuted, marginTop: 2 },

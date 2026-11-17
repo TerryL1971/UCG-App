@@ -9,6 +9,7 @@ import { ScreenHeader } from '@/components/ui/screen-header';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
 import { useChat } from '@/lib/chat-context';
+import { DEMO_MODE } from '@/lib/demo-mode';
 import { dealTitle, vehicleLabel } from '@/lib/deal-flow';
 import { fetchStaffDeals, subscribeToDealChanges, type Deal } from '@/lib/deals';
 
@@ -41,11 +42,11 @@ export default function StaffDealsScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      if (staffProfile) load();
+      if (staffProfile || DEMO_MODE) load();
     }, [staffProfile, load]),
   );
   useEffect(() => {
-    if (!staffProfile) return;
+    if (!staffProfile && !DEMO_MODE) return;
     return subscribeToDealChanges('staff-deals', () => {
       load();
     });
@@ -63,7 +64,7 @@ export default function StaffDealsScreen() {
     return [...matches].sort((a, b) => Number(b.salesperson_id === user?.id) - Number(a.salesperson_id === user?.id));
   }, [deals, query, user?.id]);
 
-  if (!staffProfile) {
+  if (!staffProfile && !DEMO_MODE) {
     return (
       <SafeAreaView style={styles.screen} edges={['top']}>
         <ScreenHeader title="Deals" />

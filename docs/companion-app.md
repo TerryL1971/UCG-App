@@ -50,7 +50,19 @@ tests makes sure the wording never slips in.
 The rules live in `src/lib/deal-flow.ts` (pure functions). Data and
 privacy rules live in `supabase/migrations/20261117120000_deals.sql`.
 
-## Setup — once
+## Demo mode (on until launch)
+
+The app runs on **sample deals stored on the phone** by default
+(`src/lib/demo-mode.ts`, `src/lib/deals-demo.ts`): no migration, no login,
+no network. Three made-up deals: 90001 regular purchase (Retail Ready,
+pay-by countdown), 90002 DEN purchase, 90003 selling to UCG. "Act as the
+salesperson" on My Deal opens the staff screen for that deal, so one
+phone can demo both sides. Account → Reset Demo Data puts them back.
+
+**At launch:** add `EXPO_PUBLIC_DEMO_MODE=false` to `.env`, apply the
+migration below, and restart Expo — the app then uses Supabase.
+
+## Setup — once (real data)
 
 1. **Apply the migration.** Supabase dashboard → SQL Editor → paste all of
    `supabase/migrations/20261117120000_deals.sql` → Run. It creates the

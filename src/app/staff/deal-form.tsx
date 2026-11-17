@@ -8,6 +8,7 @@ import { Field } from '@/components/ui/field';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { useChat } from '@/lib/chat-context';
+import { DEMO_MODE } from '@/lib/demo-mode';
 import { toIsoDate } from '@/lib/deal-flow';
 import { createDeal, fetchDealBundle, updateDeal, type DealKind, type NewDeal, type PaymentMethod } from '@/lib/deals';
 
@@ -156,7 +157,7 @@ export default function StaffDealFormScreen() {
     }
   };
 
-  if (!staffProfile) {
+  if (!staffProfile && !DEMO_MODE) {
     return (
       <SafeAreaView style={styles.screen} edges={['top']}>
         <ScreenHeader title="Deal" />

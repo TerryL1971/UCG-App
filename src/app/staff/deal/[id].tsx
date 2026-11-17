@@ -10,6 +10,7 @@ import { ScreenHeader } from '@/components/ui/screen-header';
 import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
 import { useChat } from '@/lib/chat-context';
+import { DEMO_MODE } from '@/lib/demo-mode';
 import {
   balanceDue,
   computeSteps,
@@ -107,7 +108,7 @@ export default function StaffDealScreen() {
     });
   }, [id, load]);
 
-  if (!staffProfile) {
+  if (!staffProfile && !DEMO_MODE) {
     return (
       <SafeAreaView style={styles.screen} edges={['top']}>
         <ScreenHeader title="Deal" />

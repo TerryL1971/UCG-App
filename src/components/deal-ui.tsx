@@ -84,6 +84,11 @@ function formatUploaded(iso: string): string {
 async function openFile(file: DealFile) {
   try {
     const url = await signedFileUrl(file.storage_path);
+    if (url.startsWith('file://')) {
+      // A file on the phone (demo mode): the share sheet previews it.
+      await Sharing.shareAsync(url, { mimeType: 'application/pdf', UTI: 'com.adobe.pdf' });
+      return;
+    }
     await openUrlWithFeedback(url);
   } catch {
     Alert.alert("Couldn't open that document", 'Check your connection and try again.');
@@ -101,7 +106,7 @@ async function shareFile(file: DealFile) {
     const url = await signedFileUrl(file.storage_path);
     const name = `${docTypeInfo(file.doc_type).label.replace(/[^A-Za-z0-9]+/g, '-')}.pdf`;
     const target = `${FileSystem.cacheDirectory}${name}`;
-    const { uri } = await FileSystem.downloadAsync(url, target);
+    const uri = url.startsWith('file://') ? url : (await FileSystem.downloadAsync(url, target)).uri;
     await Sharing.shareAsync(uri, { mimeType: 'application/pdf', UTI: 'com.adobe.pdf' });
   } catch {
     Alert.alert("Couldn't share that document", 'Check your connection and try again.');

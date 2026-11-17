@@ -3,6 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 
 import { useAuth } from '@/lib/auth-context';
 import { fetchMyDeals, linkMyDeal, subscribeToDealChanges, type DealBundle, type LinkResult } from '@/lib/deals';
+import { DEMO_CUSTOMER_ID, DEMO_MODE } from '@/lib/demo-mode';
 import { isSupabaseConfigured } from '@/lib/supabase';
 
 /**
@@ -29,8 +30,9 @@ const SELECTED_KEY = 'ucg.selectedDealId';
 
 export function MyDealsProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const userId = user?.id;
-  const available = isSupabaseConfigured && Boolean(userId);
+  // Demo mode works without logging in (lib/demo-mode.ts).
+  const userId = DEMO_MODE ? (user?.id ?? DEMO_CUSTOMER_ID) : user?.id;
+  const available = DEMO_MODE || (isSupabaseConfigured && Boolean(userId));
   const [deals, setDeals] = useState<DealBundle[]>([]);
   // Which account the current `deals` belong to — loading is simply
   // "haven't finished a load for this account yet", so switching accounts
