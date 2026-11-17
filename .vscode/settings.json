@@ -12,5 +12,6 @@
   },
   "typescript.tsserver.watchOptions": {
     "excludeDirectories": ["**/node_modules"]
-  }
+  },
+  "python.terminal.useEnvFile": true
 }
