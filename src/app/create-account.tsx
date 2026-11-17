@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { BasePicker } from '@/components/base-picker';
 import { Field } from '@/components/ui/field';
 import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/ui/screen-header';
@@ -11,11 +12,14 @@ import { friendlyAuthError, useAuth } from '@/lib/auth-context';
 import { isValidEmail } from '@/lib/validation';
 
 export default function CreateAccountScreen() {
-  const { signUp } = useAuth();
+  const { signUp, base: savedBase } = useAuth();
+  // Required (Terry, 2026-11-17): each base has its own registration
+  // rules, so the roadmap needs to know where the customer is stationed.
+  const [base, setBase] = useState<string | null>(savedBase);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [errors, setErrors] = useState<{ name?: string; email?: string; password?: string }>({});
+  const [errors, setErrors] = useState<{ name?: string; email?: string; password?: string; base?: string }>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -24,15 +28,16 @@ export default function CreateAccountScreen() {
     if (!name.trim()) next.name = 'Enter your name.';
     if (!isValidEmail(email)) next.email = 'Enter a valid email address.';
     if (password.length < 6) next.password = 'Use at least 6 characters.';
+    if (!base) next.base = 'Pick the base you’re stationed at.';
     setErrors(next);
     setFormError(null);
-    if (Object.keys(next).length > 0) return;
+    if (Object.keys(next).length > 0 || !base) return;
 
     setIsSubmitting(true);
     try {
       // Async either way — a stub in local stand-in mode, a real network
       // call once real Supabase credentials exist (see auth-context.tsx).
-      const result = await signUp(name.trim(), email.trim(), password);
+      const result = await signUp(name.trim(), email.trim(), password, base);
       if (result.error) {
         setFormError(friendlyAuthError(result.error));
         return;
@@ -59,7 +64,7 @@ export default function CreateAccountScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent} keyboardShouldPersistTaps="handled">
           <Text style={styles.intro}>
-            Create an account to save cars, track your deal, and pick up where you left off.
+            Create an account to follow your deal, keep your paperwork, and chat with your salesperson.
           </Text>
 
           <Field
@@ -87,6 +92,10 @@ export default function CreateAccountScreen() {
             secureTextEntry
             error={errors.password}
           />
+
+          <Text style={styles.baseLabel}>Where are you stationed?</Text>
+          <Text style={styles.baseHint}>Each base has its own rules for registering a car. You can change this later.</Text>
+          <BasePicker value={base} onChange={setBase} error={errors.base} />
 
           {formError && <Text style={styles.formError}>{formError}</Text>}
 
@@ -132,6 +141,14 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.bodyBold,
     color: Colors.red,
   },
+  baseLabel: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: 12.5,
+    color: Colors.textMuted,
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
+  },
+  baseHint: { fontFamily: Fonts.body, fontSize: 12.5, color: Colors.textFaint, marginTop: 3, marginBottom: 10 },
   formError: {
     marginTop: 12,
     fontFamily: Fonts.bodySemibold,

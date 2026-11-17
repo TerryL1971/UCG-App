@@ -82,6 +82,30 @@ migration below, and restart Expo — the app then uses Supabase.
    balance ($25,199.00). Mark **Paid in Full** → the customer's 550 step
    unlocks. Add a scan on either side → it appears on the other phone.
 
+## Bases
+
+Every base has its own rules for registering and deregistering a car.
+The customer picks their base at sign-up (required) and can change it in
+Account or from My Deal ("Roadmap for Stuttgart · Change") — e.g. bought
+in Wiesbaden, moved to Stuttgart, now selling there. The roadmap always
+follows the CURRENT base.
+
+**Adding a base's rules:** `src/constants/bases.ts` → `BASE_RULES`. Each
+base can add its own instructions to any roadmap step (flow + step id),
+e.g. `stuttgart: { stepNotes: { purchase: { registration: '…' } } }`.
+Until a base has rules, its customs/registration/deregistration steps say
+"your salesperson confirms exactly how it works at <base>".
+
+## Deleting an account
+
+Account → Delete My Account (asked twice). It runs the `delete-account`
+Edge Function (`supabase/functions/delete-account/`), which deletes only
+the signed-in user: their chat is deleted, their deals and documents stay
+with UCG (sale records) but are unlinked. Staff accounts can't delete
+themselves this way. **Deploy it once:** Supabase dashboard → Edge
+Functions → Deploy a new function → name `delete-account` → paste
+`index.ts` → Deploy.
+
 ## Not built yet (and why)
 
 - **Salespeople sending scans by WhatsApp** — needs a WhatsApp Business

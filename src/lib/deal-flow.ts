@@ -1,3 +1,4 @@
+import { BASE_RULES, BASE_SENSITIVE_STEPS, baseName } from '@/constants/bases';
 import type { Deal, DealFile, DealMilestone, DocType, Milestone } from '@/lib/deals';
 
 /**
@@ -60,6 +61,9 @@ export interface FlowStep extends DealStep {
   explainer: string;
   /** Set when the customer can't act on this step yet, with the reason. */
   lockedReason: string | null;
+  /** This base's own instructions for the step (constants/bases.ts), or —
+   * while a base's rules haven't been added — a note to confirm locally. */
+  baseNote: string | null;
 }
 
 interface StepContext {
@@ -258,15 +262,34 @@ function contextFor(deal: Deal, milestones: DealMilestone[], files: DealFile[]):
   };
 }
 
+function baseNoteFor(flow: Flow, stepId: string, baseId: string | null | undefined): string | null {
+  const rule = baseId ? BASE_RULES[baseId]?.stepNotes?.[flow]?.[stepId] : undefined;
+  if (rule) return rule;
+  if (!BASE_SENSITIVE_STEPS.includes(stepId)) return null;
+  const name = baseName(baseId);
+  return name
+    ? `Every base has its own rules for this step. Your salesperson confirms exactly how it works at ${name}.`
+    : 'Every base has its own rules for this step. Set your base in Account so your roadmap matches it.';
+}
+
 /**
  * The steps for a deal with live statuses. Progress is monotonic: the
  * furthest step that's done counts every step before it as done too
  * (a stamped 550 can only exist if the car was paid for), so the road
  * never shows a gap.
+ *
+ * `baseId` is the customer's CURRENT base — a car bought in Wiesbaden and
+ * sold after a move to Stuttgart follows Stuttgart's rules for the sale.
  */
-export function computeSteps(deal: Deal, milestones: DealMilestone[], files: DealFile[]): FlowStep[] {
+export function computeSteps(
+  deal: Deal,
+  milestones: DealMilestone[],
+  files: DealFile[],
+  baseId?: string | null,
+): FlowStep[] {
   const ctx = contextFor(deal, milestones, files);
-  const defs = STEP_DEFS[flowOf(deal)];
+  const flow = flowOf(deal);
+  const defs = STEP_DEFS[flow];
   let lastDone = -1;
   defs.forEach((def, i) => {
     if (def.isDone(ctx)) lastDone = i;
@@ -280,6 +303,7 @@ export function computeSteps(deal: Deal, milestones: DealMilestone[], files: Dea
       waitingOn: def.waitingOn(ctx),
       explainer: def.explainer(ctx),
       lockedReason: status === 'done' ? null : (def.lockedReason?.(ctx) ?? null),
+      baseNote: status === 'done' ? null : baseNoteFor(flow, def.id, baseId),
     };
   });
 }

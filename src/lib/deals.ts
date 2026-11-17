@@ -105,7 +105,7 @@ export interface DealFile {
   doc_type: DocType;
   storage_path: string;
   page_count: number;
-  uploaded_by: string;
+  uploaded_by: string | null;
   uploaded_by_role: 'customer' | 'staff';
   uploaded_by_name: string | null;
   replaced_at: string | null;

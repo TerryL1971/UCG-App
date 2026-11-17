@@ -22,6 +22,9 @@ export interface AuthUser {
    * a server-side identity (the private in-app chat, chat.ts) check for
    * this rather than for `user` alone. */
   id?: string;
+  /** Base id from constants/bases.ts — where they're stationed. Drives
+   * which base's registration/deregistration rules their roadmap uses. */
+  base?: string | null;
 }
 
 export interface AuthResult {
@@ -36,7 +39,13 @@ export interface AuthResult {
 interface AuthContextValue {
   user: AuthUser | null;
   isLoading: boolean;
-  signUp: (name: string, email: string, password: string) => Promise<AuthResult>;
+  /** The customer's current base (account, or this phone when not
+   * logged in — e.g. demo mode). Null until they've picked one. */
+  base: string | null;
+  setBase: (baseId: string) => Promise<AuthResult>;
+  /** Permanently deletes the account (App Store requirement). */
+  deleteAccount: () => Promise<AuthResult>;
+  signUp: (name: string, email: string, password: string, base: string) => Promise<AuthResult>;
   logIn: (email: string, password: string) => Promise<AuthResult>;
   logOut: () => void;
   /** Email confirmation and password reset by 6-digit code typed into
@@ -52,6 +61,7 @@ interface AuthContextValue {
 }
 
 const STORAGE_KEY = 'ucg.auth.user';
+const GUEST_BASE_KEY = 'ucg.guestBase';
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -64,12 +74,20 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 function authUserFromSupabase(user: { id: string; email?: string | null; user_metadata?: Record<string, unknown> }): AuthUser {
   const email = user.email ?? '';
   const metaName = typeof user.user_metadata?.name === 'string' ? (user.user_metadata.name as string) : undefined;
-  return { id: user.id, name: metaName ?? email.split('@')[0], email };
+  const metaBase = typeof user.user_metadata?.base === 'string' ? (user.user_metadata.base as string) : null;
+  return { id: user.id, name: metaName ?? email.split('@')[0], email, base: metaBase };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [guestBase, setGuestBase] = useState<string | null>(null);
+
+  useEffect(() => {
+    AsyncStorage.getItem(GUEST_BASE_KEY)
+      .then((b) => b && setGuestBase(b))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     // Safety net: index.tsx renders nothing at all while isLoading is
@@ -130,12 +148,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       user,
       isLoading,
-      signUp: async (name, email, password) => {
+      base: user?.base ?? guestBase,
+      setBase: async (baseId) => {
+        // Always remembered on the phone too, so it survives logging out
+        // and works in demo mode without an account.
+        setGuestBase(baseId);
+        AsyncStorage.setItem(GUEST_BASE_KEY, baseId).catch(() => {});
+        if (!user) return { error: null };
+        if (isSupabaseConfigured && supabase && user.id) {
+          const { data, error } = await supabase.auth.updateUser({ data: { base: baseId } });
+          if (error) return { error: error.message };
+          if (data.user) setUser(authUserFromSupabase(data.user));
+          return { error: null };
+        }
+        persistLocal({ ...user, base: baseId });
+        return { error: null };
+      },
+      deleteAccount: async () => {
+        if (isSupabaseConfigured && supabase) {
+          // Deleting an account needs Supabase admin rights, which must
+          // never be in the app — the delete-account Edge Function does it
+          // server-side, for the signed-in user only.
+          const { error } = await supabase.functions.invoke('delete-account', { method: 'POST' });
+          if (error) return { error: error.message };
+          await supabase.auth.signOut().catch(() => {});
+          setUser(null);
+          return { error: null };
+        }
+        persistLocal(null);
+        return { error: null };
+      },
+      signUp: async (name, email, password, base) => {
+        setGuestBase(base);
+        AsyncStorage.setItem(GUEST_BASE_KEY, base).catch(() => {});
         if (isSupabaseConfigured && supabase) {
           const { data, error } = await supabase.auth.signUp({
             email,
             password,
-            options: { data: { name } },
+            options: { data: { name, base } },
           });
           if (error) return { error: error.message };
           // A project with "Confirm email" turned on (Supabase's default
@@ -146,7 +196,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (!data.session) return { error: null, needsEmailConfirmation: true };
           return { error: null };
         }
-        persistLocal({ name, email });
+        persistLocal({ name, email, base });
         return { error: null };
       },
       logIn: async (email, password) => {
@@ -193,7 +243,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: error?.message ?? null };
       },
     }),
-    [user, isLoading],
+    [user, isLoading, guestBase],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

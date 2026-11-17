@@ -1,10 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { MessageIcon, UserIcon, WrenchIcon } from '@/components/icons';
+import { MapPinIcon, MessageIcon, UserIcon, WrenchIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
+import { baseName } from '@/constants/bases';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
 import { useChat } from '@/lib/chat-context';
@@ -13,7 +14,7 @@ import { DEMO_MODE } from '@/lib/demo-mode';
 import { useVinScan } from '@/lib/vin-scan-context';
 
 export default function AccountScreen() {
-  const { user, logOut } = useAuth();
+  const { user, logOut, base, deleteAccount } = useAuth();
   const { staffProfile } = useChat();
   const { clearLastScannedVin } = useVinScan();
 
@@ -41,11 +42,45 @@ export default function AccountScreen() {
     );
   };
 
+  // Apple requires in-app account deletion. Asked twice: it can't be undone.
+  const confirmDelete = () => {
+    Alert.alert(
+      'Delete Your Account?',
+      'This permanently deletes your UCG app account and your private chat, and logs you out. Your deal paperwork stays with UCG, as the law requires for a vehicle sale. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Continue',
+          style: 'destructive',
+          onPress: () =>
+            Alert.alert('Are you sure?', 'Your account will be deleted now.', [
+              { text: 'Keep My Account', style: 'cancel' },
+              {
+                text: 'Delete Account',
+                style: 'destructive',
+                onPress: async () => {
+                  const result = await deleteAccount();
+                  if (result.error) {
+                    Alert.alert("Couldn't delete your account", 'Check your connection and try again, or ask your salesperson.');
+                    return;
+                  }
+                  AsyncStorage.multiRemove(['ucg.sellBackDraft', 'ucg.selectedDealId']).catch(() => {});
+                  Alert.alert('Account deleted', 'Your account has been deleted.');
+                  router.replace('/');
+                },
+              },
+            ]),
+        },
+      ],
+    );
+  };
+
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <View style={styles.navbar}>
         <Text style={styles.title}>Account</Text>
       </View>
+      <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: Spacing.xl }}>
 
       <View style={styles.profileCard}>
         <View style={styles.avatarPlaceholder}>
@@ -63,6 +98,15 @@ export default function AccountScreen() {
           </View>
         )}
       </View>
+
+      <Pressable style={styles.linkRow} onPress={() => router.push('/choose-base')}>
+        <MapPinIcon size={18} color={Colors.navy} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.linkRowTitle}>{base ? `Stationed at ${baseName(base)}` : 'Where are you stationed?'}</Text>
+          <Text style={styles.linkRowSub}>Moved? Change your base so your roadmap follows its rules</Text>
+        </View>
+        <Text style={styles.linkRowChevron}>›</Text>
+      </Pressable>
 
       {!user && (
         <View style={styles.guestActions}>
@@ -126,13 +170,27 @@ export default function AccountScreen() {
         <Pressable style={styles.resetTestDataButton} onPress={clearThisPhone}>
           <Text style={styles.resetTestData}>Clear This Phone & Log Out</Text>
         </Pressable>
+        {user && (
+          <Text style={styles.deleteAccount} onPress={confirmDelete}>
+            Delete My Account
+          </Text>
+        )}
       </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: Colors.bg },
+  deleteAccount: {
+    fontFamily: Fonts.bodySemibold,
+    fontSize: 13,
+    color: Colors.textMuted,
+    textDecorationLine: 'underline',
+    textAlign: 'center',
+    marginTop: 14,
+  },
   navbar: {
     paddingHorizontal: Spacing.xl,
     paddingVertical: Spacing.lg,

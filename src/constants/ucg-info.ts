@@ -1,3 +1,5 @@
+import { BASES } from '@/constants/bases';
+
 /**
  * Real UCG facts the app still needs after the Nov 2026 pivot (the old
  * constants/mock-data.ts held these alongside simulated deal data that
@@ -73,19 +75,5 @@ export const ucgLocations: UcgLocation[] = [
   { name: 'Wiesbaden', reviewUrl: 'https://www.google.com/maps?cid=8310605518686449360' },
 ];
 
-/** Major US military communities in Germany a customer might be headed
- * to — not exhaustive, and a list like this goes stale (units move,
- * bases close), which is exactly why the intake form pairs this with a
- * free-text "Other" option rather than pretending it covers everyone. */
-export const usareurBases: string[] = [
-  'Ramstein / KMC',
-  'Baumholder',
-  'Wiesbaden',
-  'Spangdahlem',
-  'Stuttgart',
-  'Grafenwoehr',
-  'Vilseck',
-  'Ansbach',
-  'Illesheim',
-  'Hohenfels',
-];
+/** Base names, in the same order as constants/bases.ts (the one list). */
+export const usareurBases: string[] = BASES.map((b) => b.name);

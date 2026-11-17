@@ -4,8 +4,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CheckIcon } from '@/components/icons';
 import { ScreenHeader } from '@/components/ui/screen-header';
+import { baseName } from '@/constants/bases';
 import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
 import { computeSteps, flowOf, vehicleLabel, waitingOnLabel, type FlowStep } from '@/lib/deal-flow';
+import { useAuth } from '@/lib/auth-context';
 import { useMyDeals } from '@/lib/my-deals-context';
 
 /**
@@ -15,6 +17,7 @@ import { useMyDeals } from '@/lib/my-deals-context';
  */
 export default function RoadToPlatesScreen() {
   const { selected } = useMyDeals();
+  const { base } = useAuth();
 
   if (!selected) {
     return (
@@ -27,11 +30,11 @@ export default function RoadToPlatesScreen() {
 
   const { deal, milestones, files } = selected;
   const flow = flowOf(deal);
-  const steps = computeSteps(deal, milestones, files);
+  const steps = computeSteps(deal, milestones, files, base);
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      <ScreenHeader title={flow === 'sale' ? 'Selling Your Car' : 'Your Road to Plates'} subtitle={vehicleLabel(deal)} />
+      <ScreenHeader title={flow === 'sale' ? 'Selling Your Car' : 'Your Road to Plates'} subtitle={`${vehicleLabel(deal)}${base ? ` · ${baseName(base)}` : ''}`} />
       <ScrollView contentContainerStyle={styles.body}>
         <Text style={styles.intro}>
           {flow === 'purchase_den'
@@ -77,6 +80,7 @@ function StepRow({ step, index, isLast }: { step: FlowStep; index: number; isLas
           </View>
         </View>
         <Text style={styles.detail}>{step.explainer}</Text>
+        {step.baseNote && <Text style={styles.baseNote}>{step.baseNote}</Text>}
       </View>
     </View>
   );
@@ -109,6 +113,7 @@ const styles = StyleSheet.create({
   chipText: { fontFamily: Fonts.bodyBold, fontSize: 10.5, color: Colors.red },
   chipTextDone: { color: Colors.green },
   detail: { fontFamily: Fonts.body, fontSize: 12.5, color: Colors.textMuted, lineHeight: 18, marginTop: 4 },
+  baseNote: { fontFamily: Fonts.bodyMedium, fontSize: 12, color: Colors.navy, lineHeight: 17, marginTop: 6 },
   linkCard: { backgroundColor: '#fff', borderRadius: Radius.lg, padding: 14 },
   linkTitle: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.navy },
   linkSubtitle: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textMuted, marginTop: 2 },

@@ -7,6 +7,7 @@ import { ConnectDealForm } from '@/components/connect-deal-form';
 import { DealSummaryCard, DeadlineBanner, DealSwitcher, ScanUploadButton } from '@/components/deal-ui';
 import { LockIcon, MessageIcon } from '@/components/icons';
 import { TimelineRoad } from '@/components/timeline-road';
+import { baseName } from '@/constants/bases';
 import { Button } from '@/components/ui/button';
 import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
@@ -29,7 +30,7 @@ import { useMyDeals } from '@/lib/my-deals-context';
  * (lib/deal-flow.ts); nothing is simulated.
  */
 export default function MyDealScreen() {
-  const { user } = useAuth();
+  const { user, base } = useAuth();
   const { available, isLoading, loadFailed, deals, selected, selectDeal, refresh } = useMyDeals();
   const [connectingAnother, setConnectingAnother] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -77,8 +78,14 @@ export default function MyDealScreen() {
   } else if (selected) {
     body = (
       <>
+        <Pressable style={styles.baseRow} onPress={() => router.push('/choose-base')}>
+          <Text style={styles.baseText}>
+            {base ? `Roadmap for ${baseName(base)}` : 'Where are you stationed? Your roadmap depends on it.'}
+          </Text>
+          <Text style={styles.baseChange}>{base ? 'Change' : 'Choose'}</Text>
+        </Pressable>
         <DealSwitcher deals={deals} selectedId={selected.deal.id} onSelect={selectDeal} />
-        <DealView bundle={selected} userId={user?.id ?? ''} onChanged={refresh} />
+        <DealView bundle={selected} userId={user?.id ?? ''} baseId={base} onChanged={refresh} />
         <Text style={styles.link} onPress={() => setConnectingAnother(true)}>
           Selling or buying another car with UCG? Connect another deal
         </Text>
@@ -108,10 +115,20 @@ export default function MyDealScreen() {
   );
 }
 
-function DealView({ bundle, userId, onChanged }: { bundle: DealBundle; userId: string; onChanged: () => void }) {
+function DealView({
+  bundle,
+  userId,
+  baseId,
+  onChanged,
+}: {
+  bundle: DealBundle;
+  userId: string;
+  baseId: string | null;
+  onChanged: () => void;
+}) {
   const { deal, milestones, files } = bundle;
   const flow = flowOf(deal);
-  const steps = useMemo(() => computeSteps(deal, milestones, files), [deal, milestones, files]);
+  const steps = useMemo(() => computeSteps(deal, milestones, files, baseId), [deal, milestones, files, baseId]);
   const deadline = currentDeadline(deal, milestones);
   const currentIndex = Math.max(
     0,
@@ -158,6 +175,7 @@ function DealView({ bundle, userId, onChanged }: { bundle: DealBundle; userId: s
         </View>
         <Text style={styles.cardTitle}>{viewed.title}</Text>
         <Text style={styles.cardBody}>{viewed.explainer}</Text>
+        {viewed.baseNote && <Text style={styles.baseNote}>{viewed.baseNote}</Text>}
         {viewed.lockedReason && (
           <View style={styles.locked}>
             <LockIcon size={16} color={Colors.amber} />
@@ -292,6 +310,31 @@ const styles = StyleSheet.create({
   },
   lockedText: { flex: 1, fontFamily: Fonts.bodySemibold, fontSize: 13, color: Colors.amber, lineHeight: 18 },
   roadWrap: { alignItems: 'center' },
+  baseRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    backgroundColor: '#fff',
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  baseText: { flex: 1, fontFamily: Fonts.bodySemibold, fontSize: 13, color: Colors.text },
+  baseChange: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.red },
+  baseNote: {
+    fontFamily: Fonts.bodyMedium,
+    fontSize: 12.5,
+    color: Colors.navy,
+    backgroundColor: Colors.navyTint,
+    borderRadius: Radius.md,
+    padding: 10,
+    marginTop: 10,
+    lineHeight: 18,
+    overflow: 'hidden',
+  },
   demoBanner: {
     flexDirection: 'row',
     flexWrap: 'wrap',

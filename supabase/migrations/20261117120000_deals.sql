@@ -214,7 +214,9 @@ create table if not exists public.deal_files (
   )),
   storage_path text not null unique,
   page_count int not null default 1 check (page_count between 1 and 30),
-  uploaded_by uuid not null default auth.uid() references auth.users (id) on delete set null,
+  -- Nullable: if the uploader's account is deleted, the document stays
+  -- with the deal (it's UCG's sale record) and just loses the link.
+  uploaded_by uuid default auth.uid() references auth.users (id) on delete set null,
   uploaded_by_role text not null check (uploaded_by_role in ('customer', 'staff')),
   uploaded_by_name text,
   -- Set when a newer scan of the same document replaces this one (e.g. a

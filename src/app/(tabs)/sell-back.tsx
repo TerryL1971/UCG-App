@@ -10,7 +10,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraIcon, CheckCircleIcon, ClockIcon, MapPinIcon, PlusIcon, ShieldIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
+import { baseName } from '@/constants/bases';
 import { ucgLocations, usareurBases } from '@/constants/ucg-info';
+import { useAuth } from '@/lib/auth-context';
+import { docTypeInfo, liveFiles, vehicleLabel } from '@/lib/deal-flow';
+import type { DealBundle } from '@/lib/deals';
+import { useMyDeals } from '@/lib/my-deals-context';
 import { useChat } from '@/lib/chat-context';
 import { compressPhoto } from '@/lib/image';
 import { isValidEmail } from '@/lib/validation';
@@ -63,11 +68,22 @@ interface SellBackDraft {
   dutyStation: string | null;
   otherDutyStation: string;
   notes: string;
+  /** The UCG purchase deal this car came from, if any. */
+  sourceDealId?: string | null;
 }
 
 export default function SellBackScreen() {
   const { lastScannedVin, clearLastScannedVin } = useVinScan();
   const { messageSpecialist } = useChat();
+  const { user, base } = useAuth();
+  const { deals } = useMyDeals();
+  // Cars the customer bought from UCG — selling one back means all of its
+  // paperwork is already in the app for the buying team (Terry,
+  // 2026-11-17: "all of the sales documents and information should be
+  // loaded so that it can be sent back to UCG for an offer").
+  const ucgCars = deals.filter((b) => b.deal.kind === 'purchase');
+  const [sourceDealId, setSourceDealId] = useState<string | null>(null);
+  const sourceDeal = ucgCars.find((b) => b.deal.id === sourceDealId) ?? null;
   const [offerStatus, setOfferStatus] = useState<OfferStatus>('form');
 
   // Name/email/phone are mandatory and collected up front now (Terry,
@@ -130,6 +146,7 @@ export default function SellBackScreen() {
           if (draft.dutyStation) setDutyStation(draft.dutyStation);
           if (draft.otherDutyStation) setOtherDutyStation(draft.otherDutyStation);
           if (draft.notes) setNotes(draft.notes);
+          if (draft.sourceDealId) setSourceDealId(draft.sourceDealId);
         }
       })
       .catch(() => {
@@ -137,6 +154,22 @@ export default function SellBackScreen() {
       })
       .finally(() => setHasLoadedDraft(true));
   }, []);
+
+  /** Fills the form from a car bought from UCG. Current mileage is left
+   * for the customer — it's higher than at purchase. */
+  const fillFromUcgCar = (bundle: DealBundle) => {
+    const d = bundle.deal;
+    setSourceDealId(d.id);
+    setPlate(d.vin);
+    if (d.vehicle_year) setVehicleYear(String(d.vehicle_year));
+    setSpec(d.is_den ? 'EU' : 'US');
+    setMileageUnit(d.is_den ? 'km' : 'mi');
+    setMileage('');
+    if (d.customer_name) setSellerName(d.customer_name);
+    if (user?.email) setSellerEmail(user.email);
+    const station = baseName(base);
+    if (station && usareurBases.includes(station)) setDutyStation(station);
+  };
 
   // Save on every change, same pattern as deal-intake-context.tsx's
   // saveDraft — skipped until the load above finishes, so this doesn't
@@ -157,6 +190,7 @@ export default function SellBackScreen() {
       dutyStation,
       otherDutyStation,
       notes,
+      sourceDealId,
     };
     AsyncStorage.setItem(SELL_BACK_DRAFT_KEY, JSON.stringify(draft)).catch(() => {});
   }, [
@@ -174,6 +208,7 @@ export default function SellBackScreen() {
     dutyStation,
     otherDutyStation,
     notes,
+    sourceDealId,
   ]);
 
   /** index === null means "append a new photo" rather than replace one. */
@@ -305,8 +340,17 @@ export default function SellBackScreen() {
     // option, not a shortcut). wa.me is text-only — it can't carry the
     // photos above, so the message says so instead of pretending they're
     // attached.
+    const sourceDocs = sourceDeal ? liveFiles(sourceDeal.files).map((f) => docTypeInfo(f.doc_type).label) : [];
     const message = [
       "Hi! I'd like to sell my car back to UCG.",
+      sourceDeal
+        ? `Bought from UCG: ${vehicleLabel(sourceDeal.deal)}, Deal #${sourceDeal.deal.deal_number}, Stock #${sourceDeal.deal.stock_number}.`
+        : '',
+      sourceDeal
+        ? sourceDocs.length
+          ? `My documents for this car are in the app (${sourceDocs.length}): ${sourceDocs.join(', ')}.`
+          : 'No documents for this car are in the app yet.'
+        : '',
       `Name: ${sellerName.trim()}`,
       `Email: ${sellerEmail.trim()}`,
       `Phone: ${sellerContact.trim()}`,
@@ -349,6 +393,7 @@ export default function SellBackScreen() {
     setDutyStation(null);
     setOtherDutyStation('');
     setNotes('');
+    setSourceDealId(null);
     setSellerName('');
     setSellerContact('');
     setSellerEmail('');
@@ -399,6 +444,38 @@ export default function SellBackScreen() {
             <Text style={styles.intro}>
               Already own a Used Car Guys vehicle? Get a real offer in minutes — no obligation.
             </Text>
+
+            {ucgCars.length > 0 && (
+              <Field label="Which car are you selling?">
+                <View style={styles.carPicker}>
+                  {ucgCars.map((b) => {
+                    const active = b.deal.id === sourceDealId;
+                    return (
+                      <Pressable key={b.deal.id} onPress={() => fillFromUcgCar(b)} style={[styles.carOption, active && styles.carOptionActive]}>
+                        <Text style={[styles.carOptionTitle, active && styles.carOptionTitleActive]}>{vehicleLabel(b.deal)}</Text>
+                        <Text style={[styles.carOptionMeta, active && styles.carOptionMetaActive]}>
+                          Bought from UCG · Deal #{b.deal.deal_number} · {liveFiles(b.files).length} document{liveFiles(b.files).length === 1 ? '' : 's'} in the app
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                  <Pressable
+                    onPress={() => setSourceDealId(null)}
+                    style={[styles.carOption, sourceDealId === null && styles.carOptionActive]}>
+                    <Text style={[styles.carOptionTitle, sourceDealId === null && styles.carOptionTitleActive]}>
+                      A different car
+                    </Text>
+                  </Pressable>
+                </View>
+                {sourceDeal && (
+                  <Text style={styles.mileageHint}>
+                    Filled in from your deal. UCG&apos;s buying team sees this car&apos;s documents in the app, so there&apos;s nothing to resend. Just add today&apos;s mileage
+                    {sourceDeal.deal.odometer ? ` (it was ${sourceDeal.deal.odometer.toLocaleString('en-US')} when you bought it)` : ''}, the
+                    condition and a few photos.
+                  </Text>
+                )}
+              </Field>
+            )}
 
             <Field label="VIN (Required)">
               <View style={styles.plateRow}>
@@ -831,6 +908,13 @@ const styles = StyleSheet.create({
   body: { flex: 1, paddingHorizontal: Spacing.xxl },
   bodyContent: { paddingTop: Spacing.md, paddingBottom: Spacing.xl },
   intro: { fontFamily: Fonts.body, fontSize: 13.5, color: Colors.textMuted, lineHeight: 20, marginBottom: 20 },
+  carPicker: { gap: 8 },
+  carOption: { borderWidth: 1.5, borderColor: Colors.border, borderRadius: Radius.md, backgroundColor: '#fff', padding: 12 },
+  carOptionActive: { backgroundColor: Colors.navy, borderColor: Colors.navy },
+  carOptionTitle: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.text },
+  carOptionTitleActive: { color: '#fff' },
+  carOptionMeta: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textMuted, marginTop: 2 },
+  carOptionMetaActive: { color: 'rgba(255,255,255,0.85)' },
   lienToggleRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16, paddingVertical: 4 },
   checkbox: {
     width: 22,

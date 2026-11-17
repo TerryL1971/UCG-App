@@ -61,6 +61,7 @@ function AppShell({ fontsLoaded }: { fontsLoaded: boolean }) {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="salesperson" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="payment" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="choose-base" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="road-to-plates" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="vro-checklist" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="service" options={{ animation: 'slide_from_right' }} />

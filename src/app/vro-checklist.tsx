@@ -13,6 +13,8 @@ import {
   type VehicleSpec,
   type VroItem,
 } from '@/constants/vro-checklists';
+import { baseName } from '@/constants/bases';
+import { useAuth } from '@/lib/auth-context';
 import { vehicleLabel } from '@/lib/deal-flow';
 import { useMyDeals } from '@/lib/my-deals-context';
 import { openUrlWithFeedback } from '@/lib/linking';
@@ -32,10 +34,9 @@ export default function VroChecklistScreen() {
   const { selected } = useMyDeals();
   const deal = selected?.deal;
   const carLabel = deal ? vehicleLabel(deal) : 'your car';
-  // The base isn't on the deal paperwork, so the office isn't known yet;
-  // the screen already falls back to "your salesperson gives you the
-  // office details".
-  const base: string | undefined = undefined;
+  // The customer's current base (Account → change it after a move).
+  const { base: baseId } = useAuth();
+  const base = baseName(baseId) ?? undefined;
   const office = vroOfficeForBase(base);
 
   // A DEN car has never been on the USAREUR system, so it's EU-spec.
