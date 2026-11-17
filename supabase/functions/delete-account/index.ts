@@ -1,6 +1,8 @@
-// Setup type definitions for built-in Supabase Runtime APIs
-import "@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "@supabase/supabase-js";
+// Full package specifiers (not the deno.json import map) so this file
+// can be pasted straight into the Supabase dashboard's function editor,
+// which doesn't read deno.json.
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 /**
  * Deletes the signed-in customer's own account (Apple requires in-app
