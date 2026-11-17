@@ -409,7 +409,7 @@ export default function SellBackScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <View style={styles.navbar}>
-        <Text style={styles.title}>Sell It Back</Text>
+        <Text style={styles.title}>Sell My Car</Text>
       </View>
 
       {offerStatus !== 'form' ? (

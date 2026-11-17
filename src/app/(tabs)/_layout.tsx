@@ -55,7 +55,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="sell-back"
         options={{
-          title: 'Sell',
+          title: 'Sell My Car',
           tabBarIcon: ({ focused }) => (
             <TabIcon focused={focused}>
               <DrivetrainIcon size={18} color="#fff" strokeWidth={2.2} />
