@@ -28,6 +28,8 @@ export interface AuthUser {
   /** WhatsApp number (digits, country code first) — required at sign-up;
    * it's how UCG reaches the customer. */
   whatsapp?: string | null;
+  /** USAREUR driver's license expiry (yyyy-mm-dd), for a reminder. */
+  licenseExpires?: string | null;
 }
 
 export interface AuthResult {
@@ -47,6 +49,10 @@ interface AuthContextValue {
   base: string | null;
   setBase: (baseId: string) => Promise<AuthResult>;
   setWhatsapp: (whatsapp: string) => Promise<AuthResult>;
+  /** The account's USAREUR license expiry (or this phone's, when not
+   * logged in). Null clears it. */
+  licenseExpires: string | null;
+  setLicenseExpires: (date: string | null) => Promise<AuthResult>;
   /** Permanently deletes the account (App Store requirement). */
   deleteAccount: () => Promise<AuthResult>;
   signUp: (name: string, email: string, password: string, base: string, whatsapp: string) => Promise<AuthResult>;
@@ -66,6 +72,7 @@ interface AuthContextValue {
 
 const STORAGE_KEY = 'ucg.auth.user';
 const GUEST_BASE_KEY = 'ucg.guestBase';
+const GUEST_LICENSE_KEY = 'ucg.guestLicenseExpires';
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -80,17 +87,30 @@ function authUserFromSupabase(user: { id: string; email?: string | null; user_me
   const metaName = typeof user.user_metadata?.name === 'string' ? (user.user_metadata.name as string) : undefined;
   const metaBase = typeof user.user_metadata?.base === 'string' ? (user.user_metadata.base as string) : null;
   const metaWhatsapp = typeof user.user_metadata?.whatsapp === 'string' ? (user.user_metadata.whatsapp as string) : null;
-  return { id: user.id, name: metaName ?? email.split('@')[0], email, base: metaBase, whatsapp: metaWhatsapp };
+  const metaLicense =
+    typeof user.user_metadata?.license_expires === 'string' ? (user.user_metadata.license_expires as string) : null;
+  return {
+    id: user.id,
+    name: metaName ?? email.split('@')[0],
+    email,
+    base: metaBase,
+    whatsapp: metaWhatsapp,
+    licenseExpires: metaLicense,
+  };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [guestBase, setGuestBase] = useState<string | null>(null);
+  const [guestLicense, setGuestLicense] = useState<string | null>(null);
 
   useEffect(() => {
     AsyncStorage.getItem(GUEST_BASE_KEY)
       .then((b) => b && setGuestBase(b))
+      .catch(() => {});
+    AsyncStorage.getItem(GUEST_LICENSE_KEY)
+      .then((d) => d && setGuestLicense(d))
       .catch(() => {});
   }, []);
 
@@ -167,6 +187,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return { error: null };
         }
         persistLocal({ ...user, base: baseId });
+        return { error: null };
+      },
+      licenseExpires: user ? (user.licenseExpires ?? null) : guestLicense,
+      setLicenseExpires: async (date) => {
+        if (!user) {
+          setGuestLicense(date);
+          if (date) AsyncStorage.setItem(GUEST_LICENSE_KEY, date).catch(() => {});
+          else AsyncStorage.removeItem(GUEST_LICENSE_KEY).catch(() => {});
+          return { error: null };
+        }
+        if (isSupabaseConfigured && supabase && user.id) {
+          const { data, error } = await supabase.auth.updateUser({ data: { license_expires: date } });
+          if (error) return { error: error.message };
+          if (data.user) setUser(authUserFromSupabase(data.user));
+          return { error: null };
+        }
+        persistLocal({ ...user, licenseExpires: date });
         return { error: null };
       },
       setWhatsapp: async (whatsapp) => {
@@ -265,7 +302,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: error?.message ?? null };
       },
     }),
-    [user, isLoading, guestBase],
+    [user, isLoading, guestBase, guestLicense],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

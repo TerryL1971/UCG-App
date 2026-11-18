@@ -59,6 +59,8 @@ function seed(): DemoStore {
     salesperson_whatsapp: null,
     dealership: 'Ramstein',
     lender: null,
+    registration_expires: null,
+    ae550b_issued: null,
     pay_in_full_days: 5,
   };
   const deals: Deal[] = [
@@ -223,6 +225,8 @@ export async function demoCreateDeal(input: NewDeal): Promise<SaveDealResult> {
   const c = clean(input) as NewDeal;
   const now = new Date().toISOString();
   const deal: Deal = {
+    registration_expires: null,
+    ae550b_issued: null,
     ...c,
     id: `demo-deal-${id()}`,
     customer_id: DEMO_CUSTOMER_ID,

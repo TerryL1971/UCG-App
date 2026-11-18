@@ -493,6 +493,24 @@ export function currentDeadline(
   }
 
   // Sale
+  // The 550-175B is valid for 90 days from its issue date — until UCG has
+  // cleared customs with it.
+  if (deal.ae550b_issued && !m('customs_cleared')) {
+    const validUntil = addDays(parseDate(deal.ae550b_issued), 90);
+    const left = daysUntil(validUntil, today);
+    if (left <= 21) {
+      return {
+        id: 'ae550b_valid',
+        title: '550-175B valid until',
+        date: validUntil,
+        message:
+          left < 0
+            ? `Your 550-175B expired ${formatDate(validUntil)}. Ask your salesperson what to do next.`
+            : `Your 550-175B is valid until ${formatDate(validUntil)}. Make sure UCG clears customs before then.`,
+        tone: tone(validUntil),
+      };
+    }
+  }
   const dereg = m('deregistered');
   if (dereg && !m('paid_out')) {
     const payBy = addDays(parseDate(dereg.happened_on), 30);

@@ -15,6 +15,7 @@ import { useEffect, useState } from 'react';
 import { StatusBar } from 'react-native';
 
 import { AnimatedSplash } from '@/components/animated-splash';
+import { RemindersSync } from '@/components/reminders-sync';
 import { AuthProvider } from '@/lib/auth-context';
 import { MyDealsProvider } from '@/lib/my-deals-context';
 import { VinScanProvider } from '@/lib/vin-scan-context';
@@ -90,6 +91,7 @@ export default function RootLayout() {
       <MyDealsProvider>
         <VinScanProvider>
           <AppShell fontsLoaded={fontsLoaded} />
+          <RemindersSync />
         </VinScanProvider>
       </MyDealsProvider>
     </AuthProvider>

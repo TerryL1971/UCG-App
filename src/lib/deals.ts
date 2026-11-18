@@ -41,6 +41,10 @@ export interface Deal {
   salesperson_whatsapp: string | null;
   /** Which UCG location sold the car (constants/salespeople.ts). */
   dealership: string | null;
+  /** Key Dates the customer enters (yyyy-mm-dd): registration expiry
+   * from the TT Doc, and when selling, the 550-175B issue date. */
+  registration_expires: string | null;
+  ae550b_issued: string | null;
   vehicle_year: number | null;
   vehicle_make: string | null;
   vehicle_model: string | null;
@@ -222,6 +226,16 @@ export async function createMyDeal(input: NewDeal, userId: string): Promise<Save
 export async function updateDeal(dealId: string, input: Partial<NewDeal>): Promise<SaveDealResult> {
   if (isDemoMode()) return demoUpdateDeal(dealId, input);
   const { data, error } = await client().from('deals').update(input).eq('id', dealId).select('*').single();
+  if (error) return saveError(error);
+  return { ok: true, deal: data as Deal };
+}
+
+export type DealDates = Partial<Pick<Deal, 'registration_expires' | 'ae550b_issued'>>;
+
+/** Saves the customer's Key Dates on a deal (null clears one). */
+export async function updateDealDates(dealId: string, dates: DealDates): Promise<SaveDealResult> {
+  if (isDemoMode()) return demoUpdateDeal(dealId, dates as Partial<NewDeal>);
+  const { data, error } = await client().from('deals').update(dates).eq('id', dealId).select('*').single();
   if (error) return saveError(error);
   return { ok: true, deal: data as Deal };
 }
