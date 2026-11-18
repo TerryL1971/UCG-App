@@ -64,9 +64,17 @@ export const BASE_RULES: Record<string, BaseRules> = {
     stepNotes: {
       purchase: {
         zollamt: 'In Stuttgart, your salesperson takes your 550-175A copies to the German Zollamt to be stamped.',
+        registration:
+          'Stuttgart VRO: Bldg. 2930, Panzer Kaserne. Mon–Fri 7:45 a.m.–noon and 1:00–3:30 p.m.; walk in or book online. Closed the last workday of the month and U.S. federal holidays; online appointments only on German holidays.',
+      },
+      purchase_den: {
+        registration:
+          'Stuttgart VRO: Bldg. 2930, Panzer Kaserne. Mon–Fri 7:45 a.m.–noon and 1:00–3:30 p.m.; walk in or book online. Closed the last workday of the month and U.S. federal holidays; online appointments only on German holidays.',
       },
       sale: {
         zollamt: 'In Stuttgart, UCG takes your 550-175B to the German Zollamt to be stamped.',
+        deregister:
+          'In Stuttgart, turn in your S or BB plates at Vehicle Registration (Bldg. 2930, Panzer Kaserne), not at the MP Station.',
       },
     },
   },

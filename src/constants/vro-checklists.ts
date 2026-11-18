@@ -153,6 +153,9 @@ export interface VroOffice {
   name: string;
   address: string;
   hours?: string;
+  email?: string;
+  /** Short local rules worth knowing before going in. */
+  notes?: string[];
   /** The garrison's own VRO page — the authoritative source for contact
    * details and the current per-scenario checklists. */
   infoUrl?: string;
@@ -170,7 +173,17 @@ export const vroOffices: VroOffice[] = [
     base: 'Stuttgart',
     name: 'USAG Stuttgart Vehicle Registration Office',
     address: 'Building 2930, Panzer Kaserne',
-    hours: 'Mon–Fri, 7:45 a.m.–noon and 1:00–3:30 p.m. Closed the last workday of each month and US federal holidays.',
+    // Checked against the official page 2026-11-18 (Terry's screenshot).
+    hours:
+      'Mon–Fri, 7:45 a.m.–noon and 1:00–3:30 p.m. (closed noon–1 p.m.). Closed the last workday of each month and on U.S. federal holidays.',
+    email: 'usarmy.stuttgart.id-europe.list.pmo-vehicle-registration@army.mil',
+    notes: [
+      'Walk in, or book an online appointment from the official page.',
+      'On German holidays: online appointments only, no walk-ins.',
+      'Your car needs a passed safety inspection before it can be registered.',
+      'Renewing? You can do it up to 75 days before your registration expires.',
+      'Leaving Stuttgart (PCS/ETS)? Turn in your S or BB plates here, not at the MP Station.',
+    ],
     infoUrl: 'https://home.army.mil/stuttgart/my-garrison/all-services/vehicle-registration',
   },
 ];

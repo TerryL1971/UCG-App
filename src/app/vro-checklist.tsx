@@ -109,6 +109,16 @@ export default function VroChecklistScreen() {
             <>
               <Text style={styles.officeLine}>{office.address}</Text>
               {office.hours ? <Text style={styles.officeLine}>{office.hours}</Text> : null}
+              {office.notes?.map((n) => (
+                <Text key={n} style={styles.officeLine}>
+                  • {n}
+                </Text>
+              ))}
+              {office.email ? (
+                <Text style={styles.officeLine} selectable>
+                  Email: {office.email}
+                </Text>
+              ) : null}
               {office.infoUrl ? (
                 <Pressable onPress={() => openUrlWithFeedback(office.infoUrl!)}>
                   <Text style={styles.officeLink}>Official VRO page &amp; current checklists  →</Text>
