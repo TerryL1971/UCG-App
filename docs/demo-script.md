@@ -27,6 +27,23 @@ the message it would send, instead of opening WhatsApp. Tap **OK**.
 
 ---
 
+## Part 0 — Before the deposit (2 min, optional)
+
+**Say:** *"Most of our conversations happen before the customer even lands —
+like a family still in the US asking what they can get. The app starts
+there too, but anyone who's already paid the $300 goes straight to their
+plan."*
+
+1. **Tools → Get Ready:** arrival date, base, wish list (automatic, around
+   $350/month, small SUV, room for a car seat), how they'll pay, which
+   location. **Save & Send My Wish List** → demo WhatsApp preview. *"It's
+   saved in the app — WhatsApp's disappearing messages can't lose it."*
+2. **Tools → Good to Know:** the questions every customer asks — dollars,
+   no taxes, the 7-day deposit hold, deposits refundable and transferable,
+   financing, moving a car between locations.
+3. On a new account, My Deal shows both doors: **"Already put down your
+   $300 deposit? Start My Car Plan"** and **"Still shopping? Get Ready"**.
+
 ## Part 1 — Buying: deposit to delivery (8 min)
 
 **Say:** *"The salesperson sells the car and takes the $300 deposit, as
@@ -44,6 +61,9 @@ log in or type anything — salespeople keep using DealerTeam and WhatsApp."*
 3. **Step 2 – Car Being Prepared.** Tick **"My salesperson says my car is
    Retail Ready"** → a banner appears: **pay $31,199.00 by [date]**.
    *"5-day window, worked out automatically. They get reminders."*
+   Point at **Your UCG team**: the salesperson, one tap to WhatsApp, and
+   (once UCG's list is in) the registration and logistics contacts and
+   the showroom hours.
 4. **Step 3 – Pay the Balance → How to Pay.** Show the Wise details, copy
    buttons, the **wire-fraud warning**. *"Bank details only ever come from
    the app."*

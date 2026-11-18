@@ -2,7 +2,7 @@ import { router, type Href } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ClockIcon, DocumentIcon, MapPinIcon, ShieldIcon, UmbrellaIcon, WhatsAppIcon, WrenchIcon } from '@/components/icons';
+import { ClockIcon, DocumentIcon, MapPinIcon, ShieldIcon, StarIcon, UmbrellaIcon, WhatsAppIcon, WrenchIcon } from '@/components/icons';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { useMyDeals } from '@/lib/my-deals-context';
 import { messageSalesperson, salespersonLabel } from '@/lib/whatsapp';
@@ -22,6 +22,11 @@ export default function ToolsScreen() {
         <Text style={styles.title}>Tools</Text>
       </View>
       <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.group}>
+          <ToolRow icon={<StarIcon size={18} color={Colors.navy} />} title="Get Ready" sub="Arrival date and wish list, before your deposit" href="/get-ready" />
+          <ToolRow icon={<Text style={styles.currencyIcon}>?</Text>} title="Good to Know" sub="Deposits, dollars, financing, transfers…" href="/good-to-know" />
+        </View>
+
         <View style={styles.group}>
           <ToolRow icon={<ShieldIcon size={20} color={Colors.navy} />} title="How to Pay" sub="UCG's payment details for your deal" href="/payment" />
           <ToolRow icon={<ClockIcon size={20} color={Colors.navy} />} title="Key Dates" sub="Pay-by, guarantee and other deadlines" href="/key-dates" />

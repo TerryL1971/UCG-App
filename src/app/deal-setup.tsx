@@ -13,6 +13,7 @@ import { toIsoDate } from '@/lib/deal-flow';
 import { createMyDeal, deleteMyDeal, fetchDealBundle, updateDeal, type DealKind, type NewDeal, type PaymentMethod } from '@/lib/deals';
 import { DEMO_CUSTOMER_ID, useDemoMode } from '@/lib/demo-mode';
 import { useMyDeals } from '@/lib/my-deals-context';
+import { loadWishList } from '@/lib/wish-list';
 
 /**
  * "Start my car plan" — the customer copies a few things off the
@@ -51,6 +52,18 @@ export default function DealSetupScreen() {
   const [salespersonWhatsapp, setSalespersonWhatsapp] = useState('');
   const [dealership, setDealership] = useState<string | null>(null);
   const [payDays, setPayDays] = useState(5);
+
+  // A new plan picks up the salesperson and dealership from the wish list,
+  // if the customer made one before their deposit.
+  useEffect(() => {
+    if (id) return;
+    loadWishList().then((w) => {
+      if (w.salespersonName) setSalespersonName((v) => v || w.salespersonName);
+      if (w.salespersonWhatsapp) setSalespersonWhatsapp((v) => v || `+${w.salespersonWhatsapp}`);
+      if (w.dealership) setDealership((v) => v ?? w.dealership);
+      if (w.payment === 'loan') setPaymentMethod('finance');
+    });
+  }, [id]);
 
   useEffect(() => {
     if (!id) return;
@@ -316,9 +329,9 @@ export default function DealSetupScreen() {
               Their name and number are at the top right of your {paperwork}. &quot;Message my salesperson&quot; opens
               WhatsApp to them.
             </Text>
-            {SALESPEOPLE.length > 0 && (
+            {SALESPEOPLE.some((p) => !p.role || p.role === 'Sales') && (
               <View style={styles.chips}>
-                {SALESPEOPLE.map((p) => (
+                {SALESPEOPLE.filter((p) => !p.role || p.role === 'Sales').map((p) => (
                   <Pressable
                     key={p.name}
                     onPress={() => pickSalesperson(p.name)}

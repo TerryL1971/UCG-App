@@ -17,6 +17,17 @@ Decisions (Terry, David and Michelle, Nov 2026):
   Nation insurance (UCG's own).
 - Every base has its own registration/deregistration rules.
 
+## Before the deposit (added 2026-11-18)
+
+Real customer conversations mostly happen before the deposit, so the app
+has two doors: **Start My Car Plan** (already paid the $300, or selling) and
+**Get Ready** (still shopping / moving to Germany): arrival date, base, a
+wish list saved in the app and sent to the salesperson on WhatsApp.
+**Good to Know** answers the questions every customer asks
+(`src/constants/good-to-know.ts`). **Your UCG team** on My Deal shows the
+salesperson, other team members by role (registration, logistics —
+`src/constants/salespeople.ts`) and showroom hours.
+
 ## What the customer does
 
 1. **Create Account** — name, email, password, **WhatsApp number (required)**,

@@ -7,6 +7,7 @@ import { confirmRemoveFile, DealSummaryCard, DeadlineBanner, DealSwitcher, ScanU
 import { ArrowLeftIcon, CheckCircleIcon, LockIcon, WhatsAppIcon } from '@/components/icons';
 import { INSURANCE_STEPS, InsurancePrompt, requestAanQuote } from '@/components/insurance-prompt';
 import { PickupExtras } from '@/components/pickup-extras';
+import { UcgTeamCard } from '@/components/ucg-team-card';
 import { TimelineRoad } from '@/components/timeline-road';
 import { Button } from '@/components/ui/button';
 import { baseName } from '@/constants/bases';
@@ -65,15 +66,32 @@ export default function MyDealScreen() {
   } else if (loadFailed && deals.length === 0) {
     body = <Text style={styles.note}>Couldn&apos;t load your plan. Pull down to try again.</Text>;
   } else if (deals.length === 0) {
+    // Two ways in (Terry, 2026-11-18): straight to the plan for anyone
+    // who's already put down the $300 deposit (or is selling), or Get
+    // Ready for customers still shopping or moving to Germany.
     body = (
-      <View style={[styles.card, Shadow.card]}>
-        <Text style={styles.cardTitle}>Welcome{user?.name ? `, ${user.name.split(' ')[0]}` : ''}!</Text>
-        <Text style={styles.cardBody}>
-          Bought a car from UCG, or selling yours to UCG? Copy a few details from the paperwork your salesperson gave
-          you, and the app builds your step-by-step plan for your base: what to do next, what to bring, your deadlines,
-          and all your documents in one place.
-        </Text>
-        <Button label="Start My Car Plan" onPress={() => router.push('/deal-setup')} style={{ marginTop: 14 }} />
+      <View style={{ gap: Spacing.md }}>
+        <Text style={styles.welcome}>Welcome{user?.name ? `, ${user.name.split(' ')[0]}` : ''}!</Text>
+        <View style={[styles.card, Shadow.card]}>
+          <Text style={styles.cardTitle}>Already put down your $300 deposit?</Text>
+          <Text style={styles.cardBody}>
+            Copy a few details from the paperwork your salesperson gave you, and the app builds your step-by-step plan
+            for your base: what to do next, your deadlines, and all your documents in one place. Selling your car to
+            UCG starts here too.
+          </Text>
+          <Button label="Start My Car Plan" onPress={() => router.push('/deal-setup')} style={{ marginTop: 14 }} />
+        </View>
+        <View style={[styles.card, Shadow.card]}>
+          <Text style={styles.cardTitle}>Still shopping, or moving to Germany soon?</Text>
+          <Text style={styles.cardBody}>
+            Tell UCG when you arrive and what you&apos;re looking for. Your wish list is saved here and goes to your
+            salesperson on WhatsApp.
+          </Text>
+          <Button label="Get Ready" variant="secondary" onPress={() => router.push('/get-ready')} style={{ marginTop: 14 }} />
+          <Text style={styles.link} onPress={() => router.push('/good-to-know')}>
+            Questions? See Good to Know
+          </Text>
+        </View>
       </View>
     );
   } else if (selected) {
@@ -232,6 +250,7 @@ function DealView({
         </View>
       )}
       <DealSummaryCard deal={deal} />
+      <UcgTeamCard deal={deal} />
       {deadline && <DeadlineBanner deadline={deadline} />}
       {/* American Auto Nation, front and centre from the moment they pay
           until the car is registered. */}
@@ -458,6 +477,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   card: { backgroundColor: '#fff', borderRadius: Radius.lg, padding: Spacing.lg },
+  welcome: { fontFamily: Fonts.display, fontSize: 22, color: Colors.text },
   cardTitle: { fontFamily: Fonts.display, fontSize: 20, color: Colors.text, marginTop: 6 },
   cardBody: { fontFamily: Fonts.body, fontSize: 14, color: Colors.textMuted, lineHeight: 20, marginTop: 4 },
   stepHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },

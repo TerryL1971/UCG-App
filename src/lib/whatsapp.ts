@@ -57,3 +57,9 @@ export function messageSalesperson(deal: Deal | null | undefined, text: string):
 export function messageUcg(text: string): Promise<void> {
   return openWhatsApp(SUPPORT_WHATSAPP, text, 'UCG');
 }
+
+/** A message to a specific person's WhatsApp, or UCG's general inbox when
+ * there's no number yet (e.g. a wish list before a salesperson is known). */
+export function messageWhatsapp(number: string | null | undefined, text: string, who: string): Promise<void> {
+  return openWhatsApp(number || SUPPORT_WHATSAPP, text, number ? who : 'UCG');
+}
