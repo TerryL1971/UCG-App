@@ -20,7 +20,7 @@ import { friendlyAuthError, useAuth } from '@/lib/auth-context';
  * "oneTimeCode"), so most customers never even switch to their inbox.
  *
  * Needs the Supabase "Confirm signup" email template to include
- * `{{ .Token }}` — see docs/private-chat.md.
+ * `{{ .Token }}` — see docs/archive/private-chat.md.
  */
 export default function VerifyEmailScreen() {
   const { email = '', resent } = useLocalSearchParams<{ email: string; resent?: string }>();

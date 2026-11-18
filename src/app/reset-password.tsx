@@ -17,7 +17,7 @@ import { isValidEmail } from '@/lib/validation';
  * 2026-11-09: nothing should take the customer out of the app).
  *
  * Needs the Supabase "Reset password" email template to include
- * `{{ .Token }}` — see docs/private-chat.md.
+ * `{{ .Token }}` — see docs/archive/private-chat.md.
  */
 export default function ResetPasswordScreen() {
   const { email: initialEmail = '' } = useLocalSearchParams<{ email?: string }>();

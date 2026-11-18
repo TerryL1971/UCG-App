@@ -5,7 +5,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
 
 /**
- * Real backend, Sept 2 decision: Supabase (see docs/backend-and-ai-agent-plan.md,
+ * Real backend, Sept 2 decision: Supabase (see docs/archive/backend-and-ai-agent-plan.md,
  * "Recommended backend"). Account currently lives as a project under
  * Terry's existing "European Living" org — treated as UCG's in practice,
  * to be transferred to a real UCG business account once they're ready to

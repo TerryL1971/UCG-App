@@ -1,5 +1,32 @@
 # Pre-launch checklist — everything before this goes live somewhere
 
+## Current list (Nov 2026, customer-only app)
+
+The sections further down were written for the earlier app (DealerTeam
+API, PayPal deposits, AI chat) and are kept for history. For the app as
+it is now (`docs/companion-app.md`), this is what's left before launch:
+
+**Waiting on UCG**
+- [ ] Salespeople list — name, dealership, WhatsApp (`src/constants/salespeople.ts`)
+- [ ] Each base's registration/deregistration rules from Home Office (`src/constants/bases.ts`)
+- [ ] Michelle's answers: 5 vs 7 days (PO term 2), wire reference format,
+      RECIPIENT line on the two-step sheet, "reservation" on the Cost Estimate
+- [ ] Confirm: "the policyholder must be at the VRO in person"
+- [ ] Privacy contact details; lawyer review of `docs/privacy-policy-draft.md` and the Impressum
+
+**Technical, before submitting**
+- [ ] `EXPO_PUBLIC_DEMO_MODE=false` in `.env` for the store build (forces real data, hides the switch)
+- [ ] An App Store / Play review account with a sample car plan, and its login in the review notes
+- [ ] Supabase email (SMTP) sent from a UCG domain, not `mail.european-living.live`
+- [ ] Supabase Pro plan before real customers (free tier storage is 1 GB; colour scans add up)
+- [ ] Remove unused keys from `.env` (PayPal, Anthropic) — nothing in the app uses them now
+- [ ] Privacy policy and Impressum at a live URL
+- [ ] EAS build (needed for TestFlight, the true scanner and push notifications)
+
+---
+
+## Earlier list (pre-Nov 2026 app — history)
+
 Terry's ask (Sept 2): "This app is not live yet. I need everything as
 done as possible before it ever goes live somewhere." Nothing on this
 list is newly invented — it's every real gap already surfaced across

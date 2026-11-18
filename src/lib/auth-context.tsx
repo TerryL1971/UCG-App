@@ -63,7 +63,7 @@ interface AuthContextValue {
    * takes the customer out of the app — "anything that takes the customer
    * out of the app needs to be redone"). Needs the Supabase "Confirm
    * signup" and "Reset password" email templates to include
-   * `{{ .Token }}` — see docs/private-chat.md. */
+   * `{{ .Token }}` — see docs/archive/private-chat.md. */
   verifyEmailCode: (email: string, code: string) => Promise<AuthResult>;
   resendEmailCode: (email: string) => Promise<AuthResult>;
   sendPasswordResetCode: (email: string) => Promise<AuthResult>;

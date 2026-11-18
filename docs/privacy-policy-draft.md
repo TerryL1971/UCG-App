@@ -1,136 +1,123 @@
 # Privacy Policy — DRAFT, not for publication
 
-**Not legal advice, and not ready to publish.** This is a structured
-starting point covering what GDPR Article 13 requires disclosed, written
-against both the app's *current* state and the *planned* backend from
-`docs/backend-and-ai-agent-plan.md`, so it needs revision as that backend
-actually gets built — this isn't something to publish today and forget.
-**A lawyer needs to review the final language before this goes live**,
-especially given the open §312g BGB question in
-`docs/legal-considerations-germany.md` about how the sales flow itself is
-structured, which affects what this policy needs to say about the sale,
-not just about data.
+**Not legal advice, and not ready to publish.** Rewritten 2026-11-18 to
+match the app as it is now (customer-only, WhatsApp to UCG — see
+`docs/companion-app.md`). It covers what GDPR Article 13 requires, but
+**a lawyer must review the final wording before it goes live.** Items in
+[brackets] need confirming. The previous draft (for the old app) is in
+git history.
 
 ---
 
-## Privacy Policy for [APP NAME] ("the App"), operated by The Used Car Guys GmbH
+## Privacy Policy for the UCG app ("the App"), operated by The Used Car Guys GmbH
 
-**Last updated:** [DATE — keep current; GDPR requires this reflect
-reality, not read as boilerplate]
+**Last updated:** [DATE]
 
 ### 1. Who is responsible for your data (the "controller")
 
 The Used Car Guys GmbH
 Ludwig-Erhard-Str. 8, 66877 Ramstein-Miesenbach, Germany
-online@usedcarguys.net
-+49 (0)6371 920 000
+online@usedcarguys.net · +49 (0)6371 920 000
 
-**Privacy contact:** Michelle [surname + direct email to confirm] —
-named by UCG (Nov 2026) as the app's privacy/data-protection contact.
+**Privacy contact:** Michelle [surname + direct email to confirm].
+**Data Protection Officer:** [name/contact, or confirm with counsel that
+none is required under GDPR Art. 37 / § 38 BDSG.]
 
-*(Same entity details as the Impressum —* `docs/impressum-template.md`
-*— these should always match.)*
+*(Same details as the Impressum — `docs/impressum-template.md`.)*
 
-**Data Protection Officer:** [NAME/CONTACT, or a statement that none is
-formally required — confirm with counsel whether UCG's size/processing
-activities require a designated DPO under GDPR Art. 37 or German law;
-don't assume either way.]
+### 2. How the App works, in short
 
-### 2. What data we collect, and why
+The App is a personal guide for buying a car from, or selling a car to,
+UCG: a step-by-step plan for your base, your deadlines, and your car's
+paperwork in one place. **UCG employees do not use the App and cannot see
+what you put in it.** When you contact UCG from the App, WhatsApp opens
+and you send the message yourself (section 4).
 
-| Data | Collected when | Purpose | Legal basis |
+### 3. What data we process, and why
+
+| Data | When | Purpose | Legal basis |
 |---|---|---|---|
-| Name, email, phone | Creating an account | Identify you, contact you about your deal | Contract (Art. 6(1)(b)) |
-| Which base you're headed to, cash/financing preference, notes | Deal-intake form | Let a salesperson prepare a real deal | Contract / legitimate interest |
-| USAREUR license status, license photos (front/back) | Deal-intake form, if provided | Document license status for your deal | Consent (Art. 6(1)(a)) — explicitly opt-in, since this is a sensitive ID document |
-| Saved cars, browsing activity | Using the app | Show your saved listings | Legitimate interest |
-| Sell It Back condition photos, VIN/plate, mileage | Sell It Back form | Generate a buy-back offer | Contract |
-| [Once backend exists] Deal status/history | Salesperson updates | Show you where your deal stands | Contract |
+| Name, email address, password (stored only as a secure hash), WhatsApp number, the base you're stationed at | Creating your account / editing it | Your account; showing the right steps for your base; UCG reaching you on WhatsApp | Contract (Art. 6(1)(b)) |
+| Your car plan: Deal #, Stock #, car details and VIN, price, deposit, cash or loan and lender, dates, your salesperson's name and WhatsApp number, dealership, the steps you tick | Setting up and using your plan | Your step-by-step plan, deadlines and reminders | Contract (Art. 6(1)(b)) |
+| Documents you add (PDFs and scans): e.g. Purchase Order, Cost Estimate, Bill of Sale, AE Form 550-175A/B, Transfer Title Document, Hand-Over Document, Warranty Certificate, driver's license. These contain personal data such as your name, address, unit, phone number and vehicle details | When you choose to add them | Keeping your car's paperwork together so you can view, share or print it | Contract (Art. 6(1)(b)); for the driver's license, your consent by choosing to add it (Art. 6(1)(a)) |
+| Key Dates you enter (registration expiry, 550-175B issue date, USAREUR license expiry) | Key Dates | Reminders | Contract (Art. 6(1)(b)) |
+| Sell My Car details (name, email, phone, VIN, year, mileage, condition, duty station, notes) and car photos | Sell My Car | Requesting an offer — sent by you on WhatsApp (section 4). Form drafts and photos stay on your phone | Contract / pre-contract steps (Art. 6(1)(b)) |
 
-*(This table needs to be re-verified field-by-field against the actual
-schema once `docs/backend-and-ai-agent-plan.md`'s database is built —
-don't let it drift from what's actually collected.)*
+We do not use your data for advertising, we do not sell it, and the App
+has no analytics or tracking.
 
-### 3. Who your data is shared with
+**Stays on your phone only:** reminders (scheduled by your phone), the
+pickup photo, Sell My Car photos and drafts, demo-mode sample data.
 
-- **Your salesperson**, to work your deal — today, informally via a
-  WhatsApp message you send yourself from your own device (not
-  transmitted through our systems); once a real backend exists, this
-  becomes a proper internal share, and this section needs updating to
-  say so precisely.
-- **WhatsApp (Meta)** — when you use the in-app WhatsApp buttons, you're
-  initiating a message from your own device via Meta's service, subject
-  to WhatsApp's own privacy policy, not ours. [Confirm with counsel
-  whether this needs disclosure as a "recipient" or international
-  transfer under GDPR even though the app doesn't itself send the data —
-  the mechanism is real but the legal characterization needs a real
-  answer, not an assumption.]
-- **DealerTeam (Salesforce)** — *not currently connected* (see
-  `docs/salesforce-dealerteam-integration-plan.md`). If/when real API
-  integration exists, this section must be updated before that ships,
-  since it would be a new recipient and likely a new legal basis
-  discussion (DealerTeam/Salesforce's own sub-processors, hosting
-  region, etc.).
-- We do not sell your data.
+### 4. Who your data goes to
 
-### 4. Where your data is stored
-
-[Once the backend from docs/backend-and-ai-agent-plan.md exists: name
-the actual hosting provider and region here — e.g., "in the EU, via
-[PROVIDER]." Today, most app data is either local to your device only
-(never leaves it) or sent by you via WhatsApp, as described above.]
+- **Our hosting provider (processor):** Supabase, Inc. stores your
+  account, plan and documents. Data is held in the [London, UK —
+  `eu-west-2`] region. The UK has an EU adequacy decision; [confirm the
+  data processing agreement with Supabase and its sub-processors].
+- **Email codes:** sign-up and password-reset codes are sent by [Resend,
+  as an email processor]. [Before launch: send from a UCG email domain —
+  see section 9.]
+- **WhatsApp (Meta):** when you tap "Message my salesperson", "Send my
+  documents", or similar, WhatsApp opens on your phone with a message or
+  file ready, and **you** decide whether to send it. What you send is
+  processed by WhatsApp under its own terms and reaches UCG's
+  salesperson. [Confirm with counsel how to describe this.]
+- **Exchange rates:** the currency converter asks the European Central
+  Bank's public rate service (via frankfurter.dev) for today's rate. No
+  personal data is sent; the service sees your IP address like any
+  website.
+- **Links you open:** UCG pages, American Auto Nation and Google reviews
+  open in an in-app browser or the Maps app and are subject to those
+  sites' own policies.
 
 ### 5. How long we keep it
 
-[Needs a real, decided retention policy — see the open question in
-`docs/backend-and-ai-agent-plan.md`. Particularly for license photos: a
-specific rule (e.g., "deleted N days after your deal closes or after N
-months of inactivity") needs to be decided before this can be written
-truthfully, not left vague.]
+Your account, plans and documents are kept **until you delete them** —
+your car's paperwork matters for as long as you own the car, including
+when you sell it. You can delete a document, a whole plan, or your
+account at any time in the App (section 6). [UCG to confirm whether a
+maximum retention period should apply to inactive accounts.]
 
 ### 6. Your rights
 
-Under GDPR, you have the right to:
+You have the right to access, correct, delete and receive a copy of your
+data, to restrict or object to processing, and to withdraw consent at any
+time. In the App you can yourself:
+- edit your account details, base and WhatsApp number (Account);
+- remove any document (Documents → Remove) or a whole plan (My Deal →
+  Change car or start over);
+- **delete your account (Account → Delete My Account)** — this deletes
+  your account, all your plans and every document you added.
 
-- Access the personal data we hold about you
-- Correct inaccurate data
-- Request deletion ("right to be forgotten")
-- Request a copy of your data in a portable format
-- Object to certain processing
-- Lodge a complaint with a supervisory authority — in Germany, the Landesbeauftragte für den
-  Datenschutz und die Informationsfreiheit Rheinland-Pfalz (LfDI RLP),
-  since UCG is registered in Ramstein-Miesenbach
+For anything else, contact [privacy email]. You can also complain to a
+supervisory authority — for UCG, the Landesbeauftragte für den
+Datenschutz und die Informationsfreiheit Rheinland-Pfalz (LfDI RLP).
 
-To exercise these, contact [EMAIL]. **[Once real backend accounts
-exist, Apple additionally requires self-service account deletion from
-inside the app itself — see `docs/backend-and-ai-agent-plan.md` — this
-section and the actual in-app feature need to launch together, not this
-policy promising a right the app doesn't yet let you exercise
-yourself.]**
+### 7. Security
 
-### 7. Children
+Your data is sent encrypted (HTTPS) and protected by access rules so that
+only your own account can read your plans and documents.
 
-[Standard clause needed — confirm with counsel what age restriction
-applies given the app's actual audience (largely adult PCSing service
-members and their adult dependents), and word this precisely rather than
-using unreviewed boilerplate.]
+### 8. Children
 
-### 8. Changes to this policy
+[Confirm with counsel; the App is intended for adults buying or selling
+a car.]
 
-We'll update this page when what we do with your data changes, and
-update the "Last updated" date above.
+### 9. Changes to this policy
+
+We'll update this page when what we do with your data changes, and the
+"Last updated" date above.
 
 ---
 
-## What's still needed before this can be published
+## Still needed before publishing
 
-- Every bracketed placeholder above filled with confirmed, accurate
-  information.
-- Legal review of the entire document, not just the placeholders —
-  particularly section 3 (WhatsApp/DealerTeam characterization) and
-  section 6 (which supervisory authority, DPO requirement).
-- The retention policy (section 5) actually decided, not left as an
-  open question, before the backend that would enforce it is built.
-- A real, hosted URL to publish this at — both App Store Connect and
-  Google Play Console require a live Privacy Policy URL at submission,
-  not a document sitting in this repo.
+- Fill every [bracket] with confirmed information; lawyer review of the
+  whole text (especially sections 3–5).
+- **Email sender:** the email codes currently come from
+  `mail.european-living.live` (set up for testing). Switch Supabase's
+  SMTP to a UCG domain before launch.
+- Data processing agreements in place (Supabase, email provider).
+- A live URL for this policy — App Store Connect and Google Play require
+  one at submission.

@@ -32,13 +32,24 @@ Decisions (Terry, David and Michelle, Nov 2026):
      salesperson says my car is Retail Ready" (starts the 5-day pay-in-full
      countdown) or "UCG has confirmed they received my payment" (unlocks
      the customs step).
-4. **Documents** — every PDF and scan for the car, view / share / print,
-   older versions kept; "paperwork that stays with the car" checklist.
-5. **Tools** — How to Pay (Wise / lender / DEN cashier's check), Key Dates,
+4. **Documents** — every paper for the deal with Add / Replace: add the
+   PDF the salesperson sent on WhatsApp, or scan the paper copy. View /
+   share / print / remove each one; older versions kept. **Send all my
+   documents** merges them into one PDF for WhatsApp. "Paperwork that
+   stays with the car" checklist.
+5. **Tools** — How to Pay (Wise / lender / DEN cashier's check), Key Dates
+   (plan deadlines plus registration expiry, 550-175B issue date, USAREUR
+   license expiry — with reminders on the phone),
    Every Step Explained, VRO Checklist, Currency Converter, American Auto
    Nation, Service Center, Message my salesperson.
-6. **Sell** — pick a car bought from UCG; the offer request goes to the
-   salesperson on WhatsApp with the car and its documents listed.
+6. **Sell My Car** — pick a car bought from UCG; the offer request goes
+   to the salesperson on WhatsApp, then "Send My Car's Documents" and
+   "Send My Car Photos" send them too.
+
+**Reminders:** the day before and on the day of each deadline (pay-by,
+Cost Estimate, inspection guarantee, 550-175B), and 30/7 days before
+registration and license expiry. Scheduled on the phone (works in Expo
+Go), rebuilt whenever dates change.
 
 ## The three plans
 
@@ -84,8 +95,12 @@ Demo Mode** switches it per phone (off = the real plan). For launch:
   ever see and change their own plans and documents (row-level security).
 - Edge Function `delete-account` — deployed. Deletes the account, its car
   plans and every document the customer added.
-- The older staff tables/policies and the private-chat tables are unused
-  by the app now (no staff users); left in place, harmless.
+- `20261118100000_customer_only_access.sql`: only the customer can read
+  or change their own data — staff access removed, staff list emptied,
+  legacy public document lookup and anonymous upload paths removed.
+  `20261118120000_key_dates.sql`: Key Dates columns.
+- The old chat tables stay (unused; old test chats readable only by
+  their own customer).
 
 ## Later options
 
