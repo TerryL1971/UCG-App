@@ -20,7 +20,7 @@ export const GOOD_TO_KNOW: GoodToKnow[] = [
   },
   {
     q: 'Can I reserve a car before I arrive?',
-    a: 'Yes. On our website, open the car and tap “Reserve this car” under the pictures. A $300 deposit holds it for 7 days; if we’re not on a deal by then, the hold can be released. So if you arrive in two weeks, wait until a few days before you land.',
+    a: 'Yes. On our website, open the car and tap “Reserve this car” under the pictures. A $300 deposit holds it for 5 days; if we’re not on a deal by then, the hold can be released. So if you arrive in two weeks, wait until a few days before you land.',
   },
   {
     q: 'What if I change my mind about the car?',

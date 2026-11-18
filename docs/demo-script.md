@@ -39,7 +39,7 @@ plan."*
    location. **Save & Send My Wish List** → demo WhatsApp preview. *"It's
    saved in the app — WhatsApp's disappearing messages can't lose it."*
 2. **Tools → Good to Know:** the questions every customer asks — dollars,
-   no taxes, the 7-day deposit hold, deposits refundable and transferable,
+   no taxes, the 5-day deposit hold, deposits refundable and transferable,
    financing, moving a car between locations.
 3. On a new account, My Deal shows both doors: **"Already put down your
    $300 deposit? Start My Car Plan"** and **"Still shopping? Get Ready"**.

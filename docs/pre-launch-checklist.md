@@ -9,7 +9,8 @@ it is now (`docs/companion-app.md`), this is what's left before launch:
 **Waiting on UCG**
 - [ ] Salespeople list — name, dealership, WhatsApp (`src/constants/salespeople.ts`)
 - [ ] Each base's registration/deregistration rules from Home Office (`src/constants/bases.ts`)
-- [ ] Michelle's answers: 5 vs 7 days (PO term 2), wire reference format,
+- [x] 5 vs 7 days: confirmed 5 (Terry, 2026-11-18). The PO's printed term 2 still says seven — update the DealerTeam template.
+- [ ] Michelle's answers: wire reference format,
       RECIPIENT line on the two-step sheet, "reservation" on the Cost Estimate
 - [ ] Confirm: "the policyholder must be at the VRO in person"
 - [ ] Privacy contact details; lawyer review of `docs/privacy-policy-draft.md` and the Impressum

@@ -126,8 +126,10 @@ Demo Mode** switches it per phone (off = the real plan). For launch:
 
 ## Open questions for Michelle
 
-- Pay-in-full: the app uses **5** days; the Purchase Order's printed term 2
-  still says seven.
+- ~~5 or 7 days?~~ Confirmed by Terry 2026-11-18: the hold is now **5
+  days** (the app uses 5 everywhere). The Purchase Order's printed term 2
+  (DealerTeam template) still says "seven calendar days" and should be
+  updated to match.
 - Payment reference format she wants on wires (app: `DE8261 Deal 17724`).
 - The newest two-step wire sheet dropped the "RECIPIENT" line.
 - The Cost Estimate's printed terms mention "reservation" (not allowed for DEN).
