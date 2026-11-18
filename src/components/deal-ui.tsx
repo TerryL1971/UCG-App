@@ -172,7 +172,7 @@ export function ScanUploadButton({
   userId,
   label,
   onUploaded,
-  allowPdf = false,
+  allowPdf = true,
 }: {
   deal: Deal;
   info: DocTypeInfo;
@@ -198,7 +198,7 @@ export function ScanUploadButton({
         userId,
       });
       onUploaded?.();
-      Alert.alert('Saved', `${info.label} is in the app now.${role === 'customer' ? ' Your salesperson can see it too.' : ''}`);
+      Alert.alert('Saved', `${info.label} is in your documents now.`);
     } catch (error) {
       console.error('Document upload failed:', error);
       Alert.alert("Couldn't save that document", 'Check your connection and try again. Nothing was saved.');
@@ -214,8 +214,8 @@ export function ScanUploadButton({
     }
     Alert.alert(info.label, 'How do you want to add it?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Attach a PDF', onPress: () => run('pdf') },
-      { text: 'Scan with Camera', onPress: () => run('scan') },
+      { text: 'Add a PDF (e.g. from WhatsApp)', onPress: () => run('pdf') },
+      { text: 'Scan the Paper Copy', onPress: () => run('scan') },
     ]);
   };
 

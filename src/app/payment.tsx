@@ -38,7 +38,7 @@ export default function PaymentScreen() {
     return (
       <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
         <ScreenHeader title="Payment" />
-        <Text style={styles.note}>Connect your deal on My Deal first.</Text>
+        <Text style={styles.note}>Start your car plan on My Deal first.</Text>
       </SafeAreaView>
     );
   }

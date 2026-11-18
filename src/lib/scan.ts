@@ -118,9 +118,24 @@ export async function scanPages(documentLabel: string, pages: string[] | null): 
   return imagesToPdf(images);
 }
 
-/** Staff often already have the PDF (scanner, email, SharePoint). */
+/** Rough page count of a PDF (counts its page objects). Good enough for
+ * "3 pages" in a list; falls back to 1. */
+async function countPdfPages(uri: string): Promise<number> {
+  try {
+    const base64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' });
+    const text = atob(base64);
+    const n = (text.match(/\/Type\s*\/Page[^s]/g) ?? []).length;
+    return Math.min(Math.max(n, 1), 30);
+  } catch {
+    return 1;
+  }
+}
+
+/** A PDF the customer already has — e.g. the Purchase Order their
+ * salesperson sent on WhatsApp (saved to Files from WhatsApp first). */
 export async function pickPdf(): Promise<ScannedPdf | null> {
   const result = await DocumentPicker.getDocumentAsync({ type: 'application/pdf', copyToCacheDirectory: true });
   if (result.canceled || !result.assets[0]) return null;
-  return { uri: result.assets[0].uri, pageCount: 1 };
+  const uri = result.assets[0].uri;
+  return { uri, pageCount: await countPdfPages(uri) };
 }

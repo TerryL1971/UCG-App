@@ -23,7 +23,7 @@ export default function RoadToPlatesScreen() {
     return (
       <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
         <ScreenHeader title="Every Step" />
-        <Text style={styles.note}>Connect your deal on My Deal to see its steps.</Text>
+        <Text style={styles.note}>Start your car plan on My Deal to see its steps.</Text>
       </SafeAreaView>
     );
   }

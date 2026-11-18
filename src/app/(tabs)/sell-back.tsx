@@ -16,6 +16,8 @@ import { useAuth } from '@/lib/auth-context';
 import { docTypeInfo, liveFiles, vehicleLabel } from '@/lib/deal-flow';
 import type { DealBundle } from '@/lib/deals';
 import { useMyDeals } from '@/lib/my-deals-context';
+import { sharePacket } from '@/lib/pdf-packet';
+import { imagesToPdf } from '@/lib/scan';
 import { messageSalesperson } from '@/lib/whatsapp';
 import { compressPhoto } from '@/lib/image';
 import { isValidEmail } from '@/lib/validation';
@@ -345,10 +347,8 @@ export default function SellBackScreen() {
       sourceDeal
         ? `Bought from UCG: ${vehicleLabel(sourceDeal.deal)}, Deal #${sourceDeal.deal.deal_number}, Stock #${sourceDeal.deal.stock_number}.`
         : '',
-      sourceDeal
-        ? sourceDocs.length
-          ? `My documents for this car are in the app (${sourceDocs.length}): ${sourceDocs.join(', ')}.`
-          : 'No documents for this car are in the app yet.'
+      sourceDeal && sourceDocs.length
+        ? `I'll send you my documents for this car next (${sourceDocs.length}): ${sourceDocs.join(', ')}.`
         : '',
       `Name: ${sellerName.trim()}`,
       `Email: ${sellerEmail.trim()}`,
@@ -418,6 +418,17 @@ export default function SellBackScreen() {
           dutyStation={effectiveDutyStation}
           onAccept={() => setOfferStatus('enteringAmount')}
           onStartOver={startOver}
+          onSendDocuments={
+            sourceDeal && liveFiles(sourceDeal.files).length > 0
+              ? () =>
+                  sharePacket(
+                    liveFiles(sourceDeal.files),
+                    `${vehicleLabel(sourceDeal.deal)} documents Deal ${sourceDeal.deal.deal_number}`,
+                    'Send my documents',
+                  )
+              : undefined
+          }
+          onSendPhotos={photos.length > 0 ? () => sendPhotos(photos) : undefined}
           acceptedAmountText={acceptedAmountText}
           setAcceptedAmountText={setAcceptedAmountText}
           hasLien={hasLien}
@@ -469,7 +480,7 @@ export default function SellBackScreen() {
                 </View>
                 {sourceDeal && (
                   <Text style={styles.mileageHint}>
-                    Filled in from your deal. UCG&apos;s buying team sees this car&apos;s documents in the app, so there&apos;s nothing to resend. Just add today&apos;s mileage
+                    Filled in from your deal. After you send the request, the app helps you send this car&apos;s documents to your salesperson too. Just add today&apos;s mileage
                     {sourceDeal.deal.odometer ? ` (it was ${sourceDeal.deal.odometer.toLocaleString('en-US')} when you bought it)` : ''}, the
                     condition and a few photos.
                   </Text>
@@ -678,11 +689,24 @@ export default function SellBackScreen() {
   );
 }
 
+/** All the car photos in one PDF for the share sheet (WhatsApp takes one
+ * file at a time from another app). */
+async function sendPhotos(photos: string[]) {
+  try {
+    const { uri } = await imagesToPdf(photos);
+    await Sharing.shareAsync(uri, { mimeType: 'application/pdf', UTI: 'com.adobe.pdf', dialogTitle: 'Send my car photos' });
+  } catch {
+    Alert.alert("Couldn't put the photos together", 'Try again, or share them one by one with the Share button on each photo.');
+  }
+}
+
 function OfferStatusView({
   status,
   dutyStation,
   onAccept,
   onStartOver,
+  onSendDocuments,
+  onSendPhotos,
   acceptedAmountText,
   setAcceptedAmountText,
   hasLien,
@@ -698,6 +722,8 @@ function OfferStatusView({
   onConfirmAccept,
 }: {
   status: Exclude<OfferStatus, 'form'>;
+  onSendDocuments?: () => void;
+  onSendPhotos?: () => void;
   dutyStation: string | null;
   onAccept: () => void;
   onStartOver: () => void;
@@ -819,6 +845,13 @@ function OfferStatusView({
           <Text style={styles.statusBody}>
             A UCG salesperson will reply on WhatsApp with a real offer within one business day. Once you&apos;ve accepted it, come back here to confirm and book your inspection.
           </Text>
+          {(onSendDocuments || onSendPhotos) && (
+            <Text style={styles.statusBody}>Help them make the best offer: send your paperwork and photos on WhatsApp too.</Text>
+          )}
+          {onSendDocuments && (
+            <Button label="Send My Car's Documents" variant="secondary" onPress={onSendDocuments} style={styles.statusButton} />
+          )}
+          {onSendPhotos && <Button label="Send My Car Photos" variant="secondary" onPress={onSendPhotos} style={styles.statusButton} />}
           <Button label="I've Accepted My Offer" onPress={onAccept} style={styles.statusButton} />
         </>
       ) : (
@@ -863,8 +896,8 @@ function OfferStatusView({
               one. Once it's signed, the salesperson opens the selling
               deal in the app and it shows up on My Deal. */}
           <Text style={styles.statusBody}>
-            Once you sign the Bill of Sale with your salesperson, connect your selling deal on My Deal with the Deal #
-            printed on it. Every step from there, and every document, is tracked in the app.
+            Once you sign the Bill of Sale with your salesperson, add your selling deal on My Deal from the Bill of Sale.
+            Every step from there, and every document, is tracked in the app.
           </Text>
           <Button label="Go to My Deal" variant="secondary" onPress={() => router.push('/(tabs)')} style={styles.statusButton} />
         </>

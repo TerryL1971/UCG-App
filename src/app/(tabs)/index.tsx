@@ -112,6 +112,15 @@ export default function MyDealScreen() {
         refreshControl={
           available ? <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.navy} /> : undefined
         }>
+        {/* Accounts made before WhatsApp was required have no number —
+            UCG can't reach them, so ask. */}
+        {user && !user.whatsapp && (
+          <Pressable style={styles.whatsappPrompt} onPress={() => router.push('/edit-whatsapp')}>
+            <WhatsAppIcon size={18} color={Colors.green} />
+            <Text style={styles.whatsappPromptText}>Add your WhatsApp number so UCG can reach you about your car.</Text>
+            <Text style={styles.baseChange}>Add</Text>
+          </Pressable>
+        )}
         {body}
       </ScrollView>
     </SafeAreaView>
@@ -505,6 +514,16 @@ const styles = StyleSheet.create({
   whatsappRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 14 },
   whatsappLabel: { fontFamily: Fonts.bodySemibold, fontSize: 13, color: Colors.green, flexShrink: 1 },
   roadWrap: { alignItems: 'center' },
+  whatsappPrompt: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: Colors.greenTint,
+    borderRadius: Radius.md,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  whatsappPromptText: { flex: 1, fontFamily: Fonts.bodySemibold, fontSize: 13, color: Colors.text, lineHeight: 18 },
   baseRow: {
     flexDirection: 'row',
     alignItems: 'center',
