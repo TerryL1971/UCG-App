@@ -11,7 +11,7 @@ import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
 import { toIsoDate } from '@/lib/deal-flow';
 import { createMyDeal, deleteMyDeal, fetchDealBundle, updateDeal, type DealKind, type NewDeal, type PaymentMethod } from '@/lib/deals';
-import { DEMO_CUSTOMER_ID } from '@/lib/demo-mode';
+import { DEMO_CUSTOMER_ID, useDemoMode } from '@/lib/demo-mode';
 import { useMyDeals } from '@/lib/my-deals-context';
 
 /**
@@ -85,6 +85,42 @@ export default function DealSetupScreen() {
   const purchaseNonDen = kind === 'purchase' && !isDen;
   const paperwork = kind === 'sale' ? 'Bill of Sale' : isDen ? 'Cost Estimate' : 'Purchase Order';
   const parseMoney = (value: string) => Number(value.replace(/[^0-9.]/g, ''));
+
+  const demo = useDemoMode();
+
+  /** Demo mode: fill the form with made-up paperwork, so a live demo
+   * doesn't stall on typing. */
+  const fillSample = () => {
+    const today = toIsoDate(new Date());
+    setDocumentDate(today);
+    setSalespersonName('Demo Salesperson');
+    setSalespersonWhatsapp('');
+    setDealership('Ramstein');
+    if (kind === 'sale') {
+      setDealNumber('90020');
+      setStockNumber('DE9020');
+      setYear('2019');
+      setMake('Toyota');
+      setModel('RAV4 XLE');
+      setColor('Silver');
+      setVin('WDEMO0000000TOY20');
+      setOdometer('61200');
+      setTotalPrice('17500');
+      return;
+    }
+    setDealNumber(isDen ? '90011' : '90010');
+    setStockNumber(isDen ? 'DEN9011' : 'DE9010');
+    setYear('2020');
+    setMake('BMW');
+    setModel('X3 xDrive30i');
+    setColor('Black');
+    setVin('WDEMO0000000BMW10');
+    setOdometer('48500');
+    setTotalPrice('31499');
+    setDeposit('300');
+    setPaymentMethod('cash');
+    setLender('');
+  };
 
   const pickSalesperson = (name: string) => {
     const person = SALESPEOPLE.find((p) => p.name === name);
@@ -176,6 +212,13 @@ export default function DealSetupScreen() {
       ) : (
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+            {demo && !editing && (
+              <Pressable style={styles.sampleButton} onPress={fillSample}>
+                <Text style={styles.sampleLabel}>
+                  Demo: fill in a sample {kind === 'sale' ? 'Bill of Sale' : isDen ? 'Cost Estimate' : 'Purchase Order'}
+                </Text>
+              </Pressable>
+            )}
             {!editing && (
               <Text style={styles.intro}>
                 Your salesperson gave you your paperwork when you put down your deposit. Copy these details from it and
@@ -384,6 +427,16 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: Colors.navy, borderColor: Colors.navy },
   chipLabel: { fontFamily: Fonts.bodySemibold, fontSize: 13, color: Colors.text },
   chipLabelActive: { color: '#fff' },
+  sampleButton: {
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: Colors.amber,
+    backgroundColor: Colors.amberTint,
+    borderRadius: Radius.md,
+    padding: 12,
+    marginBottom: 14,
+  },
+  sampleLabel: { fontFamily: Fonts.bodyBold, fontSize: 13.5, color: Colors.amber, textAlign: 'center' },
   remove: {
     fontFamily: Fonts.bodySemibold,
     fontSize: 13,
