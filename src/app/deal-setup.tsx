@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
 import { ScreenHeader } from '@/components/ui/screen-header';
-import { DEALERSHIPS, normalizeWhatsapp, SALESPEOPLE } from '@/constants/salespeople';
+import { dealershipForBase, DEALERSHIPS, normalizeWhatsapp, SALESPEOPLE } from '@/constants/salespeople';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
 import { toIsoDate } from '@/lib/deal-flow';
@@ -26,7 +26,7 @@ import { loadWishList } from '@/lib/wish-list';
 export default function DealSetupScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const editing = Boolean(id);
-  const { user } = useAuth();
+  const { user, base } = useAuth();
   const { refresh, selectDeal } = useMyDeals();
 
   const [loading, setLoading] = useState(editing);
@@ -60,10 +60,11 @@ export default function DealSetupScreen() {
     loadWishList().then((w) => {
       if (w.salespersonName) setSalespersonName((v) => v || w.salespersonName);
       if (w.salespersonWhatsapp) setSalespersonWhatsapp((v) => v || `+${w.salespersonWhatsapp}`);
-      if (w.dealership) setDealership((v) => v ?? w.dealership);
+      // The wish list's location, else the UCG location at their base.
+      setDealership((v) => v ?? w.dealership ?? dealershipForBase(base));
       if (w.payment === 'loan') setPaymentMethod('finance');
     });
-  }, [id]);
+  }, [id, base]);
 
   useEffect(() => {
     if (!id) return;

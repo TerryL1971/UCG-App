@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { WhatsAppIcon } from '@/components/icons';
-import { dealershipTeam, SHOWROOM_HOURS } from '@/constants/salespeople';
+import { dealershipForBase, dealershipTeam, SHOWROOM_HOURS } from '@/constants/salespeople';
 import { Colors, Fonts, Radius, Shadow } from '@/constants/theme';
 import type { Deal } from '@/lib/deals';
 import { messageSalesperson, messageWhatsapp } from '@/lib/whatsapp';
@@ -13,9 +13,12 @@ import { messageSalesperson, messageWhatsapp } from '@/lib/whatsapp';
  * showroom hours. In a real conversation the customer had to ask for the
  * registration contact's number; it should just be here.
  */
-export function UcgTeamCard({ deal }: { deal: Deal }) {
-  const team = dealershipTeam(deal.dealership);
-  const hours = deal.dealership ? SHOWROOM_HOURS[deal.dealership] : undefined;
+export function UcgTeamCard({ deal, baseId }: { deal: Deal; baseId: string | null }) {
+  // The location that sold the car; if the customer didn't say, the UCG
+  // location at their base (if there is one).
+  const location = deal.dealership ?? dealershipForBase(baseId);
+  const team = dealershipTeam(location);
+  const hours = location ? SHOWROOM_HOURS[location] : undefined;
   const salesperson = deal.salesperson_name || 'Your salesperson';
   const initials = salesperson
     .split(/\s+/)
@@ -26,7 +29,7 @@ export function UcgTeamCard({ deal }: { deal: Deal }) {
 
   return (
     <View style={[styles.card, Shadow.card]}>
-      <Text style={styles.kicker}>Your UCG team{deal.dealership ? ` · ${deal.dealership}` : ''}</Text>
+      <Text style={styles.kicker}>Your UCG team{location ? ` · UCG ${location}` : ''}</Text>
       <Pressable style={styles.person} onPress={() => messageSalesperson(deal, 'Hi! ')}>
         <View style={styles.avatar}>
           <Text style={styles.initials}>{initials}</Text>

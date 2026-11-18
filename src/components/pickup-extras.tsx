@@ -5,8 +5,10 @@ import { useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { CameraIcon, StarIcon } from '@/components/icons';
+import { dealershipForBase } from '@/constants/salespeople';
 import { ucgLocations } from '@/constants/ucg-info';
 import { Colors, Fonts, Radius } from '@/constants/theme';
+import { useAuth } from '@/lib/auth-context';
 import type { Deal } from '@/lib/deals';
 import { openUrlWithFeedback } from '@/lib/linking';
 import { salespersonLabel } from '@/lib/whatsapp';
@@ -21,6 +23,8 @@ import { salespersonLabel } from '@/lib/whatsapp';
  * the review goes to the deal's dealership (or the customer picks one).
  */
 export function PickupExtras({ deal }: { deal: Deal }) {
+  const { base } = useAuth();
+  const dealership = deal.dealership ?? dealershipForBase(base);
   const [photo, setPhoto] = useState<string | null>(null);
   const who = salespersonLabel(deal);
 
@@ -47,7 +51,7 @@ export function PickupExtras({ deal }: { deal: Deal }) {
   const openReview = (url: string) => openUrlWithFeedback(url, "Couldn't open Google. Check your connection and try again.");
 
   const leaveReview = () => {
-    const location = ucgLocations.find((l) => l.name === deal.dealership);
+    const location = ucgLocations.find((l) => l.name === dealership);
     if (location) {
       openReview(location.reviewUrl);
       return;
@@ -90,7 +94,7 @@ export function PickupExtras({ deal }: { deal: Deal }) {
         <View style={{ flex: 1 }}>
           <Text style={styles.reviewTitle}>Leave UCG a Google Review</Text>
           <Text style={styles.reviewSub}>
-            {deal.dealership ? `For UCG ${deal.dealership}` : 'Tell other Americans how it went'}
+            {dealership ? `For UCG ${dealership}` : 'Tell other Americans how it went'}
           </Text>
         </View>
       </Pressable>

@@ -44,6 +44,20 @@ export const SHOWROOM_HOURS: Record<string, string> = {
   Stuttgart: 'Mon–Fri 09:00–18:00 · Sat 10:00–15:00',
 };
 
+/** The UCG location named after a base, if there is one. Only exact
+ * matches — no guessing which lot serves which base. */
+const BASE_DEALERSHIP: Record<string, string> = {
+  ramstein: 'Ramstein',
+  stuttgart: 'Stuttgart',
+  spangdahlem: 'Spangdahlem',
+  grafenwoehr: 'Grafenwoehr',
+  wiesbaden: 'Wiesbaden',
+};
+
+export function dealershipForBase(baseId: string | null | undefined): string | null {
+  return baseId ? (BASE_DEALERSHIP[baseId] ?? null) : null;
+}
+
 /** UCG dealership locations. */
 export const DEALERSHIPS: string[] = ucgLocations.map((l) => l.name);
 

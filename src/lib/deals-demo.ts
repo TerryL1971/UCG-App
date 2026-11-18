@@ -33,7 +33,7 @@ interface DemoStore {
   files: DealFile[];
 }
 
-const STORAGE_KEY = 'ucg.demoDeals.v3';
+const STORAGE_KEY = 'ucg.demoDeals.v4';
 const DEMO_PREFIX = 'demo:';
 
 let store: DemoStore | null = null;
@@ -57,7 +57,9 @@ function seed(): DemoStore {
     // No WhatsApp on demo deals: "Message my salesperson" goes to UCG's
     // general WhatsApp instead of a made-up number.
     salesperson_whatsapp: null,
-    dealership: 'Ramstein',
+    // Follows the customer's base on screen (dealershipForBase), so a
+    // Stuttgart customer sees the Stuttgart team in the demo.
+    dealership: null,
     lender: null,
     registration_expires: null,
     ae550b_issued: null,

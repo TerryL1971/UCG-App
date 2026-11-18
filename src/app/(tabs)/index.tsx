@@ -99,7 +99,7 @@ export default function MyDealScreen() {
       <>
         <Pressable style={styles.baseRow} onPress={() => router.push('/choose-base')}>
           <Text style={styles.baseText}>
-            {base ? `Plan for ${baseName(base)}` : 'Where are you stationed? Your plan depends on it.'}
+            {base ? `Stationed at ${baseName(base)}` : 'Where are you stationed? Your plan depends on it.'}
           </Text>
           <Text style={styles.baseChange}>{base ? 'Change' : 'Choose'}</Text>
         </Pressable>
@@ -250,7 +250,7 @@ function DealView({
         </View>
       )}
       <DealSummaryCard deal={deal} />
-      <UcgTeamCard deal={deal} />
+      <UcgTeamCard deal={deal} baseId={baseId} />
       {deadline && <DeadlineBanner deadline={deadline} />}
       {/* American Auto Nation, front and centre from the moment they pay
           until the car is registered. */}
