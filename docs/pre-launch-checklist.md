@@ -19,11 +19,10 @@ it is now (`docs/companion-app.md`), this is what's left before launch:
 - [ ] `EXPO_PUBLIC_DEMO_MODE=false` in `.env` for the store build (forces real data, hides the switch)
 - [ ] An App Store / Play review account with a sample car plan, and its login in the review notes
 - [ ] Supabase email (SMTP) sent from a UCG domain, not `mail.european-living.live`
-- [ ] Supabase Pro plan before real customers (free tier storage is 1 GB; colour scans add up)
-- [ ] Remove the unused PayPal keys from `.env`. The Anthropic key now belongs in Supabase, not `.env`:
-      `supabase secrets set ANTHROPIC_API_KEY=… --project-ref fadmcixenfqhjoelvyhg` (the document reader, `supabase/functions/read-document`)
-- [ ] Document reader: a UCG-owned Anthropic account with a spending limit; Anthropic's data processing addendum; test on real UCG paperwork
-- [ ] Document reader: a per-customer daily limit, so a stolen login can't run up the bill
+- [ ] Stay on Supabase's free plan: watch storage (free tier ~1 GB; colour scans are 1–2 MB each), and
+      plan for it — smaller scans, or keeping documents on the phone only — rather than paying for Pro
+- [ ] Remove the unused PayPal and Anthropic keys from `.env` — nothing uses them, and nothing paid may be added
+      (Terry, 2026-11-19: the app costs nothing beyond the store fees)
 - [ ] Privacy policy and Impressum at a live URL
 - [ ] EAS build (needed for TestFlight, the true scanner and push notifications)
 

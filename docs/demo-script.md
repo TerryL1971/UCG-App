@@ -131,8 +131,8 @@ type the VIN or **Scan** it — same flow.
 - **"When is it in the App Store?"** Needs UCG developer accounts (D-U-N-S
   number), the lawyer review, and a few weeks of testing — see
   `docs/pre-launch-checklist.md`.
-- **"What does it cost to run?"** Supabase Pro ($25/month) once real
-  customers use it; Apple $99/year; Google $25 once.
+- **"What does it cost to run?"** Nothing beyond the store fees: Apple
+  $99/year and Google $25 once. Everything else runs on free plans.
 
 ## After the demo
 Account → **Reset Demo Data** puts all sample deals back.

@@ -13,7 +13,7 @@ import { toIsoDate } from '@/lib/deal-flow';
 import { createMyDeal, deleteMyDeal, fetchDealBundle, updateDeal, uploadDealFile, type DealKind, type NewDeal, type PaymentMethod } from '@/lib/deals';
 import { DEMO_CUSTOMER_ID, useDemoMode } from '@/lib/demo-mode';
 import { useMyDeals } from '@/lib/my-deals-context';
-import { readDocument, readFailureMessage, type DocumentFields } from '@/lib/read-document';
+import { READER_AVAILABLE, readDocument, readFailureMessage, type DocumentFields } from '@/lib/read-document';
 import { pickPdf, scanPages, type ScannedPdf } from '@/lib/scan';
 import { loadWishList } from '@/lib/wish-list';
 import { messageWhatsapp } from '@/lib/whatsapp';
@@ -343,7 +343,8 @@ export default function DealSetupScreen() {
                 the app builds your step-by-step plan for your base.
               </Text>
             )}
-            {!editing && (
+            {/* Demo only until a free reader exists (lib/read-document.ts). */}
+            {!editing && (READER_AVAILABLE || demo) && (
               <View style={styles.readCard}>
                 <Text style={styles.readTitle}>Let the app fill this in</Text>
                 <Text style={styles.readBody}>

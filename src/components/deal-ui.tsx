@@ -8,7 +8,8 @@ import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
 import { dealTitle, docTypeInfo, type DealDeadline, type DocTypeInfo, vehicleLabel } from '@/lib/deal-flow';
 import { deleteDealFile, signedFileUrl, uploadDealFile, type Deal, type DealBundle, type DealFile } from '@/lib/deals';
 import { openUrlWithFeedback } from '@/lib/linking';
-import { checkAgainstDeal, readDocument } from '@/lib/read-document';
+import { checkAgainstDeal, READER_AVAILABLE, readDocument } from '@/lib/read-document';
+import { isDemoMode } from '@/lib/demo-mode';
 import { pickPdf, scanPages } from '@/lib/scan';
 import { messageSalesperson } from '@/lib/whatsapp';
 
@@ -247,7 +248,7 @@ export function ScanUploadButton({
         userId,
       });
       onUploaded?.();
-      if (CHECKED_FORMS.includes(info.type)) {
+      if (CHECKED_FORMS.includes(info.type) && (READER_AVAILABLE || isDemoMode())) {
         await check550(pdf.uri);
       } else {
         Alert.alert('Saved', `${info.label} is in your documents now.`);

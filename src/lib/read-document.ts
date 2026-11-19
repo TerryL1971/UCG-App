@@ -1,17 +1,21 @@
-import * as FileSystem from 'expo-file-system/legacy';
-
 import type { Deal } from '@/lib/deals';
 import { isDemoMode } from '@/lib/demo-mode';
-import { supabase } from '@/lib/supabase';
 
 /**
- * Reads a deal document with AI (the read-document Edge Function, which
- * calls Claude server-side) so the customer doesn't copy numbers by hand,
- * and checks an AE Form 550 against the deal (Terry, 2026-11-19).
+ * Reading a deal document so the customer doesn't copy numbers by hand,
+ * and checking an AE Form 550 against the deal (Terry, 2026-11-19).
  *
- * Nothing is saved from here: the fields come back to the screen, and the
- * customer checks them against the paper before anything is stored.
+ * The app must cost nothing to run beyond the app-store fees (Terry,
+ * 2026-11-19), so there is no paid AI reader. For now only demo mode
+ * "reads" (with made-up results). The free way to do it for real:
+ *   - DealerTeam PDFs (Purchase Order, Cost Estimate, Bill of Sale) have
+ *     their text inside, so it can be pulled out without OCR and matched
+ *     to the known layout. Needs a real Purchase Order to build against.
+ *   - Scanned paper (the 550s) needs OCR on the phone itself (Apple
+ *     Vision / Google ML Kit, both free), which needs the EAS build.
+ * Flip READER_AVAILABLE when one of these is in.
  */
+export const READER_AVAILABLE = false;
 
 export type ReadDocType = 'purchase_order' | 'cost_estimate' | 'bill_of_sale' | 'ae550a' | 'ae550b' | 'other';
 
@@ -107,41 +111,11 @@ const EMPTY: DocumentFields = {
 
 /**
  * Reads a local PDF (a scan from the app, or a PDF the customer added).
- * In demo mode it falls back to made-up results when the real reader
- * can't run (not logged in, or not switched on yet).
+ * Demo mode returns made-up results; there is no real reader yet.
  */
-export async function readDocument(pdfUri: string, kind: 'paperwork' | 'ae550', deal?: Deal): Promise<ReadResult> {
-  const demoFallback = (): ReadResult => ({ ok: true, fields: sampleFields(kind, deal), sample: true });
-  if (!supabase) return isDemoMode() ? demoFallback() : { ok: false, reason: 'not_ready' };
-  const { data: session } = await supabase.auth.getSession();
-  if (!session.session) return isDemoMode() ? demoFallback() : { ok: false, reason: 'not_signed_in' };
-
-  let file: string;
-  try {
-    file = await FileSystem.readAsStringAsync(pdfUri, { encoding: 'base64' });
-  } catch {
-    return { ok: false, reason: 'failed' };
-  }
-
-  try {
-    const { data, error } = await supabase.functions.invoke('read-document', {
-      method: 'POST',
-      body: { file, mimeType: 'application/pdf' },
-    });
-    if (error) {
-      const status = (error as { context?: { status?: number } }).context?.status;
-      if (status === 503 || status === 404) return isDemoMode() ? demoFallback() : { ok: false, reason: 'not_ready' };
-      if (status === 401) return { ok: false, reason: 'not_signed_in' };
-      if (status === 413) return { ok: false, reason: 'too_large' };
-      if (status === 422) return { ok: false, reason: 'unreadable' };
-      if (!status) return { ok: false, reason: 'offline' };
-      return { ok: false, reason: 'failed' };
-    }
-    const fields = (data as { fields?: DocumentFields } | null)?.fields;
-    return fields ? { ok: true, fields, sample: false } : { ok: false, reason: 'failed' };
-  } catch {
-    return { ok: false, reason: 'offline' };
-  }
+export async function readDocument(_pdfUri: string, kind: 'paperwork' | 'ae550', deal?: Deal): Promise<ReadResult> {
+  if (isDemoMode()) return { ok: true, fields: sampleFields(kind, deal), sample: true };
+  return { ok: false, reason: 'not_ready' };
 }
 
 // ---------------------------------------------------------------------
