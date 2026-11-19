@@ -10,9 +10,11 @@ import { dealershipForBase, DEALERSHIPS, normalizeWhatsapp, SALESPEOPLE } from '
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
 import { toIsoDate } from '@/lib/deal-flow';
-import { createMyDeal, deleteMyDeal, fetchDealBundle, updateDeal, type DealKind, type NewDeal, type PaymentMethod } from '@/lib/deals';
+import { createMyDeal, deleteMyDeal, fetchDealBundle, updateDeal, uploadDealFile, type DealKind, type NewDeal, type PaymentMethod } from '@/lib/deals';
 import { DEMO_CUSTOMER_ID, useDemoMode } from '@/lib/demo-mode';
 import { useMyDeals } from '@/lib/my-deals-context';
+import { readDocument, readFailureMessage, type DocumentFields } from '@/lib/read-document';
+import { pickPdf, scanPages, type ScannedPdf } from '@/lib/scan';
 import { loadWishList } from '@/lib/wish-list';
 import { messageWhatsapp } from '@/lib/whatsapp';
 
@@ -54,6 +56,10 @@ export default function DealSetupScreen() {
   const [dealership, setDealership] = useState<string | null>(null);
   const [payDays, setPayDays] = useState(5);
   const [showMore, setShowMore] = useState(false);
+  // The paperwork the app read, kept to save into the deal's documents.
+  const [paperworkPdf, setPaperworkPdf] = useState<ScannedPdf | null>(null);
+  const [reading, setReading] = useState(false);
+  const [readNote, setReadNote] = useState<{ sample: boolean; unclear: string[] } | null>(null);
 
   // A new plan picks up the salesperson and dealership from the wish list,
   // if the customer made one before their deposit.
@@ -121,6 +127,69 @@ export default function DealSetupScreen() {
       hint="On your paperwork. Today's date is filled in."
     />
   );
+
+  /** Fills the form from what the reader found; leaves blanks alone. */
+  const applyFields = (f: DocumentFields) => {
+    if (f.document_type === 'bill_of_sale') setKind('sale');
+    if (f.document_type === 'purchase_order' || f.document_type === 'cost_estimate') {
+      setKind('purchase');
+      setIsDen(f.document_type === 'cost_estimate');
+    }
+    if (f.stock_number?.toUpperCase().startsWith('DEN')) setIsDen(true);
+    if (f.deal_number) setDealNumber(f.deal_number);
+    if (f.stock_number) setStockNumber(f.stock_number);
+    if (f.vin) setVin(f.vin);
+    if (f.vehicle_year) setYear(String(f.vehicle_year));
+    if (f.vehicle_make) setMake(f.vehicle_make);
+    if (f.vehicle_model) setModel(f.vehicle_model);
+    if (f.vehicle_color) setColor(f.vehicle_color);
+    if (f.odometer !== null) setOdometer(String(f.odometer));
+    if (f.total_price !== null) setTotalPrice(String(f.total_price));
+    if (f.deposit !== null && f.document_type === 'purchase_order') setDeposit(String(f.deposit));
+    if (f.document_date && /^\d{4}-\d{2}-\d{2}$/.test(f.document_date)) setDocumentDate(f.document_date);
+    if (f.salesperson_name) setSalespersonName(f.salesperson_name);
+    if (f.salesperson_phone) {
+      const digits = normalizeWhatsapp(f.salesperson_phone);
+      if (digits) setSalespersonWhatsapp(`+${digits}`);
+    }
+    const location = DEALERSHIPS.find((d) => f.dealership_location?.toLowerCase().includes(d.toLowerCase()));
+    if (location) setDealership(location);
+    if (f.lender) {
+      setPaymentMethod('finance');
+      setLender(f.lender);
+    }
+    setErrors({});
+  };
+
+  /** "Scan my paperwork": the app reads it and fills the form in. */
+  const readPaperwork = () => {
+    const go = async (source: 'scan' | 'pdf') => {
+      const pdf = source === 'pdf' ? await pickPdf() : await scanPages(paperwork, null);
+      if (!pdf) return;
+      setReading(true);
+      const result = await readDocument(pdf.uri, 'paperwork');
+      setReading(false);
+      if (!result.ok) {
+        Alert.alert("Couldn't read it", readFailureMessage[result.reason]);
+        return;
+      }
+      if (result.fields.document_type === 'ae550a' || result.fields.document_type === 'ae550b' || result.fields.document_type === 'other') {
+        Alert.alert(
+          "That doesn't look like your paperwork",
+          'Use the Purchase Order, Cost Estimate or Bill of Sale your salesperson gave you.',
+        );
+        return;
+      }
+      applyFields(result.fields);
+      setPaperworkPdf(pdf);
+      setReadNote({ sample: result.sample, unclear: result.fields.unclear });
+    };
+    Alert.alert('Your paperwork', 'How do you want to add it?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Add the PDF (e.g. from WhatsApp)', onPress: () => go('pdf') },
+      { text: 'Scan the Paper Copy', onPress: () => go('scan') },
+    ]);
+  };
 
   /** Demo mode: fill the form with made-up paperwork, so a live demo
    * doesn't stall on typing. */
@@ -214,6 +283,20 @@ export default function DealSetupScreen() {
       Alert.alert("Couldn't save", result.message ?? 'Check your connection and try again.');
       return;
     }
+    // The paperwork the app read goes into the deal's documents too.
+    if (!editing && paperworkPdf) {
+      const docType = kind === 'sale' ? 'bill_of_sale' : isDen ? 'cost_estimate' : 'purchase_order';
+      await uploadDealFile({
+        dealId: result.deal.id,
+        docType,
+        localPdfUri: paperworkPdf.uri,
+        pageCount: paperworkPdf.pageCount,
+        role: 'customer',
+        userId: user?.id ?? DEMO_CUSTOMER_ID,
+      }).catch(() =>
+        Alert.alert('Plan saved', 'Your plan is ready, but the paperwork scan didn’t save. Add it again in Documents.'),
+      );
+    }
     selectDeal(result.deal.id);
     await refresh();
     router.back();
@@ -259,6 +342,26 @@ export default function DealSetupScreen() {
                 About two minutes. Grab the paperwork your salesperson gave you: you only need four numbers from it, and
                 the app builds your step-by-step plan for your base.
               </Text>
+            )}
+            {!editing && (
+              <View style={styles.readCard}>
+                <Text style={styles.readTitle}>Let the app fill this in</Text>
+                <Text style={styles.readBody}>
+                  Scan your Purchase Order, Cost Estimate or Bill of Sale (or add the PDF your salesperson sent), and the
+                  app reads the numbers for you.
+                </Text>
+                <Pressable style={[styles.readButton, reading && { opacity: 0.7 }]} onPress={readPaperwork} disabled={reading}>
+                  {reading ? <ActivityIndicator color="#fff" /> : null}
+                  <Text style={styles.readButtonLabel}>{reading ? 'Reading your paperwork…' : 'Scan My Paperwork'}</Text>
+                </Pressable>
+                {readNote && (
+                  <Text style={styles.readDone}>
+                    {readNote.sample ? 'Demo: filled in with sample paperwork. ' : 'Filled in from your paperwork. '}
+                    Check each number against the paper before you build your plan.
+                    {readNote.unclear.length > 0 ? ` Couldn't read clearly: ${readNote.unclear.join(', ').replace(/_/g, ' ')}.` : ''}
+                  </Text>
+                )}
+              </View>
             )}
             <Text style={styles.label}>Are you…</Text>
             <Segmented
@@ -493,6 +596,20 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   sampleLabel: { fontFamily: Fonts.bodyBold, fontSize: 13.5, color: Colors.amber, textAlign: 'center' },
+  readCard: { backgroundColor: Colors.navyTint, borderRadius: Radius.md, padding: 14, gap: 8, marginBottom: 18 },
+  readTitle: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.navy },
+  readBody: { fontFamily: Fonts.body, fontSize: 13, color: Colors.text, lineHeight: 18 },
+  readButton: {
+    minHeight: 44,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.navy,
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  readButtonLabel: { fontFamily: Fonts.bodyBold, fontSize: 14, color: '#fff' },
+  readDone: { fontFamily: Fonts.bodySemibold, fontSize: 12.5, color: Colors.green, lineHeight: 17 },
   inlineLink: { fontFamily: Fonts.bodySemibold, color: Colors.green, textDecorationLine: 'underline' },
   moreToggle: { paddingVertical: 6, marginBottom: 8 },
   moreLabel: { fontFamily: Fonts.bodyBold, fontSize: 13.5, color: Colors.navy },

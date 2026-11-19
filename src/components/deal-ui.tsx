@@ -8,7 +8,12 @@ import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
 import { dealTitle, docTypeInfo, type DealDeadline, type DocTypeInfo, vehicleLabel } from '@/lib/deal-flow';
 import { deleteDealFile, signedFileUrl, uploadDealFile, type Deal, type DealBundle, type DealFile } from '@/lib/deals';
 import { openUrlWithFeedback } from '@/lib/linking';
+import { checkAgainstDeal, readDocument } from '@/lib/read-document';
 import { pickPdf, scanPages } from '@/lib/scan';
+import { messageSalesperson } from '@/lib/whatsapp';
+
+/** Customs forms the app checks against the deal as soon as they're added. */
+const CHECKED_FORMS = ['ae550a', 'ae550b', 'ae550a_stamped', 'ae550b_stamped'];
 
 export function DealSummaryCard({ deal }: { deal: Deal }) {
   return (
@@ -182,13 +187,57 @@ export function ScanUploadButton({
   onUploaded?: () => void;
   allowPdf?: boolean;
 }) {
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<false | 'saving' | 'checking'>(false);
+
+  /**
+   * Checks a 550 against the deal right after it's added, so a wrong VIN
+   * or price is caught while the customer is still at the counter: the
+   * base customs office types these forms by hand (Terry, 2026-11-17).
+   */
+  const check550 = async (pdfUri: string) => {
+    setBusy('checking');
+    const result = await readDocument(pdfUri, 'ae550', deal);
+    if (!result.ok) {
+      Alert.alert(
+        'Saved',
+        `${info.label} is in your documents. The app couldn't check it this time, so compare the VIN, your name and the price with your Purchase Order before you leave the counter.`,
+      );
+      return;
+    }
+    const demo = result.sample ? 'Demo: ' : '';
+    const problems = checkAgainstDeal(result.fields, deal);
+    if (problems.length === 0) {
+      Alert.alert(`${demo}Your form matches your deal`, `${info.label} is saved, and the VIN, name and price match your deal.`);
+      return;
+    }
+    const mismatches = problems.filter((p) => p.severity === 'mismatch');
+    const lines = problems.map((p) => `${p.label}\n  On the form: ${p.onForm}\n  Your deal: ${p.onDeal}`).join('\n\n');
+    Alert.alert(
+      mismatches.length > 0 ? `${demo}Ask them to fix this before you leave` : `${demo}Worth a quick look`,
+      `${lines}\n\n${
+        mismatches.length > 0
+          ? 'Customs forms are typed by hand, and a wrong number holds up your registration. Show this to the clerk. If it is your deal details that are wrong, fix them under "Change car or start over".'
+          : 'Small differences can be fine. If you are unsure, ask your salesperson.'
+      }`,
+      [
+        { text: 'OK', style: 'cancel' },
+        {
+          text: 'Ask My Salesperson',
+          onPress: () =>
+            messageSalesperson(
+              deal,
+              `My ${info.label} doesn't match my deal: ${problems.map((p) => `${p.label} on the form is ${p.onForm}, my deal says ${p.onDeal}`).join('; ')}. What should I do?`,
+            ),
+        },
+      ],
+    );
+  };
 
   const run = async (source: 'scan' | 'pdf') => {
     try {
       const pdf = source === 'pdf' ? await pickPdf() : await scanPages(info.label, info.pages);
       if (!pdf) return;
-      setBusy(true);
+      setBusy('saving');
       await uploadDealFile({
         dealId: deal.id,
         docType: info.type,
@@ -198,7 +247,11 @@ export function ScanUploadButton({
         userId,
       });
       onUploaded?.();
-      Alert.alert('Saved', `${info.label} is in your documents now.`);
+      if (CHECKED_FORMS.includes(info.type)) {
+        await check550(pdf.uri);
+      } else {
+        Alert.alert('Saved', `${info.label} is in your documents now.`);
+      }
     } catch (error) {
       console.error('Document upload failed:', error);
       Alert.alert("Couldn't save that document", 'Check your connection and try again. Nothing was saved.');
@@ -220,9 +273,11 @@ export function ScanUploadButton({
   };
 
   return (
-    <Pressable style={({ pressed }) => [styles.scanButton, pressed && { opacity: 0.8 }]} onPress={onPress} disabled={busy}>
+    <Pressable style={({ pressed }) => [styles.scanButton, pressed && { opacity: 0.8 }]} onPress={onPress} disabled={busy !== false}>
       {busy ? <ActivityIndicator color="#fff" /> : <UploadIcon size={16} color="#fff" />}
-      <Text style={styles.scanLabel}>{busy ? 'Saving…' : (label ?? `Scan ${info.label}`)}</Text>
+      <Text style={styles.scanLabel}>
+        {busy === 'saving' ? 'Saving…' : busy === 'checking' ? 'Checking it against your deal…' : (label ?? `Scan ${info.label}`)}
+      </Text>
     </Pressable>
   );
 }

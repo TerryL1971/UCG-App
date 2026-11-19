@@ -4,3 +4,9 @@ enabled = true
 verify_jwt = true
 import_map = "./functions/delete-account/deno.json"
 entrypoint = "./functions/delete-account/index.ts"
+
+[functions.read-document]
+enabled = true
+verify_jwt = true
+import_map = "./functions/read-document/deno.json"
+entrypoint = "./functions/read-document/index.ts"

@@ -40,6 +40,7 @@ and you send the message yourself (section 4).
 | Name, email address, password (stored only as a secure hash), WhatsApp number, the base you're stationed at | Creating your account / editing it | Your account; showing the right steps for your base; UCG reaching you on WhatsApp | Contract (Art. 6(1)(b)) |
 | Your car plan: Deal #, Stock #, car details and VIN, price, deposit, cash or loan and lender, dates, your salesperson's name and WhatsApp number, dealership, the steps you tick | Setting up and using your plan | Your step-by-step plan, deadlines and reminders | Contract (Art. 6(1)(b)) |
 | Documents you add (PDFs and scans): e.g. Purchase Order, Cost Estimate, Bill of Sale, AE Form 550-175A/B, Transfer Title Document, Hand-Over Document, Warranty Certificate, driver's license. These contain personal data such as your name, address, unit, phone number and vehicle details | When you choose to add them | Keeping your car's paperwork together so you can view, share or print it | Contract (Art. 6(1)(b)); for the driver's license, your consent by choosing to add it (Art. 6(1)(a)) |
+| The content of a document you ask the App to read: your Purchase Order, Cost Estimate or Bill of Sale (to fill in your plan), or your AE Form 550-175A/B (to check it against your plan). Includes your name, the car, VIN and price | Only when you tap "Scan My Paperwork", or add a 550 | Reading the numbers for you, and spotting typing mistakes on customs forms before they hold up your registration. You check the results before anything is saved | Contract (Art. 6(1)(b)) |
 | Key Dates you enter (registration expiry, 550-175B issue date, USAREUR license expiry) | Key Dates | Reminders | Contract (Art. 6(1)(b)) |
 | Sell My Car details (name, email, phone, VIN, year, mileage, condition, duty station, notes) and car photos | Sell My Car | Requesting an offer — sent by you on WhatsApp (section 4). Form drafts and photos stay on your phone | Contract / pre-contract steps (Art. 6(1)(b)) |
 
@@ -55,6 +56,15 @@ pickup photo, Sell My Car photos and drafts, demo-mode sample data.
   account, plan and documents. Data is held in the [London, UK —
   `eu-west-2`] region. The UK has an EU adequacy decision; [confirm the
   data processing agreement with Supabase and its sub-processors].
+- **Document reading (processor):** when you ask the App to read a
+  document (section 3), that document is sent to Anthropic, PBC, whose
+  AI model (Claude) reads it and returns the numbers to your phone.
+  [Confirm: Anthropic's commercial terms and data processing addendum;
+  that API inputs are not used to train its models; how long Anthropic
+  keeps API inputs and outputs; the transfer mechanism for sending data
+  to the US (e.g. EU–US Data Privacy Framework or Standard Contractual
+  Clauses).] UCG does not keep the reader's results except what you
+  save in your plan.
 - **Email codes:** sign-up and password-reset codes are sent by [Resend,
   as an email processor]. [Before launch: send from a UCG email domain —
   see section 9.]
@@ -118,6 +128,8 @@ We'll update this page when what we do with your data changes, and the
 - **Email sender:** the email codes currently come from
   `mail.european-living.live` (set up for testing). Switch Supabase's
   SMTP to a UCG domain before launch.
-- Data processing agreements in place (Supabase, email provider).
+- Data processing agreements in place (Supabase, email provider,
+  Anthropic for document reading), and a decision on the US transfer
+  basis for Anthropic.
 - A live URL for this policy — App Store Connect and Google Play require
   one at submission.
