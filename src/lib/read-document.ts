@@ -198,7 +198,7 @@ export function parsePaperwork(lines: string[]): DocumentFields {
   const odometer = odometerText ? Math.round(Number(odometerText.replace(/[.,]/g, ''))) || null : null;
 
   // "Total Price" — never the Cost Estimate's larger MWST "Total Amount".
-  const priceText = afterLabel(lines, /total\s+(vehicle\s+)?price[^$\d]*/i, /\$?\s*([\d.,]+\d)/);
+  const priceText = afterLabel(lines, /total\s+(vehicle\s+)?price(\s*\([^)]*\))?[^$\d(]*/i, /^\s*\$?\s*([\d.,]+\d)/);
   const total_price = priceText ? money(priceText) : null;
   const depositText = document_type === 'purchase_order' ? afterLabel(lines, /deposit[^$\d]*/i, /\$?\s*([\d.,]+\d)/) : null;
   const deposit = depositText ? money(depositText) : null;
