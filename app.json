@@ -55,7 +55,13 @@
       "expo-image",
       "expo-sharing",
       "expo-status-bar",
-      "expo-notifications"
+      "expo-notifications",
+      [
+        "react-native-document-scanner-plugin",
+        {
+          "cameraPermission": "Used Car Guys uses your camera to scan a VIN barcode, scan your driver's license, upload deal documents, and take photos of your car."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

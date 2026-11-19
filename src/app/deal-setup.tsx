@@ -154,10 +154,6 @@ export default function DealSetupScreen() {
     }
     const location = DEALERSHIPS.find((d) => f.dealership_location?.toLowerCase().includes(d.toLowerCase()));
     if (location) setDealership(location);
-    if (f.lender) {
-      setPaymentMethod('finance');
-      setLender(f.lender);
-    }
     setErrors({});
   };
 
@@ -167,7 +163,7 @@ export default function DealSetupScreen() {
       const pdf = source === 'pdf' ? await pickPdf() : await scanPages(paperwork, null);
       if (!pdf) return;
       setReading(true);
-      const result = await readDocument(pdf.uri, 'paperwork');
+      const result = await readDocument(pdf.uri);
       setReading(false);
       if (!result.ok) {
         Alert.alert("Couldn't read it", readFailureMessage[result.reason]);

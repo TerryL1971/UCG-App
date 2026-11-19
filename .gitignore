@@ -48,3 +48,7 @@ example
 # cache, not portable project config; no secret values in it today, but
 # it's not meant to be committed regardless.
 supabase/.temp/
+
+# Native projects are generated (npx expo prebuild / EAS), never committed
+/ios
+/android

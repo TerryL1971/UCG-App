@@ -8,7 +8,7 @@ import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
 import { dealTitle, docTypeInfo, type DealDeadline, type DocTypeInfo, vehicleLabel } from '@/lib/deal-flow';
 import { deleteDealFile, signedFileUrl, uploadDealFile, type Deal, type DealBundle, type DealFile } from '@/lib/deals';
 import { openUrlWithFeedback } from '@/lib/linking';
-import { checkAgainstDeal, READER_AVAILABLE, readDocument } from '@/lib/read-document';
+import { check550 as check550Form, READER_AVAILABLE } from '@/lib/read-document';
 import { isDemoMode } from '@/lib/demo-mode';
 import { pickPdf, scanPages } from '@/lib/scan';
 import { messageSalesperson } from '@/lib/whatsapp';
@@ -197,7 +197,7 @@ export function ScanUploadButton({
    */
   const check550 = async (pdfUri: string) => {
     setBusy('checking');
-    const result = await readDocument(pdfUri, 'ae550', deal);
+    const result = await check550Form(pdfUri, deal);
     if (!result.ok) {
       Alert.alert(
         'Saved',
@@ -206,32 +206,34 @@ export function ScanUploadButton({
       return;
     }
     const demo = result.sample ? 'Demo: ' : '';
-    const problems = checkAgainstDeal(result.fields, deal);
-    if (problems.length === 0) {
-      Alert.alert(`${demo}Your form matches your deal`, `${info.label} is saved, and the VIN, name and price match your deal.`);
+    const { mismatches, notFound } = result;
+    if (mismatches.length === 0 && notFound.length === 0) {
+      Alert.alert(`${demo}Your form matches your deal`, `${info.label} is saved. The VIN, your name and the price match your deal.`);
       return;
     }
-    const mismatches = problems.filter((p) => p.severity === 'mismatch');
-    const lines = problems.map((p) => `${p.label}\n  On the form: ${p.onForm}\n  Your deal: ${p.onDeal}`).join('\n\n');
-    Alert.alert(
-      mismatches.length > 0 ? `${demo}Ask them to fix this before you leave` : `${demo}Worth a quick look`,
-      `${lines}\n\n${
-        mismatches.length > 0
-          ? 'Customs forms are typed by hand, and a wrong number holds up your registration. Show this to the clerk. If it is your deal details that are wrong, fix them under "Change car or start over".'
-          : 'Small differences can be fine. If you are unsure, ask your salesperson.'
-      }`,
-      [
-        { text: 'OK', style: 'cancel' },
-        {
-          text: 'Ask My Salesperson',
-          onPress: () =>
-            messageSalesperson(
-              deal,
-              `My ${info.label} doesn't match my deal: ${problems.map((p) => `${p.label} on the form is ${p.onForm}, my deal says ${p.onDeal}`).join('; ')}. What should I do?`,
-            ),
-        },
-      ],
-    );
+    const parts: string[] = [];
+    if (mismatches.length > 0) {
+      parts.push(mismatches.map((p) => `${p.label}\n  On the form: ${p.onForm}\n  Your deal: ${p.onDeal}`).join('\n\n'));
+      parts.push(
+        'Customs forms are typed by hand, and a wrong number holds up your registration. Show this to the clerk. If it is your deal details that are wrong, fix them under "Change car or start over".',
+      );
+    }
+    if (notFound.length > 0) {
+      parts.push(`The app couldn't find ${notFound.join(', ')} on the form. Check by eye that it's there and correct.`);
+    }
+    Alert.alert(mismatches.length > 0 ? `${demo}Ask them to fix this before you leave` : `${demo}Check this by eye`, parts.join('\n\n'), [
+      { text: 'OK', style: 'cancel' },
+      {
+        text: 'Ask My Salesperson',
+        onPress: () =>
+          messageSalesperson(
+            deal,
+            mismatches.length > 0
+              ? `My ${info.label} doesn't match my deal: ${mismatches.map((p) => `${p.label} on the form is ${p.onForm}, my deal says ${p.onDeal}`).join('; ')}. What should I do?`
+              : `Could you double-check my ${info.label}? I couldn't confirm ${notFound.join(', ')}.`,
+          ),
+      },
+    ]);
   };
 
   const run = async (source: 'scan' | 'pdf') => {

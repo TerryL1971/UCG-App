@@ -1,0 +1,10 @@
+{
+  "name": "ucg-native",
+  "version": "0.1.0",
+  "description": "UCG app's own native helpers: on-device text reading (OCR) for deal documents.",
+  "main": "index.ts",
+  "license": "UNLICENSED",
+  "author": "The Used Car Guys",
+  "homepage": "https://usedcarguys.net",
+  "private": true
+}
