@@ -76,7 +76,7 @@ export default function MyDealScreen() {
         <View style={[styles.card, Shadow.card]}>
           <Text style={styles.cardTitle}>Already put down your $300 deposit?</Text>
           <Text style={styles.cardBody}>
-            Copy a few details from the paperwork your salesperson gave you, and the app builds your step-by-step plan
+            Scan the paperwork your salesperson gave you. The app reads it and builds your step-by-step plan
             for your base: what to do next, your deadlines, and all your documents in one place. Selling your car to
             UCG starts here too.
           </Text>
