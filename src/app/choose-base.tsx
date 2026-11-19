@@ -1,4 +1,3 @@
-import { router } from 'expo-router';
 import { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,6 +7,7 @@ import { ScreenHeader } from '@/components/ui/screen-header';
 import { baseName } from '@/constants/bases';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
+import { goBack } from '@/lib/navigation';
 
 /**
  * Change where you're stationed (e.g. PCS from Wiesbaden to Stuttgart).
@@ -19,7 +19,7 @@ export default function ChooseBaseScreen() {
 
   const choose = async (id: string) => {
     if (id === base) {
-      router.back();
+      goBack();
       return;
     }
     setSaving(true);
@@ -29,7 +29,7 @@ export default function ChooseBaseScreen() {
       Alert.alert("Couldn't save your base", 'Check your connection and try again.');
       return;
     }
-    router.back();
+    goBack();
   };
 
   return (

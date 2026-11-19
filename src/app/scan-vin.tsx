@@ -1,5 +1,4 @@
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
-import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,6 +7,7 @@ import { ArrowLeftIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { isPlausibleVin, useVinScan } from '@/lib/vin-scan-context';
+import { goBack } from '@/lib/navigation';
 
 /** VIN stickers sometimes wrap the code in start/stop chars a scanner
  * doesn't always strip, or the decode includes stray whitespace — clean
@@ -41,7 +41,7 @@ export default function ScanVinScreen() {
     }
 
     setLastScannedVin(vin);
-    router.back();
+    goBack();
   };
 
   if (!permission) {
@@ -58,7 +58,7 @@ export default function ScanVinScreen() {
         </Text>
         <View style={{ width: '100%', gap: 10, marginTop: 20 }}>
           <Button label="Grant Camera Access" onPress={requestPermission} />
-          <Text style={styles.manualLink} onPress={() => router.back()}>
+          <Text style={styles.manualLink} onPress={goBack}>
             Enter VIN manually instead
           </Text>
         </View>
@@ -77,7 +77,7 @@ export default function ScanVinScreen() {
 
       <SafeAreaView style={styles.overlay} edges={['top', 'bottom']}>
         <View style={styles.header}>
-          <Pressable style={styles.closeButton} onPress={() => router.back()} hitSlop={8}>
+          <Pressable style={styles.closeButton} onPress={goBack} hitSlop={8}>
             <ArrowLeftIcon color="#fff" />
           </Pressable>
           <Text style={styles.headerTitle}>Scan VIN</Text>
@@ -92,7 +92,7 @@ export default function ScanVinScreen() {
           </Text>
         </View>
 
-        <Text style={styles.manualLinkOnCamera} onPress={() => router.back()}>
+        <Text style={styles.manualLinkOnCamera} onPress={goBack}>
           Enter VIN manually instead
         </Text>
       </SafeAreaView>

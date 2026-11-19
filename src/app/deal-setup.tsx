@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -42,6 +42,7 @@ import {
 import { pickPdf, scanPages, type ScannedPdf } from '@/lib/scan';
 import { loadWishList } from '@/lib/wish-list';
 import { messageWhatsapp } from '@/lib/whatsapp';
+import { goBack } from '@/lib/navigation';
 
 /** Fields the reader can fill. Once read, they're shown locked rather
  * than as boxes to retype (Terry, 2026-11-19: copying numbers off the
@@ -396,7 +397,7 @@ export default function DealSetupScreen() {
     }
     selectDeal(result.deal.id);
     await refresh();
-    router.back();
+    goBack();
   };
 
   const remove = () => {
@@ -413,7 +414,7 @@ export default function DealSetupScreen() {
             try {
               await deleteMyDeal(id);
               await refresh();
-              router.back();
+              goBack();
             } catch {
               Alert.alert("Couldn't remove it", 'Check your connection and try again.');
             }

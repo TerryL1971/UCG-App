@@ -1,4 +1,3 @@
-import { router } from 'expo-router';
 import { useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -10,6 +9,7 @@ import { WhatsAppHelp } from '@/components/whatsapp-help';
 import { normalizeWhatsapp } from '@/constants/salespeople';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
+import { goBack } from '@/lib/navigation';
 
 /** The customer's own WhatsApp number — how UCG reaches them. */
 export default function EditWhatsappScreen() {
@@ -31,7 +31,7 @@ export default function EditWhatsappScreen() {
       Alert.alert("Couldn't save", 'Check your connection and try again.');
       return;
     }
-    router.back();
+    goBack();
   };
 
   return (

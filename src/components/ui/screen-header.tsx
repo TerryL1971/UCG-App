@@ -1,8 +1,8 @@
-import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ArrowLeftIcon } from '@/components/icons';
 import { Colors, Fonts, Radius } from '@/constants/theme';
+import { goBack } from '@/lib/navigation';
 
 export function ScreenHeader({
   title,
@@ -24,7 +24,7 @@ export function ScreenHeader({
   return (
     <View style={styles.row}>
       <Pressable
-        onPress={onBack ?? (() => router.back())}
+        onPress={onBack ?? goBack}
         hitSlop={8}
         style={styles.backButton}>
         <ArrowLeftIcon />
