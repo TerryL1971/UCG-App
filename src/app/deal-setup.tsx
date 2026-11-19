@@ -14,6 +14,7 @@ import { createMyDeal, deleteMyDeal, fetchDealBundle, updateDeal, type DealKind,
 import { DEMO_CUSTOMER_ID, useDemoMode } from '@/lib/demo-mode';
 import { useMyDeals } from '@/lib/my-deals-context';
 import { loadWishList } from '@/lib/wish-list';
+import { messageWhatsapp } from '@/lib/whatsapp';
 
 /**
  * "Start my car plan" — the customer copies a few things off the
@@ -52,6 +53,7 @@ export default function DealSetupScreen() {
   const [salespersonWhatsapp, setSalespersonWhatsapp] = useState('');
   const [dealership, setDealership] = useState<string | null>(null);
   const [payDays, setPayDays] = useState(5);
+  const [showMore, setShowMore] = useState(false);
 
   // A new plan picks up the salesperson and dealership from the wish list,
   // if the customer made one before their deposit.
@@ -101,6 +103,24 @@ export default function DealSetupScreen() {
   const parseMoney = (value: string) => Number(value.replace(/[^0-9.]/g, ''));
 
   const demo = useDemoMode();
+
+  /** Can't find a number? The salesperson sends them (Terry, 2026-11-19:
+   * copying numbers off a contract shouldn't feel like homework). */
+  const askForNumbers = () => {
+    const text = `Hi! I'm setting up my car plan in the UCG app. Could you send me my Deal #, Stock #, VIN and Total Price from my ${paperwork}?`;
+    messageWhatsapp(normalizeWhatsapp(salespersonWhatsapp), text, salespersonName.trim() || 'your salesperson');
+  };
+
+  const dateField = (
+    <Field
+      label={kind === 'sale' ? 'Purchase Date (YYYY-MM-DD)' : isDen ? 'Date (YYYY-MM-DD)' : 'Deal Date (YYYY-MM-DD)'}
+      value={documentDate}
+      onChangeText={setDocumentDate}
+      autoCorrect={false}
+      error={errors.documentDate}
+      hint="On your paperwork. Today's date is filled in."
+    />
+  );
 
   /** Demo mode: fill the form with made-up paperwork, so a live demo
    * doesn't stall on typing. */
@@ -158,6 +178,7 @@ export default function DealSetupScreen() {
     const whatsappDigits = salespersonWhatsapp.trim() ? normalizeWhatsapp(salespersonWhatsapp) : null;
     if (salespersonWhatsapp.trim() && !whatsappDigits) next.salespersonWhatsapp = 'Include the country code, e.g. +49 151 2345 6789.';
     setErrors(next);
+    if (next.documentDate) setShowMore(true);
     if (Object.keys(next).length > 0) return;
 
     const name = user?.name?.trim() || 'Customer';
@@ -235,7 +256,7 @@ export default function DealSetupScreen() {
             )}
             {!editing && (
               <Text style={styles.intro}>
-                Your salesperson gave you your paperwork when you put down your deposit. Copy these details from it and
+                About two minutes. Grab the paperwork your salesperson gave you: you only need four numbers from it, and
                 the app builds your step-by-step plan for your base.
               </Text>
             )}
@@ -262,73 +283,9 @@ export default function DealSetupScreen() {
               </>
             )}
 
-            <View style={styles.row}>
-              <View style={{ flex: 1 }}>
-                <Field label="Deal #" value={dealNumber} onChangeText={setDealNumber} keyboardType="number-pad" error={errors.dealNumber} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Field label="Stock #" value={stockNumber} onChangeText={setStockNumber} autoCapitalize="characters" error={errors.stockNumber} />
-              </View>
-            </View>
-
-            <View style={styles.row}>
-              <View style={{ flex: 1 }}>
-                <Field label="Year" value={year} onChangeText={setYear} keyboardType="number-pad" error={errors.year} />
-              </View>
-              <View style={{ flex: 2 }}>
-                <Field label="Make" value={make} onChangeText={setMake} autoCapitalize="words" />
-              </View>
-            </View>
-            <View style={styles.row}>
-              <View style={{ flex: 2 }}>
-                <Field label="Model" value={model} onChangeText={setModel} autoCapitalize="words" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Field label="Color" value={color} onChangeText={setColor} autoCapitalize="words" />
-              </View>
-            </View>
-            <Field label="VIN" value={vin} onChangeText={setVin} autoCapitalize="characters" autoCorrect={false} error={errors.vin} />
-            <Field label="Odometer" value={odometer} onChangeText={setOdometer} keyboardType="number-pad" />
-
-            <Field
-              label={kind === 'sale' ? 'Total Vehicle Price, $' : 'Total Price, $'}
-              value={totalPrice}
-              onChangeText={setTotalPrice}
-              keyboardType="decimal-pad"
-              error={errors.totalPrice}
-            />
-            {isDen && kind === 'purchase' && (
-              <Text style={styles.hint}>Use the Total Price — not the larger Total Amount that includes MWST.</Text>
-            )}
-            {purchaseNonDen && <Field label="Deposit paid, $" value={deposit} onChangeText={setDeposit} keyboardType="decimal-pad" />}
-
-            {kind === 'purchase' && (
-              <>
-                <Text style={styles.label}>Paying</Text>
-                <Segmented
-                  options={[
-                    { value: 'cash', label: 'Myself (cash / wire)' },
-                    { value: 'finance', label: 'With a loan' },
-                  ]}
-                  value={paymentMethod}
-                  onChange={(v) => setPaymentMethod(v as PaymentMethod)}
-                />
-                {paymentMethod === 'finance' && <Field label="Lender" value={lender} onChangeText={setLender} autoCapitalize="words" />}
-              </>
-            )}
-
-            <Field
-              label={kind === 'sale' ? 'Purchase Date (YYYY-MM-DD)' : isDen ? 'Date (YYYY-MM-DD)' : 'Deal Date (YYYY-MM-DD)'}
-              value={documentDate}
-              onChangeText={setDocumentDate}
-              autoCorrect={false}
-              error={errors.documentDate}
-            />
-
             <Text style={styles.section}>Your salesperson</Text>
             <Text style={styles.sectionHint}>
-              Their name and number are at the top right of your {paperwork}. &quot;Message my salesperson&quot; opens
-              WhatsApp to them.
+              Their name and number are at the top right of your {paperwork}, so you can message them from the app.
             </Text>
             {SALESPEOPLE.some((p) => !p.role || p.role === 'Sales') && (
               <View style={styles.chips}>
@@ -362,6 +319,91 @@ export default function DealSetupScreen() {
               ))}
             </View>
 
+            <Text style={styles.section}>The car</Text>
+            <Text style={styles.sectionHint}>So you know which plan is which. Leave out anything you don&apos;t know.</Text>
+            <View style={styles.row}>
+              <View style={{ flex: 1 }}>
+                <Field label="Year" value={year} onChangeText={setYear} keyboardType="number-pad" error={errors.year} />
+              </View>
+              <View style={{ flex: 2 }}>
+                <Field label="Make" value={make} onChangeText={setMake} autoCapitalize="words" placeholder="e.g. Toyota" />
+              </View>
+            </View>
+            <Field label="Model" value={model} onChangeText={setModel} autoCapitalize="words" placeholder="e.g. RAV4" />
+
+            <Text style={styles.section}>From your {paperwork}</Text>
+            <Text style={styles.sectionHint}>
+              Four numbers and you&apos;re done. Not sure where they are?{' '}
+              <Text style={styles.inlineLink} onPress={askForNumbers}>
+                Ask {salespersonName.trim().split(/\s+/)[0] || 'your salesperson'} to send them on WhatsApp
+              </Text>
+            </Text>
+            <View style={styles.row}>
+              <View style={{ flex: 1 }}>
+                <Field label="Deal #" value={dealNumber} onChangeText={setDealNumber} keyboardType="number-pad" error={errors.dealNumber} hint="Top right" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Field label="Stock #" value={stockNumber} onChangeText={setStockNumber} autoCapitalize="characters" error={errors.stockNumber} />
+              </View>
+            </View>
+
+            <Field
+              label="VIN"
+              value={vin}
+              onChangeText={setVin}
+              autoCapitalize="characters"
+              autoCorrect={false}
+              error={errors.vin}
+              hint="The car's 17-character ID number"
+            />
+
+            <Field
+              label={kind === 'sale' ? 'Total Vehicle Price, $' : 'Total Price, $'}
+              value={totalPrice}
+              onChangeText={setTotalPrice}
+              keyboardType="decimal-pad"
+              error={errors.totalPrice}
+            />
+            {isDen && kind === 'purchase' && (
+              <Text style={styles.hint}>Use the Total Price — not the larger Total Amount that includes MWST.</Text>
+            )}
+            {purchaseNonDen && <Field label="Deposit paid, $" value={deposit} onChangeText={setDeposit} keyboardType="decimal-pad" />}
+
+            {kind === 'purchase' && (
+              <>
+                <Text style={styles.label}>Paying</Text>
+                <Segmented
+                  options={[
+                    { value: 'cash', label: 'Myself (cash / wire)' },
+                    { value: 'finance', label: 'With a loan' },
+                  ]}
+                  value={paymentMethod}
+                  onChange={(v) => setPaymentMethod(v as PaymentMethod)}
+                />
+                {paymentMethod === 'finance' && <Field label="Lender" value={lender} onChangeText={setLender} autoCapitalize="words" />}
+              </>
+            )}
+
+            {isDen && kind === 'purchase' && dateField}
+
+            <Pressable onPress={() => setShowMore((v) => !v)} hitSlop={6} style={styles.moreToggle}>
+              <Text style={styles.moreLabel}>{showMore ? '−' : '+'} More details (optional)</Text>
+            </Pressable>
+            {showMore && (
+              <>
+                <View style={styles.row}>
+                  <View style={{ flex: 1 }}>
+                    <Field label="Color" value={color} onChangeText={setColor} autoCapitalize="words" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Field label="Odometer" value={odometer} onChangeText={setOdometer} keyboardType="number-pad" />
+                  </View>
+                </View>
+                {!(isDen && kind === 'purchase') && dateField}
+              </>
+            )}
+
+            <View style={{ height: 10 }} />
             <Button label={saving ? 'Saving…' : editing ? 'Save Changes' : 'Build My Plan'} onPress={save} disabled={saving} />
             {editing && (
               <Text style={styles.remove} onPress={remove}>
@@ -451,6 +493,9 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   sampleLabel: { fontFamily: Fonts.bodyBold, fontSize: 13.5, color: Colors.amber, textAlign: 'center' },
+  inlineLink: { fontFamily: Fonts.bodySemibold, color: Colors.green, textDecorationLine: 'underline' },
+  moreToggle: { paddingVertical: 6, marginBottom: 8 },
+  moreLabel: { fontFamily: Fonts.bodyBold, fontSize: 13.5, color: Colors.navy },
   remove: {
     fontFamily: Fonts.bodySemibold,
     fontSize: 13,

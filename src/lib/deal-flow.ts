@@ -625,33 +625,40 @@ export interface CustomerTick {
   label: string;
   /** Also ticked (and unticked) together with `milestone`. */
   alsoMarks?: Milestone[];
+  /** When to tap it, in plain words — so the customer knows they're
+   * waiting for the salesperson's message, not doing UCG's job
+   * (Terry, 2026-11-19). */
+  hint: string;
 }
+
+const WAIT_FOR_SALESPERSON = 'Your salesperson will message you on WhatsApp when this happens. Tap here then.';
 
 export const CUSTOMER_TICKS: Record<Flow, Partial<Record<string, CustomerTick>>> = {
   purchase: {
-    retail_ready: { milestone: 'retail_ready', label: 'My salesperson says my car is Retail Ready' },
-    payment: { milestone: 'paid_in_full', label: 'UCG has confirmed they received my payment' },
-    insurance: { milestone: 'insured', label: 'My car is insured' },
+    retail_ready: { milestone: 'retail_ready', label: 'My salesperson says my car is Retail Ready', hint: WAIT_FOR_SALESPERSON },
+    payment: { milestone: 'paid_in_full', label: 'UCG has confirmed they received my payment', hint: 'Your salesperson will message you when UCG has your money. Tap here then.' },
+    insurance: { milestone: 'insured', label: 'My car is insured', hint: 'Tap here once your insurance company confirms your policy.' },
     zollamt: {
       milestone: 'customs_cleared',
       label: 'UCG has cleared customs — my registration packet is ready',
       alsoMarks: ['registration_packet'],
+      hint: WAIT_FOR_SALESPERSON,
     },
-    registration: { milestone: 'registration_packet', label: 'I have my registration packet' },
-    delivered: { milestone: 'delivered', label: "I've picked up my car" },
+    registration: { milestone: 'registration_packet', label: 'I have my registration packet', hint: 'Tap here once your salesperson has given you the packet.' },
+    delivered: { milestone: 'delivered', label: "I've picked up my car", hint: 'Tap here once you’ve signed for the car and it’s yours.' },
   },
   purchase_den: {
-    paid: { milestone: 'paid_in_full', label: 'UCG has confirmed they received my payment' },
-    insurance: { milestone: 'insured', label: 'My car is insured' },
-    tuv: { milestone: 'tuv_release', label: 'My salesperson says the TÜV and release are done' },
-    registration: { milestone: 'registration_packet', label: 'I have my registration packet' },
-    delivered: { milestone: 'delivered', label: "I've picked up my car" },
+    paid: { milestone: 'paid_in_full', label: 'UCG has confirmed they received my payment', hint: 'Your salesperson will message you when UCG has your money. Tap here then.' },
+    insurance: { milestone: 'insured', label: 'My car is insured', hint: 'Tap here once your insurance company confirms your policy.' },
+    tuv: { milestone: 'tuv_release', label: 'My salesperson says the TÜV and release are done', hint: WAIT_FOR_SALESPERSON },
+    registration: { milestone: 'registration_packet', label: 'I have my registration packet', hint: 'Tap here once your salesperson has given you the packet.' },
+    delivered: { milestone: 'delivered', label: "I've picked up my car", hint: 'Tap here once you’ve signed for the car and it’s yours.' },
   },
   sale: {
-    zollamt: { milestone: 'customs_cleared', label: 'UCG has cleared customs' },
-    handover: { milestone: 'vehicle_received', label: "I've handed over the car, keys and title documents" },
-    deregister: { milestone: 'deregistered', label: 'My car is deregistered' },
-    paid_out: { milestone: 'paid_out', label: 'UCG has paid me' },
+    zollamt: { milestone: 'customs_cleared', label: 'UCG has cleared customs', hint: WAIT_FOR_SALESPERSON },
+    handover: { milestone: 'vehicle_received', label: "I've handed over the car, keys and title documents", hint: 'Tap here once UCG has the car, every key and the papers.' },
+    deregister: { milestone: 'deregistered', label: 'My car is deregistered', hint: 'Tap here once the VRO has taken your plates, or just scan the proof.' },
+    paid_out: { milestone: 'paid_out', label: 'UCG has paid me', hint: 'Tap here once the money is in your account.' },
   },
 };
 

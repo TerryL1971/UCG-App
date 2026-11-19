@@ -9,6 +9,7 @@ import { INSURANCE_STEPS, InsurancePrompt, requestAanQuote } from '@/components/
 import { PickupExtras } from '@/components/pickup-extras';
 import { UcgTeamCard } from '@/components/ucg-team-card';
 import { TimelineRoad } from '@/components/timeline-road';
+import { WordsToKnow } from '@/components/words-to-know';
 import { Button } from '@/components/ui/button';
 import { baseName } from '@/constants/bases';
 import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
@@ -250,17 +251,10 @@ function DealView({
         </View>
       )}
       <DealSummaryCard deal={deal} />
-      <UcgTeamCard deal={deal} baseId={baseId} />
       {deadline && <DeadlineBanner deadline={deadline} />}
-      {/* American Auto Nation, front and centre from the moment they pay
-          until the car is registered. */}
-      {flow !== 'sale' &&
-        !allDone &&
-        INSURANCE_STEPS.includes(steps[currentIndex]?.id) &&
-        steps.find((s) => s.id === 'insurance')?.status !== 'done' && (
-          <InsurancePrompt deal={deal} userId={userId} onChanged={onChanged} />
-        )}
 
+      {/* The next step comes first (Terry, 2026-11-19: "I only care about
+          my next step"); the team, the road and the rest follow. */}
       <View style={[styles.card, Shadow.card]}>
         <View style={styles.stepHead}>
           {/* Step back and forth through the whole plan. */}
@@ -289,6 +283,7 @@ function DealView({
             </Text>
           </View>
         </View>
+        {viewed.status === 'current' && <Text style={styles.nextKicker}>Your next step</Text>}
         <Text style={styles.cardTitle}>{viewed.title}</Text>
         <Text style={styles.cardBody}>{viewed.explainer}</Text>
         {viewed.baseNote && <Text style={styles.baseNote}>{viewed.baseNote}</Text>}
@@ -298,6 +293,7 @@ function DealView({
             <Text style={styles.lockedText}>{viewed.lockedReason}</Text>
           </View>
         )}
+        <WordsToKnow key={viewed.id} texts={[viewed.explainer, viewed.baseNote, viewed.lockedReason, tick?.label]} />
 
         {/* Insurance stays changeable after it's done (e.g. switching to
             American Auto Nation from another insurer). */}
@@ -327,10 +323,13 @@ function DealView({
           !viewed.lockedReason &&
           tick &&
           !ticked && (
-          <Pressable style={styles.tickButton} onPress={() => setTick(true)}>
-            <View style={styles.tickBox} />
-            <Text style={styles.tickLabel}>{tick.label}</Text>
-          </Pressable>
+          <>
+            <Pressable style={styles.tickButton} onPress={() => setTick(true)}>
+              <View style={styles.tickBox} />
+              <Text style={styles.tickLabel}>{tick.label}</Text>
+            </Pressable>
+            <Text style={styles.tickHint}>{tick.hint}</Text>
+          </>
         )}
         {tick && ticked && (
           <View style={styles.tickedRow}>
@@ -358,9 +357,20 @@ function DealView({
         )}
       </View>
 
+      {/* American Auto Nation, front and centre from the moment they pay
+          until the car is registered. */}
+      {flow !== 'sale' &&
+        !allDone &&
+        INSURANCE_STEPS.includes(steps[currentIndex]?.id) &&
+        steps.find((s) => s.id === 'insurance')?.status !== 'done' && (
+          <InsurancePrompt deal={deal} userId={userId} onChanged={onChanged} />
+        )}
+
       <View style={styles.roadWrap}>
         <TimelineRoad steps={steps} car={null} viewedIndex={viewedIndex} onStepPress={setViewedIndex} />
       </View>
+
+      <UcgTeamCard deal={deal} baseId={baseId} />
 
       <Pressable style={[styles.linkCard, Shadow.card]} onPress={() => router.push('/road-to-plates')}>
         <Text style={styles.linkCardTitle}>Every step, explained  →</Text>
@@ -519,6 +529,15 @@ const styles = StyleSheet.create({
     marginTop: 14,
   },
   tickBox: { width: 20, height: 20, borderRadius: 5, borderWidth: 2, borderColor: Colors.navy },
+  tickHint: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textMuted, marginTop: 6, lineHeight: 16 },
+  nextKicker: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: 11.5,
+    color: Colors.red,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    marginTop: 10,
+  },
   tickLabel: { flex: 1, fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.navy },
   tickedRow: {
     flexDirection: 'row',

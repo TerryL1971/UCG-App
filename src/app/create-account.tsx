@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BasePicker } from '@/components/base-picker';
 import { normalizeWhatsapp } from '@/constants/salespeople';
 import { Field } from '@/components/ui/field';
+import { WhatsAppHelp } from '@/components/whatsapp-help';
 import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
@@ -98,6 +99,7 @@ export default function CreateAccountScreen() {
             autoComplete="tel"
             error={errors.whatsapp}
           />
+          <WhatsAppHelp />
           <Field
             label="Password"
             value={password}

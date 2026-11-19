@@ -16,34 +16,51 @@ export default function ToolsScreen() {
   const { selected } = useMyDeals();
   const deal = selected?.deal;
 
+  const beforeYouBuy = (
+    <Section title={deal ? 'Before buying another car' : 'Before you buy'}>
+      <ToolRow icon={<StarIcon size={18} color={Colors.navy} />} title="Get Ready" sub="Arrival date and wish list, before your deposit" href="/get-ready" />
+      <ToolRow icon={<Text style={styles.currencyIcon}>?</Text>} title="Good to Know" sub="Deposits, dollars, financing, transfers…" href="/good-to-know" />
+    </Section>
+  );
+
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <View style={styles.navbar}>
         <Text style={styles.title}>Tools</Text>
       </View>
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.group}>
-          <ToolRow icon={<StarIcon size={18} color={Colors.navy} />} title="Get Ready" sub="Arrival date and wish list, before your deposit" href="/get-ready" />
-          <ToolRow icon={<Text style={styles.currencyIcon}>?</Text>} title="Good to Know" sub="Deposits, dollars, financing, transfers…" href="/good-to-know" />
-        </View>
+        {/* Grouped by when you need them (Terry, 2026-11-19: "I only care
+            about my next step, and the rest can wait"). Before a deal,
+            the getting-ready tools come first; after, they go last. */}
+        {!deal && beforeYouBuy}
 
-        <View style={styles.group}>
-          <ToolRow icon={<ShieldIcon size={20} color={Colors.navy} />} title="How to Pay" sub="UCG's payment details for your deal" href="/payment" />
-          <ToolRow icon={<ClockIcon size={20} color={Colors.navy} />} title="Key Dates" sub="Pay-by, guarantee and other deadlines" href="/key-dates" />
-          <ToolRow icon={<DocumentIcon size={20} color={Colors.navy} />} title="Every Step, Explained" sub="Your whole plan for your base" href="/road-to-plates" />
-          <ToolRow icon={<MapPinIcon size={20} color={Colors.navy} />} title="VRO Checklist" sub="What to bring to register your car" href="/vro-checklist" />
-          <ToolRow icon={<Text style={styles.currencyIcon}>$€</Text>} title="Currency Converter" sub="US dollars and euros, today's rate" href="/currency" />
-        </View>
+        {deal && (
+          <Section title="For your car right now">
+            <ToolRow icon={<DocumentIcon size={20} color={Colors.navy} />} title="Every Step, Explained" sub="Your whole plan for your base" href="/road-to-plates" />
+            <ToolRow icon={<ShieldIcon size={20} color={Colors.navy} />} title="How to Pay" sub="UCG's payment details for your deal" href="/payment" />
+            <ToolRow icon={<ClockIcon size={20} color={Colors.navy} />} title="Key Dates" sub="Pay-by, guarantee and other deadlines" href="/key-dates" />
+            <ToolRow icon={<MapPinIcon size={20} color={Colors.navy} />} title="VRO Checklist" sub="What to bring to register your car" href="/vro-checklist" />
+          </Section>
+        )}
 
-        <View style={styles.group}>
+        <Section title="Handy any time">
+          <ToolRow icon={<Text style={styles.currencyIcon}>Aa</Text>} title="Words You'll Hear" sub="VRO, TT Doc, Zollamt… in plain English" href="/words" />
           <ToolRow
             icon={<UmbrellaIcon size={20} color={Colors.navy} />}
             title="American Auto Nation"
             sub="Car insurance for USAREUR drivers, from UCG"
             href="/insurance"
           />
+          <ToolRow icon={<Text style={styles.currencyIcon}>$€</Text>} title="Currency Converter" sub="US dollars and euros, today's rate" href="/currency" />
           <ToolRow icon={<WrenchIcon size={20} color={Colors.navy} />} title="Service Center" sub="Oil changes, repairs, tires" href="/service" />
-        </View>
+        </Section>
+
+        {!deal && (
+          <Section title="Once you've bought">
+            <ToolRow icon={<MapPinIcon size={20} color={Colors.navy} />} title="VRO Checklist" sub="What to bring to register your car" href="/vro-checklist" />
+          </Section>
+        )}
+        {deal && beforeYouBuy}
 
         <View style={styles.group}>
           <Pressable style={styles.row} onPress={() => messageSalesperson(deal, 'Hi! ')}>
@@ -59,6 +76,15 @@ export default function ToolsScreen() {
         </View>
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <View style={{ gap: 8 }}>
+      <Text style={styles.sectionTitle}>{title}</Text>
+      <View style={styles.group}>{children}</View>
+    </View>
   );
 }
 
@@ -86,6 +112,14 @@ const styles = StyleSheet.create({
   },
   title: { fontFamily: Fonts.display, fontSize: 20, color: Colors.text },
   content: { padding: Spacing.xl, gap: Spacing.lg },
+  sectionTitle: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: 12,
+    color: Colors.textMuted,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+    marginLeft: 4,
+  },
   group: { backgroundColor: '#fff', borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden' },
   row: {
     flexDirection: 'row',

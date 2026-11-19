@@ -5,9 +5,11 @@ import { Colors, Fonts, Radius } from '@/constants/theme';
 interface FieldProps extends TextInputProps {
   label: string;
   error?: string;
+  /** A short "where to find it" line under the box. */
+  hint?: string;
 }
 
-export function Field({ label, error, style, ...inputProps }: FieldProps) {
+export function Field({ label, error, hint, style, ...inputProps }: FieldProps) {
   return (
     <View style={styles.field}>
       <Text style={styles.label}>{label}</Text>
@@ -16,7 +18,7 @@ export function Field({ label, error, style, ...inputProps }: FieldProps) {
         style={[styles.input, error && styles.inputError, style]}
         {...inputProps}
       />
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? <Text style={styles.error}>{error}</Text> : hint ? <Text style={styles.hint}>{hint}</Text> : null}
     </View>
   );
 }
@@ -45,6 +47,7 @@ const styles = StyleSheet.create({
   inputError: {
     borderColor: Colors.red,
   },
+  hint: { marginTop: 5, fontFamily: Fonts.body, fontSize: 12, color: Colors.textFaint },
   error: {
     marginTop: 5,
     fontFamily: Fonts.bodyMedium,

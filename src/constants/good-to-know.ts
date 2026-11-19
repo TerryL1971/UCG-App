@@ -51,6 +51,14 @@ export const GOOD_TO_KNOW: GoodToKnow[] = [
     a: 'It goes to one of our partner shops first. Your salesperson tells you as soon as it’s finished and ready to pick up.',
   },
   {
+    q: 'Why do I tick my own steps?',
+    a: 'UCG keeps your deal in its own office system, which the app can’t see. So when your salesperson messages you that something is done (your car is ready, your payment arrived, customs is cleared), one tap keeps your plan and your deadlines up to date. Tap the wrong one? Just undo it.',
+  },
+  {
+    q: 'What do VRO, TT Doc and the other words mean?',
+    a: 'Every step on My Deal has “What do these words mean?” under it, and Tools has the full list: Words You’ll Hear.',
+  },
+  {
     q: 'Tip: keep your WhatsApp messages',
     a: 'If your chat with UCG has disappearing messages on, your wish list and our answers vanish after a day or two. Turn it off in the chat settings, or keep your wish list here in the app.',
   },

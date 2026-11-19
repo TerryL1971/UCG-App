@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
 import { ScreenHeader } from '@/components/ui/screen-header';
+import { WhatsAppHelp } from '@/components/whatsapp-help';
 import { normalizeWhatsapp } from '@/constants/salespeople';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
@@ -49,6 +50,7 @@ export default function EditWhatsappScreen() {
           placeholder="+49 151 2345 6789"
           error={error}
         />
+        <WhatsAppHelp />
         <Button label={saving ? 'Saving…' : 'Save'} onPress={save} disabled={saving} />
       </View>
     </SafeAreaView>
